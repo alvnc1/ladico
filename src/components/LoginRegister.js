@@ -66,7 +66,7 @@ function LoginRegister() {
   };
 
   const handleLogoClick = () => {
-    navigate("/#");
+    navigate("/homepage");
   };
   
 
