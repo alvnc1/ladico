@@ -42,7 +42,7 @@ function LoginRegister() {
   const handleClick = async () => {
     try {
       await signInWithPopup(auth, provider);
-      navigate("/home");
+      navigate("/competencias");
     } catch (error) {
       if (error.code === "auth/popup-closed-by-user") {
         console.log("El usuario cerró el popup sin iniciar sesión.");
@@ -197,7 +197,7 @@ function LoginRegister() {
       <div className="panels-container">
         <div className="panel left-panel">
           <div className="content">
-            <h3>Nuevo en la página ?</h3>
+            <h3>¿ Nuevo en la página ?</h3>
             <p>¡Crea tu cuenta en pocos segundos!</p>
             <button className="btn transparent" onClick={() => setIsSignUp(true)}>
               Registrarse

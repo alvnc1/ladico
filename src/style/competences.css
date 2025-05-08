@@ -1,0 +1,122 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700;800&display=swap");
+
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+
+.sidebar h2 {
+  margin-bottom: 1rem;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li.active {
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+
+.sidebar li {
+  margin: 1rem 0;
+  cursor: pointer;
+}
+
+.sidebar .active {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.main-content {
+  margin-left: 260px;
+  padding: 2rem;
+}
+
+
+.header {
+  background-color: white;
+  padding: 1rem;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.user-menu {
+  position: relative;
+}
+
+.user-menu .username {
+  margin-right: 1rem;
+}
+
+.dropdown {
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ccc;
+  list-style: none;
+  padding: 0.5rem 0;
+  margin: 0;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.dropdown-content li {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.competence-area {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee; 
+}
+
+
+.competence-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 0 1rem;
+  justify-content: flex-start;
+}
+
+
+.competence-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.icon {
+  font-size: 2rem;
+  margin-right: 1rem;
+}
+
+.area-title {
+  font-size: 1rem;
+  color: #666;
+  font-weight: 500;
+  margin: 1.2rem 1rem 0.5rem;
+}
+

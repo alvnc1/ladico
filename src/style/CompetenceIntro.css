@@ -1,0 +1,18 @@
+.competence-intro {
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    padding: 0 2rem;
+    color: #2d3b45;
+  }
+  
+  .competence-intro h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  .competence-intro p {
+    font-size: 1rem;
+    color: #555;
+  }
+  

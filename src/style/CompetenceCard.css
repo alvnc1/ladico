@@ -1,0 +1,98 @@
+.card-container {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 280px;
+    transition: transform 0.3s ease;
+    position: relative;
+    text-align: center;
+    }
+
+.card-container:hover {
+    transform: scale(1.03);
+}
+
+.card-header {
+    background: linear-gradient(180deg, #1da1f2 0%, #2996f5 100%);
+    padding: 1.5rem 1rem 3rem;
+    color: white;
+    border-bottom-left-radius: 50% 20%;
+    border-bottom-right-radius: 50% 20%;
+}
+
+.category {
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 10%;
+}
+.card-title {
+    color: #fff; 
+    font-weight: 600;
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+  }
+  
+.title {
+    margin: 0.2rem 0 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.card-body {
+    padding: 1rem;
+    position: relative;
+}
+
+.progress-circle {
+    position: relative;
+    margin: 1rem auto;
+    width: 100px;
+    height: 100px;
+}
+
+.progress-circle svg {
+    display: block;
+    margin: auto;
+}
+
+.level-label {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: #2d3b45;
+}
+
+.level-value {
+    position: absolute;
+    top: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3b45;
+}
+
+.resume-button {
+    background-color: #218b6c;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 999px;
+    font-weight: bold;
+    margin-top: 1rem;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.card-container:hover .resume-button {
+    opacity: 1;
+    transform: translateY(0);
+}  
+

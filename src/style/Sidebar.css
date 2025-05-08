@@ -1,0 +1,82 @@
+.sidebar {
+    position: fixed;
+    top: 30px;
+    left: 20px;
+    height: 85vh;
+    width: 220px;
+    background: linear-gradient(135deg, #004B9B, #0072CE);
+    color: white;
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    border-radius: 20px;
+    z-index: 1000;
+    
+  }
+  
+  .sidebar h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0 0 2rem 0;
+    text-align: center;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  .sidebar nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .sidebar nav li {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: white;
+    transition: background-color 0.2s ease;
+  }
+  
+  .sidebar nav li:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .sidebar nav li.active {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .sidebar .help-link {
+    font-size: 0.85rem;
+    text-align: center;
+    color: white;
+    margin-top: 2rem;
+  }
+  
+  .sidebar .help-link a {
+    color: white;
+    font-weight: bold;
+    text-decoration: underline;
+  }
+
+  .logo {
+    max-width: 160px;
+    width: 100%;
+    height: auto;
+    margin: 0 auto 2rem;
+    display: block;
+    filter: brightness(0) invert(1); 
+    transition: filter 0.3s ease;
+  }
+
+  body.light .logo {
+    filter: none; 
+  }
+  
+  body.dark .logo {
+    filter: brightness(0) invert(1); 
+  }
