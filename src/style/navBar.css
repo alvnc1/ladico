@@ -1,0 +1,60 @@
+/* Navbar.css */
+
+.navbar {
+  width: 90%;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 10px 30px;
+  background-color: #ffffff;
+  border-radius: 40px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 10px;
+  z-index: 100;
+}
+
+.navbar-logo {
+  /* Eliminar los estilos anteriores */
+}
+
+.navbar-logo-image {
+  max-height: 50px;  /* Ajusta el tamaño del logo según lo necesites */
+  object-fit: contain;  /* Mantener la proporción sin distorsionar */
+}
+
+.navbar-links {
+  list-style: none;
+  display: flex;
+  gap: 25px;
+}
+
+.navbar-links li a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.navbar-links li a:hover {
+  color: #4d84e2;
+}
+
+.navbar-button {
+}
+
+.get-started-btn {
+  text-decoration: none;
+  padding: 8px 20px;
+  background-color: #4d84e2;
+  color: white;
+  border-radius: 25px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.get-started-btn:hover {
+  background-color: #3665c2;
+}
