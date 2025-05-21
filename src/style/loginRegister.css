@@ -12,7 +12,7 @@ input {
 }
 
 .container {
-  position: absolute;
+  position: relative;
   width: 100%;
   background-color: #F9F9F9;
   min-height: 100vh;
@@ -54,7 +54,7 @@ form {
 .form-logo {
   width: 250px; /* o el tamaño que estés usando */
   margin-bottom: -60px;
-  margin-top: -50px; /* reduce el espacio hacia arriba */
+  margin-top: 10px !important; /* reduce el espacio hacia arriba */
   display: block;
 }
 
@@ -436,6 +436,23 @@ form.sign-in-form {
   width: 100%;
 }
 
+.input-wrapper select {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  color: #333;
+  font-family: "Poppins", sans-serif;
+  appearance: none; /* elimina la flechita nativa del navegador */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.input-wrapper select option {
+  color: #333;
+}
+
 .input-wrapper i {
   font-size: 1rem;
   margin-right: 10px;
@@ -559,4 +576,15 @@ form.sign-in-form {
 
 .clickable-logo:hover {
   transform: scale(1.05);
+}
+
+.inline-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.inline-group .input-group {
+  flex: 1;
+  min-width: 100px;
 }

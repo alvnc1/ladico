@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, provider } from "./firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, provider, db } from "./firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -15,13 +16,15 @@ function LoginRegister() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [country, setCountry] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      //alert("¡Sesión iniciada!");
       navigate("/home");
     } catch (error) {
       alert(error.message);
@@ -29,15 +32,27 @@ function LoginRegister() {
   };
 
   const handleRegister = async (e) => {
-    e.preventDefault();
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      //alert("¡Cuenta creada!");
-      navigate("/home");
-    } catch (error) {
-      alert(error.message);
-    }
-  };
+  e.preventDefault();
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // Guardar datos adicionales en Firestore
+    await setDoc(doc(db, "users", user.uid), {
+      username,
+      email,
+      age,
+      gender,
+      country,
+      createdAt: new Date()
+    });
+
+    navigate("/home");
+
+  } catch (error) {
+    alert(error.message);
+  }
+};
 
   const handleClick = async () => {
     try {
@@ -68,15 +83,13 @@ function LoginRegister() {
   const handleLogoClick = () => {
     navigate("/homepage");
   };
-  
 
   return (
     <div className={`container ${isSignUp ? "sign-up-mode" : ""}`}>
       <div className="forms-container">
         <div className="signin-signup">
-          {/* Formulario de Iniciar Sesión */}
           <form onSubmit={handleLogin} className="sign-in-form">
-            <img src="/img/ladico.png" alt="Logo LADICO" className="form-logo clickable-logo" onClick={handleLogoClick} style={{ cursor: "pointer" }}  />
+            <img src="/img/ladico.png" alt="Logo LADICO" className="form-logo clickable-logo" onClick={handleLogoClick} style={{ cursor: "pointer" }} />
             <h2 className="title">Bienvenido de nuevo</h2>
 
             <div className="input-group">
@@ -121,7 +134,7 @@ function LoginRegister() {
             </div>
             <input type="submit" value="Iniciar Sesión" className="btn solid" />
             <div className="google-login-container">
-            <div className="separator">
+              <div className="separator">
                 <span>Inicia Sesión</span>
                 <span style={{ fontWeight: 400, color: "#777" }}>con</span>
               </div>
@@ -132,7 +145,6 @@ function LoginRegister() {
             </div>
           </form>
 
-          {/* Formulario de Registro */}
           <form onSubmit={handleRegister} className="sign-up-form">
             <img src="/img/ladico.png" alt="Logo LADICO" className="form-logo clickable-logo" onClick={handleLogoClick} style={{ cursor: "pointer" }} />
             <h2 className="title">Inscribirse</h2>
@@ -167,6 +179,57 @@ function LoginRegister() {
               </div>
             </div>
 
+            <div className="inline-group">
+              <div className="input-group">
+                <label htmlFor="register-age">Edad</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-calendar"></i>
+                  <input
+                    type="number"
+                    id="register-age"
+                    placeholder="ej.: 25"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="register-gender">Género</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-venus-mars"></i>
+                  <select
+                    id="register-gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    required
+                  >
+                    <option value="">Selecciona...</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
+                    <option value="Otro">Otro</option>
+                    <option value="Prefiero no decirlo">Prefiero no decirlo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="register-country">País</label>
+                <div className="input-wrapper">
+                  <i className="fas fa-globe"></i>
+                  <input
+                    type="text"
+                    id="register-country"
+                    placeholder="ej.: Chile"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="input-group">
               <label htmlFor="register-password">Contraseña</label>
               <div className="input-wrapper">
@@ -193,7 +256,6 @@ function LoginRegister() {
         </div>
       </div>
 
-      {/* Paneles laterales */}
       <div className="panels-container">
         <div className="panel left-panel">
           <div className="content">
