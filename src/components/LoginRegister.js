@@ -25,7 +25,7 @@ function LoginRegister() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/home");
+      navigate("/competencias");
     } catch (error) {
       alert(error.message);
     }
@@ -47,7 +47,7 @@ function LoginRegister() {
       createdAt: new Date()
     });
 
-    navigate("/home");
+    navigate("/competencias");
 
   } catch (error) {
     alert(error.message);
