@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import CompetenceList from '../components/CompetenceList';
@@ -23,6 +23,10 @@ function CompetenciasPage() {
     default:
       content = <CompetenceList />;
   }
+
+  useEffect(() => {
+      document.title = "Página Principal | Ladico";
+    }, []);
 
   return (
     <div className="app">

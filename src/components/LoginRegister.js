@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, provider, db } from "./firebase";
@@ -20,6 +20,11 @@ function LoginRegister() {
   const [gender, setGender] = useState("");
   const [country, setCountry] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+  document.title = isSignUp ? "Registrarse | Ladico" : "Iniciar Sesión | Ladico";
+  }, [isSignUp]);
+
 
   const handleLogin = async (e) => {
     e.preventDefault();

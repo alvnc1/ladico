@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import "../style/homePage.css";
 import Navbar from './NavBar';
 
 
 function HomePage() {
+  useEffect(() => {
+    document.title = "Inicio | Ladico";
+  }, []);
+
   return (
     <div className="homepage-container">
       <Navbar />
