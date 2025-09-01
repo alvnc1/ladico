@@ -6,7 +6,7 @@
   "dev": "next dev",
   "build": "next build",
   "lint": "next lint",
-  "start": "next start -p $PORT"
+  "start": "cross-env PORT=$PORT next start -p $PORT"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

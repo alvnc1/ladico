@@ -33,5 +33,3 @@ coverage/
 # Typescript build (si lo compilas)
 *.tsbuildinfo
 
-
-/lib/firebase.ts
