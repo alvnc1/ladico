@@ -1,0 +1,273 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --Ladico-purple: #6366f1;
+  --Ladico-purple-dark: #4f46e5;
+  --Ladico-purple-light: #8b5cf6;
+  --Ladico-blue: #3b82f6;
+  --Ladico-green: #10b981;
+  --Ladico-orange: #f97316;
+  --Ladico-red: #ef4444;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .Ladico-gradient {
+    background: linear-gradient(135deg, var(--Ladico-purple) 0%, var(--Ladico-blue) 100%);
+  }
+
+
+  .Ladico-button-primary {
+    @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200;
+  }
+
+  .Ladico-button-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-all duration-200;
+  }
+
+  .Ladico-sidebar {
+    background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+
+
+  @media (min-width: 1024px) {
+    .Ladico-sidebar {
+      width: 224px !important;
+
+      margin-top: 1rem !important;
+      margin-bottom: 1rem !important;
+      margin-left: 1rem !important;
+      margin-right: 0 !important;
+      height: calc(100vh - 2rem) !important;
+      top: 1rem !important;
+      border-radius: 1rem !important;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .Ladico-sidebar {
+      margin: 0 !important;
+      border-radius: 0 !important;
+      left: 0 !important;
+      width: 80vw !important;
+      max-width: 320px !important;
+      height: 100dvh !important;
+      top: 0 !important;
+    }
+  }
+
+
+  .competence-card-pix {
+    @apply bg-white overflow-hidden transition-all duration-300;
+    border-radius: 1rem !important;
+
+    border: 1px solid #e5e7eb;
+
+    box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    transform: translateZ(0);
+
+  }
+
+
+  @media (min-width: 1024px) {
+    .competence-card-pix {
+      border-radius: 1.25rem !important;
+
+      border: 1px solid #e5e7eb;
+
+      box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.1), 0 4px 8px -2px rgba(0, 0, 0, 0.04);
+    }
+  }
+
+  .competence-card-pix:hover {
+    border-color: #a5b4fc;
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.15), 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px) scale(1.02);
+    transform: translateY(-4px) scale(1.01);
+  }
+
+
+  @media (max-width: 1023px) {
+    .competence-card-pix:hover {
+      transform: translateY(-2px) scale(1.005);
+    }
+  }
+
+
+  @media (min-width: 1024px) {
+    .competence-card-pix:hover {
+      box-shadow: 0 35px 70px -15px rgba(0, 0, 0, 0.2), 0 15px 30px -8px rgba(0, 0, 0, 0.15);
+      transform: translateY(-8px) scale(1.02);
+    }
+  }
+
+  .progress-bar-modern {
+    @apply transition-all duration-500 ease-out;
+    height: 12px !important;
+
+    border-radius: 1rem !important;
+
+  }
+
+
+  .ladico-gradient {
+    background: linear-gradient(135deg, var(--Ladico-purple) 0%, var(--Ladico-purple-light) 100%);
+  }
+
+
+  .ladico-button-primary {
+    @apply bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-3 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl;
+  }
+
+  .ladico-button-secondary {
+    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-8 rounded-xl border border-gray-200 transition-all duration-200 hover:border-gray-300;
+  }
+
+  .ladico-button {
+    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-4 px-8 rounded-2xl transition-all duration-200 border-2 border-indigo-600 hover:border-indigo-700;
+  }
+
+  .ladico-button-outline {
+    @apply bg-white hover:bg-gray-50 text-indigo-600 font-medium py-4 px-8 rounded-2xl border-2 border-indigo-600 hover:border-indigo-700 transition-all duration-200;
+  }
+
+  .ladico-input {
+    @apply w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-indigo-500 focus:outline-none transition-all bg-white;
+  }
+
+  .ladico-section {
+    @apply py-20 px-6;
+  }
+
+
+  .test-container {
+    @apply min-h-screen;
+  }
+
+  .test-header {
+    @apply bg-white
+  }
+
+  .test-progress-container {
+    @apply max-w-4xl mx-auto px-4 sm:px-6;
+  }
+
+  .test-question-card {
+    @apply bg-white shadow-2xl border-0;
+    border-radius: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .test-question-card {
+      border-radius: 1.5rem;
+    }
+  }
+
+  .test-option-label {
+    @apply flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all duration-200;
+  }
+
+  @media (min-width: 640px) {
+    .test-option-label {
+      @apply p-5 rounded-2xl;
+    }
+  }
+
+  .test-button-primary {
+    @apply w-full sm:w-auto px-8 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all;
+  }
+
+  @media (min-width: 640px) {
+    .test-button-primary {
+      @apply rounded-2xl text-lg px-10;
+    }
+  }
+
+
+  .results-container {
+    @apply min-h-screen flex items-center justify-center p-3 sm:p-4;
+  }
+
+  .results-card {
+    @apply w-full max-w-2xl shadow-2xl border-0 overflow-hidden;
+    border-radius: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .results-card {
+      border-radius: 1.5rem;
+    }
+  }
+
+  .results-summary-grid {
+    @apply grid grid-cols-3 gap-3 sm:gap-6 text-center;
+  }
+
+  .results-summary-item {
+    @apply p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border;
+  }
+
+
+  .test-text-responsive {
+    @apply text-sm sm:text-base;
+  }
+
+  .test-title-responsive {
+    @apply text-lg sm:text-xl;
+  }
+
+  .test-header-responsive {
+    @apply text-2xl sm:text-3xl;
+  }
+}
+
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}

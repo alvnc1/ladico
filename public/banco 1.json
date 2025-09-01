@@ -1,0 +1,1271 @@
+[
+  {
+    "type": "multiple-choice",
+    "competence": "2.1",
+    "level": "Básico 2",
+    "title": "¿Cómo comunicarte con una institución para resolver dudas sobre un trámite?",
+    "scenario": "Miguel, un joven de 15 años en Colombia, tiene dudas sobre el proceso de inscripción a un programa juvenil del gobierno. Quiere comunicarse con la institución responsable.",
+    "options": [
+      "Opción A: Buscar la sección de 'Contáctenos' o 'Atención al Ciudadano' en el sitio web oficial de la institución.",
+      "Opción B: Escribir un mensaje en las redes sociales personales esperando que alguien responda.",
+      "Opción C: Esperar a que un amigo haga el trámite primero y preguntarle después.",
+      "Opción D: Buscar la información solamente en foros no oficiales."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Los canales oficiales de comunicación son la mejor forma de obtener información confiable.",
+      "incorrect": "No es la mejor opción. Para comunicarte con instituciones, siempre usa sus canales oficiales."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "2.1",
+    "level": "Básico 2",
+    "title": "¿Cómo redactar un correo electrónico para solicitar información sobre un trámite?",
+    "scenario": "Lucía, una estudiante de 16 años en Argentina, necesita enviar un correo electrónico a su escuela para pedir información sobre el proceso de inscripción al siguiente año escolar.",
+    "options": [
+      "Opción A: Escribir un mensaje claro y respetuoso, con un asunto específico y sus datos de contacto al final.",
+      "Opción B: Enviar un mensaje informal como si estuviera chateando con amigos.",
+      "Opción C: Escribir todo en mayúsculas para que presten más atención a su mensaje.",
+      "Opción D: Enviar varios correos repetidos a la misma dirección para asegurarse de que lo lean."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Un correo formal y claro muestra respeto y facilita la comunicación efectiva.",
+      "incorrect": "La comunicación formal requiere un tono respetuoso y claro. Sigue las normas de cortesía en tus mensajes."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "2.1",
+    "level": "Básico 2",
+    "title": "¿Cómo participar adecuadamente en un foro de ayuda sobre trámites escolares?",
+    "scenario": "Carlos, de 14 años en México, tiene dudas sobre cómo obtener una constancia de estudios y decide preguntar en un foro en línea de su escuela.",
+    "options": [
+      "Opción A: Escribir su pregunta de forma clara, revisar si alguien ya ha preguntado lo mismo antes y agradecer las respuestas.",
+      "Opción B: Escribir en mayúsculas para que todos vean su pregunta primero.",
+      "Opción C: Hacer la misma pregunta varias veces en diferentes secciones del foro.",
+      "Opción D: Criticar a quienes dan respuestas que no le gustan."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Participar respetuosamente en comunidades en línea facilita la comunicación efectiva.",
+      "incorrect": "En los foros en línea es importante ser claro, respetuoso y seguir las normas de la comunidad."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.1",
+    "level": "Básico 2",
+    "title": "¿Cómo crear un documento para una tarea escolar?",
+    "scenario": "Martín, de 15 años en Chile, necesita crear un documento para presentar un trabajo sobre historia local.",
+    "options": [
+      "Opción A: Usar un procesador de texto como Word o Google Docs para crear un documento bien estructurado con título, secciones y conclusión.",
+      "Opción B: Escribir todo el contenido en un mensaje de WhatsApp.",
+      "Opción C: Hacer el documento a mano y tomar una foto borrosa con el celular.",
+      "Opción D: Pedirle a un amigo que lo haga por él."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Usar procesadores de texto te permite crear documentos bien estructurados y profesionales.",
+      "incorrect": "Para presentar trabajos escolares, es mejor usar herramientas específicas como procesadores de texto."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.1",
+    "level": "Básico 2",
+    "title": "¿Cómo crear una presentación digital efectiva?",
+    "scenario": "Ana, una estudiante de 16 años en Perú, debe preparar una presentación sobre un tema científico para su clase.",
+    "options": [
+      "Opción A: Usar PowerPoint o Google Slides con diapositivas claras, poco texto y algunas imágenes relevantes.",
+      "Opción B: Crear una sola diapositiva con todo el texto de su presentación.",
+      "Opción C: Usar muchas animaciones y efectos especiales en cada diapositiva.",
+      "Opción D: Incluir música de fondo a alto volumen durante toda la presentación."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Una buena presentación digital debe ser clara, concisa y visualmente equilibrada.",
+      "incorrect": "Las presentaciones efectivas tienen contenido claro y conciso, sin exceso de efectos que distraigan."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.1",
+    "level": "Básico 2",
+    "title": "¿Cómo elaborar una hoja de cálculo para organizar datos?",
+    "scenario": "David, de 17 años en Ecuador, necesita organizar información sobre los gastos de un proyecto escolar.",
+    "options": [
+      "Opción A: Crear una hoja de cálculo con Excel o Google Sheets, organizando los datos en columnas con etiquetas claras.",
+      "Opción B: Escribir todos los números en un papel y luego sumarlos manualmente.",
+      "Opción C: Memorizar todos los gastos sin anotarlos.",
+      "Opción D: Pedirle a alguien más que se encargue de las cuentas."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Las hojas de cálculo son ideales para organizar datos numéricos y realizar operaciones automáticamente.",
+      "incorrect": "Para organizar datos numéricos, las hojas de cálculo ofrecen ventajas como cálculos automáticos y mejor organización."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.2",
+    "level": "Básico 2",
+    "title": "¿Cómo editar una foto para un proyecto escolar?",
+    "scenario": "Valeria, de 15 años en Uruguay, necesita editar unas fotografías para incluirlas en un trabajo sobre su comunidad.",
+    "options": [
+      "Opción A: Usar una aplicación de edición de fotos para ajustar el brillo, recortar lo innecesario y mejorar la calidad.",
+      "Opción B: Usar las fotos tal como están, sin ningún tipo de edición.",
+      "Opción C: Aplicar tantos filtros que la imagen sea irreconocible.",
+      "Opción D: Pedirle a un profesional que edite todas sus fotos."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! La edición básica de imágenes puede mejorar significativamente la calidad de tu trabajo.",
+      "incorrect": "Una edición básica de tus fotos puede hacer que tu trabajo se vea más profesional y claro."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.2",
+    "level": "Básico 2",
+    "title": "¿Cómo crear un video sencillo para una presentación?",
+    "scenario": "Luis, de 16 años en Paraguay, necesita crear un video corto explicando un tema de ciencias para su clase.",
+    "options": [
+      "Opción A: Planificar el contenido, grabar con buena luz y sonido, y usar un programa simple de edición para cortar partes innecesarias.",
+      "Opción B: Grabar sin planificación y subir el video sin revisarlo.",
+      "Opción C: Usar efectos complicados que no sabe manejar bien.",
+      "Opción D: Copiar videos de otras personas de internet."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! La planificación y edición básica son clave para crear videos efectivos.",
+      "incorrect": "Para crear buenos videos, es importante planificar, cuidar la calidad de grabación y hacer una edición básica."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.2",
+    "level": "Básico 2",
+    "title": "¿Cómo modificar un documento compartido por tu profesor?",
+    "scenario": "Diego, de 14 años en Bolivia, recibió un documento de Word de su profesor con instrucciones para completarlo y devolverlo.",
+    "options": [
+      "Opción A: Abrir el documento, usar las herramientas de edición para añadir su información en los espacios indicados y guardar los cambios.",
+      "Opción B: Imprimir el documento, escribir a mano y tomar una foto borrosa.",
+      "Opción C: Crear un documento nuevo e ignorar el que envió el profesor.",
+      "Opción D: Pedirle a un compañero que lo complete por él."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Usar las herramientas de edición digital te permite completar documentos de forma clara y profesional.",
+      "incorrect": "Aprovecha las herramientas digitales para editar documentos de manera eficiente y profesional."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.3",
+    "level": "Básico 2",
+    "title": "¿Cómo compartir un trabajo escolar digital con tu profesor?",
+    "scenario": "Carolina, de 16 años en Venezuela, completó un ensayo en su computadora y necesita enviarlo a su profesor.",
+    "options": [
+      "Opción A: Enviar el archivo a través del medio oficial solicitado (aula virtual, correo electrónico o plataforma educativa) verificando que sea el archivo correcto.",
+      "Opción B: Enviarlo por mensaje de texto o WhatsApp sin preguntar si es el medio adecuado.",
+      "Opción C: Imprimir el trabajo aunque el profesor haya pedido entrega digital.",
+      "Opción D: Compartir un enlace a sus redes sociales personales donde subió el trabajo."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Usar los canales oficiales solicitados es la forma adecuada de entregar trabajos digitales.",
+      "incorrect": "Es importante seguir las instrucciones del profesor sobre cómo y dónde entregar los trabajos digitales."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.3",
+    "level": "Básico 2",
+    "title": "¿Cómo colaborar en un proyecto grupal en línea?",
+    "scenario": "Mateo, de 15 años en Colombia, debe trabajar con tres compañeros en un proyecto de ciencias usando herramientas digitales.",
+    "options": [
+      "Opción A: Usar herramientas colaborativas como Google Docs donde todos puedan editar, asignar tareas claras y comunicarse regularmente.",
+      "Opción B: Hacer su parte del trabajo sin coordinarse con el resto del grupo.",
+      "Opción C: Esperar a que sus compañeros hagan todo y solo añadir su nombre.",
+      "Opción D: Enviar muchos mensajes no relacionados con el proyecto al grupo."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Las herramientas colaborativas facilitan el trabajo en equipo y permiten una mejor coordinación.",
+      "incorrect": "El trabajo colaborativo en línea requiere buena comunicación y uso de herramientas que permitan la participación de todos."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.3",
+    "level": "Básico 2",
+    "title": "¿Cómo publicar contenido apropiado en un blog escolar?",
+    "scenario": "Sofía, de 14 años en Argentina, debe publicar un artículo en el blog de su escuela sobre un evento cultural.",
+    "options": [
+      "Opción A: Escribir contenido relevante, verificar la información, revisar ortografía y seguir las normas del blog escolar.",
+      "Opción B: Publicar información sin verificar si es correcta.",
+      "Opción C: Incluir comentarios personales negativos sobre compañeros o profesores.",
+      "Opción D: Copiar y pegar contenido de internet sin citar las fuentes."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Publicar contenido apropiado y verificado muestra responsabilidad digital.",
+      "incorrect": "Al publicar en espacios escolares, debes ser responsable con el contenido, verificar la información y respetar las normas."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.4",
+    "level": "Básico 2",
+    "title": "¿Cómo usar imágenes de internet en tu presentación escolar?",
+    "scenario": "Javier, de 15 años en México, está creando una presentación sobre ecosistemas y quiere incluir imágenes que encontró en internet.",
+    "options": [
+      "Opción A: Buscar imágenes con licencia de uso libre o dar crédito a los autores de las imágenes que utilice.",
+      "Opción B: Usar cualquier imagen sin importar su origen o derechos de autor.",
+      "Opción C: Modificar imágenes con derechos de autor y presentarlas como propias.",
+      "Opción D: Pedir a un amigo que descargue las imágenes por él para no tener responsabilidad."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Respetar los derechos de autor y dar crédito es una práctica ética en el mundo digital.",
+      "incorrect": "Es importante respetar los derechos de autor al usar contenido de internet y dar el crédito correspondiente."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.4",
+    "level": "Básico 2",
+    "title": "¿Cómo citar correctamente información de internet en un trabajo escolar?",
+    "scenario": "María, de 16 años en Chile, está escribiendo un ensayo y ha utilizado información de varios sitios web.",
+    "options": [
+      "Opción A: Incluir las referencias de todos los sitios consultados, con el nombre del autor (si está disponible), título del artículo, nombre del sitio y fecha de consulta.",
+      "Opción B: No incluir ninguna referencia porque la información es de internet.",
+      "Opción C: Mencionar solo los sitios que le parecen importantes.",
+      "Opción D: Modificar ligeramente el texto original y presentarlo como propio."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Citar correctamente tus fuentes es esencial para evitar el plagio y reconocer el trabajo de otros.",
+      "incorrect": "Debes citar todas las fuentes que utilizas en tus trabajos para evitar el plagio y dar crédito a los autores originales."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.4",
+    "level": "Básico 2",
+    "title": "¿Qué hacer si quieres usar música en un video para un proyecto escolar?",
+    "scenario": "Daniel, de 17 años en Perú, está creando un video para su clase de historia y quiere añadir música de fondo.",
+    "options": [
+      "Opción A: Buscar música con licencia libre, de dominio público o con permiso para uso educativo, y dar crédito al autor en el video.",
+      "Opción B: Descargar cualquier canción famosa sin permiso.",
+      "Opción C: Usar música comercial y no mencionar su origen.",
+      "Opción D: Pedirle a un amigo que le consiga música pirateada."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Usar música con los permisos adecuados y dar crédito muestra respeto por la propiedad intelectual.",
+      "incorrect": "La música también tiene derechos de autor. Busca opciones legales como música libre o con licencias que permitan su uso."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.1",
+    "level": "Básico 2",
+    "title": "¿Cómo buscar información sobre trámites de identificación?",
+    "scenario": "Sofía, una joven de 16 años en Colombia, necesita obtener su cédula de ciudadanía para realizar algunos trámites. Decide buscar información en internet sobre los requisitos y el proceso.",
+    "options": [
+      "Opción A: 'requisitos cédula ciudadanía Colombia registraduria'",
+      "Opción B: 'cómo sacar mi identificación rápido'",
+      "Opción C: 'buscar trámites en TikTok'",
+      "Opción D: 'Preguntar a un amigo si sabe cómo se saca la cédula'"
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Esa es una manera clara y eficaz de encontrar la información digital.",
+      "incorrect": "No es la mejor opción. Recuerda usar palabras específicas y fuentes confiables al buscar trámites."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.1",
+    "level": "Básico 2",
+    "title": "Encontrar el sitio web oficial para un trámite escolar",
+    "scenario": "Juan, un estudiante de 14 años en Argentina, necesita matricularse en el siguiente ciclo escolar. Busca en internet el sitio web del Ministerio de Educación para encontrar los formularios.",
+    "options": [
+      "Opción A: 'Ministerio de Educación Argentina matriculación escolar'",
+      "Opción B: 'inscripciones colegios Argentina', en un foro de internet",
+      "Opción C: 'Buscar escuela en Facebook'",
+      "Opción D: 'Esperar a que la escuela le envíe la información por correo postal'"
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Una búsqueda precisa te lleva directamente a la fuente oficial.",
+      "incorrect": "Para encontrar información oficial, es mejor usar términos claros y buscar en sitios gubernamentales."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.1",
+    "level": "Básico 2",
+    "title": "Cómo buscar requisitos para un permiso juvenil",
+    "scenario": "María, de 15 años en México, quiere obtener un permiso para trabajar medio tiempo. Necesita saber qué documentos necesita presentar y dónde solicitarlos.",
+    "options": [
+      "Opción A: 'requisitos permiso trabajo menor edad México'",
+      "Opción B: 'permiso para trabajar rápido jóvenes'",
+      "Opción C: 'Buscar empleo joven en Instagram'",
+      "Opción D: 'No buscar y esperar a cumplir 18 años'"
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Utilizar términos específicos te ayudará a encontrar la información que buscas.",
+      "incorrect": "Busca términos relacionados con el trámite y la institución gubernamental para encontrar la información correcta."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.2",
+    "level": "Básico 2",
+    "title": "¿Cómo saber si una página sobre un trámite es confiable?",
+    "scenario": "Carlos, de 17 años en Chile, está buscando información para renovar su pase escolar. Encuentra una página web que parece ofrecer la información, pero no está seguro si es el sitio oficial.",
+    "options": [
+      "Opción A: Verificar que la dirección web termine en '.gob.cl' o tenga el logo de una institución oficial.",
+      "Opción B: Si la página tiene muchos anuncios llamativos.",
+      "Opción C: Si la página tiene muchos 'me gusta' en redes sociales.",
+      "Opción D: Si un amigo le dijo que la página era buena."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Los dominios gubernamentales (.gob) y la presencia de logos oficiales son buenos indicadores de confiabilidad.",
+      "incorrect": "Ten cuidado con la información en internet. Busca señales que te indiquen si la página es oficial."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.2",
+    "level": "Básico 2",
+    "title": "Identificar información oficial sobre becas",
+    "scenario": "Ana, una joven de 15 años en Perú, está buscando becas para continuar sus estudios. Encuentra información en un blog personal sobre un programa de becas.",
+    "options": [
+      "Opción A: Buscar la misma información en el sitio web del Ministerio de Educación o una institución gubernamental de becas.",
+      "Opción B: Si el blog tiene muchos comentarios positivos.",
+      "Opción C: Si la información parece muy atractiva y fácil de obtener.",
+      "Opción D: Confiar en la información del blog sin verificarla en otra fuente."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Siempre es importante verificar la información importante en fuentes oficiales.",
+      "incorrect": "Los blogs pueden tener información útil, pero para trámites oficiales, es mejor consultar sitios gubernamentales."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.2",
+    "level": "Básico 2",
+    "title": "Evaluar la fuente de un trámite digital",
+    "scenario": "Roberto, de 16 años en Ecuador, recibe un correo electrónico que le informa sobre un nuevo trámite para jóvenes y le pide hacer clic en un enlace.",
+    "options": [
+      "Opción A: Verificar si el correo proviene de una dirección de correo oficial (con dominio .gob.ec) y no hacer clic en el enlace si no está seguro.",
+      "Opción B: Hacer clic en el enlace para ver de qué se trata.",
+      "Opción C: Responder al correo pidiendo más información.",
+      "Opción D: Compartir el correo con sus amigos para ver si ellos saben algo."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Ser precavido con correos sospechosos es clave para tu seguridad en línea.",
+      "incorrect": "Ten cuidado con los correos electrónicos desconocidos, podrían ser intentos de estafa."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.3",
+    "level": "Básico 2",
+    "title": "¿Cómo guardar un documento importante de un trámite?",
+    "scenario": "Valeria, de 14 años en Uruguay, ha descargado un formulario oficial para un trámite escolar desde internet.",
+    "options": [
+      "Opción A: Guardarlo en una carpeta con un nombre claro como 'Formulario Matricula Escolar'.",
+      "Opción B: Dejarlo en la carpeta de descargas con el nombre que tenía al descargarlo.",
+      "Opción C: Imprimirlo inmediatamente y no guardarlo digitalmente.",
+      "Opción D: Subirlo a una red social para tenerlo disponible."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Organizar tus archivos con nombres claros te ayuda a encontrarlos fácilmente.",
+      "incorrect": "Es importante guardar tus documentos digitales de forma organizada para poder encontrarlos cuando los necesites."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.3",
+    "level": "Básico 2",
+    "title": "Organizar información de varios trámites",
+    "scenario": "Diego, de 17 años en Paraguay, está investigando sobre diferentes trámites universitarios y ha descargado varios documentos e información.",
+    "options": [
+      "Opción A: Crear carpetas separadas para cada universidad o trámite y guardar la información relevante en cada una.",
+      "Opción B: Guardar todos los documentos juntos en una sola carpeta sin orden.",
+      "Opción C: No guardar la información digital y confiar en recordarla.",
+      "Opción D: Compartir todos los documentos en un grupo de mensajería."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Organizar la información en carpetas te facilita encontrar lo que buscas cuando lo necesitas.",
+      "incorrect": "Una buena organización de tus archivos digitales te ahorrará tiempo y esfuerzo."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.3",
+    "level": "Básico 2",
+    "title": "Cómo renombrar un archivo descargado de un trámite",
+    "scenario": "Sofía ha descargado un comprobante de pago de un trámite en línea y el archivo tiene un nombre como 'download.pdf'.",
+    "options": [
+      "Opción A: Renombrarlo con un nombre descriptivo como 'Comprobante Pago Tramite X'.",
+      "Opción B: Dejar el nombre como 'download.pdf'.",
+      "Opción C: Eliminar el archivo después de verlo.",
+      "Opción D: Cambiarle el nombre a algo aleatorio."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Renombrar los archivos te ayuda a identificar su contenido rápidamente.",
+      "incorrect": "Dale a tus archivos nombres que te permitan saber qué contienen de forma sencilla."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.1",
+    "level": "Básico 2",
+    "title": "¿Qué debes hacer si tu teléfono se siente lento o muestra anuncios extraños?",
+    "scenario": "Luis, de 13 años en Bolivia, usa su teléfono para buscar información sobre sus tareas escolares. Últimamente, su teléfono está muy lento y le aparecen muchos anuncios que no había visto antes.",
+    "options": [
+      "Opción A: Descargar e instalar un antivirus y escanear el dispositivo.",
+      "Opción B: Ignorar los anuncios, pensando que desaparecerán solos.",
+      "Opción C: Compartir su teléfono con sus amigos para ver si a ellos también les pasa.",
+      "Opción D: Eliminar todas las aplicaciones, incluso las que necesita."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Un antivirus puede ayudarte a detectar y eliminar software malicioso que cause esos problemas.",
+      "incorrect": "Es importante proteger tus dispositivos de virus y software no deseado."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.1",
+    "level": "Básico 2",
+    "title": "Cómo proteger tu computadora al descargar archivos para trámites",
+    "scenario": "Ana, de 16 años en Venezuela, necesita descargar un formulario de un sitio web gubernamental para un trámite.",
+    "options": [
+      "Opción A: Asegurarse de que está descargando desde un sitio web oficial y tener un antivirus actualizado.",
+      "Opción B: Descargar el archivo sin importar de dónde venga.",
+      "Opción C: Desactivar el antivirus para que la descarga sea más rápida.",
+      "Opción D: Descargar el archivo y abrirlo inmediatamente sin pensarlo."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Descargar de fuentes confiables y tener un antivirus activo es fundamental para protegerte.",
+      "incorrect": "Sé cuidadoso al descargar archivos de internet, especialmente de sitios desconocidos."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.1",
+    "level": "Básico 2",
+    "title": "¿Qué debes hacer con las actualizaciones de software en tus dispositivos?",
+    "scenario": "Roberto, de 14 años en Guatemala, ve que su teléfono y computadora le notifican constantemente sobre actualizaciones de software.",
+    "options": [
+      "Opción A: Realizar las actualizaciones cuando sea posible para mantener los dispositivos seguros.",
+      "Opción B: Ignorar las actualizaciones, ya que a veces tardan mucho.",
+      "Opción C: Desactivar las notificaciones de actualización.",
+      "Opción D: Esperar a que alguien le diga si es necesario actualizar."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Las actualizaciones a menudo incluyen mejoras de seguridad que protegen tus dispositivos.",
+      "incorrect": "Las actualizaciones de software son importantes para mantener tus dispositivos protegidos."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.2",
+    "level": "Básico 2",
+    "title": "¿Qué información personal NO debes compartir en internet al hacer un trámite?",
+    "scenario": "María, de 17 años en Nicaragua, está llenando un formulario en línea para un trámite académico.",
+    "options": [
+      "Opción A: Tu contraseña de correo electrónico o redes sociales.",
+      "Opción B: Tu nombre y apellido.",
+      "Opción C: Tu fecha de nacimiento (si es requerida por el trámite oficial).",
+      "Opción D: Tu dirección de correo electrónico (si es requerida por el trámite oficial)."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Nunca compartas tus contraseñas, son la llave a tu información personal.",
+      "incorrect": "Sé muy cuidadoso con la información que compartes en línea. Algunas cosas, como tu contraseña, nunca debes compartirlas."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.2",
+    "level": "Básico 2",
+    "title": "Crear una contraseña segura para trámites en línea",
+    "scenario": "Juan, de 15 años en El Salvador, necesita crear una contraseña para acceder a un portal de trámites estudiantiles.",
+    "options": [
+      "Opción A: Usar una combinación de letras mayúsculas, minúsculas, números y símbolos, que no sea fácil de adivinar.",
+      "Opción B: Usar su fecha de nacimiento o su nombre.",
+      "Opción C: Usar la misma contraseña para todas sus cuentas.",
+      "Opción D: Escribir su contraseña en un papel cerca de la computadora."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Una contraseña fuerte es tu primera línea de defensa en línea.",
+      "incorrect": "Una contraseña débil puede poner en riesgo tu información personal. Crea contraseñas difíciles de adivinar."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.2",
+    "level": "Básico 2",
+    "title": "¿Qué hacer si te piden información personal sensible por correo electrónico para un trámite?",
+    "scenario": "Carlos, de 16 años en Honduras, recibe un correo que parece de una institución oficial, pidiéndole su número de identificación y otros datos sensibles para 'completar' un trámite.",
+    "options": [
+      "Opción A: No responder al correo y verificar directamente en el sitio web oficial de la institución si hay alguna información pendiente.",
+      "Opción B: Responder inmediatamente con la información solicitada para no perder el trámite.",
+      "Opción C: Reenviar el correo a sus amigos para preguntarles qué hacer.",
+      "Opción D: Hacer clic en cualquier enlace que venga en el correo."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Las instituciones oficiales raramente solicitan información sensible por correo electrónico. Siempre verifica la fuente.",
+      "incorrect": "Sé muy cauteloso con los correos que solicitan información personal. Es mejor verificar directamente con la institución."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.3",
+    "level": "Básico 2",
+    "title": "¿Cómo cuidar tu vista al pasar mucho tiempo frente a la pantalla buscando trámites?",
+    "scenario": "Sofía, de 15 años en Costa Rica, pasa varias horas buscando información sobre trámites de admisión a la universidad en su computadora.",
+    "options": [
+      "Opción A: Tomar descansos regulares, mirar a la distancia y ajustar el brillo de la pantalla.",
+      "Opción B: Seguir mirando la pantalla sin descanso hasta terminar.",
+      "Opción C: Acercarse mucho a la pantalla para ver mejor.",
+      "Opción D: Apagar la luz de la habitación para que la pantalla sea más visible."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Cuidar tu vista es importante cuando pasas tiempo frente a la pantalla.",
+      "incorrect": "Es importante cuidar tus ojos al usar dispositivos digitales. Toma descansos y ajusta la pantalla."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.3",
+    "level": "Básico 2",
+    "title": "¿Qué postura es recomendable al usar la computadora para trámites?",
+    "scenario": "Juan, de 17 años en Panamá, está llenando un formulario largo en línea para un trámite de beca.",
+    "options": [
+      "Opción A: Sentarse con la espalda recta, los pies apoyados en el suelo y la pantalla a la altura de los ojos.",
+      "Opción B: Sentarse encorvado y con el cuello inclinado hacia la pantalla.",
+      "Opción C: Acostarse en la cama con la computadora sobre las piernas.",
+      "Opción D: Usar la computadora en una superficie muy baja que lo obligue a doblar mucho la espalda."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Una buena postura ayuda a prevenir dolores y molestias.",
+      "incorrect": "Presta atención a tu postura al usar dispositivos digitales para cuidar tu salud."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.3",
+    "level": "Básico 2",
+    "title": "¿Cómo evitar distracciones y concentrarte al realizar trámites en línea?",
+    "scenario": "Ana, de 14 años en República Dominicana, está intentando completar un trámite escolar en línea, pero constantemente se distrae con notificaciones de su teléfono y redes sociales.",
+    "options": [
+      "Opción A: Silenciar las notificaciones innecesarias y concentrarse en la tarea del trámite.",
+      "Opción B: Dejar las notificaciones activadas para no perderse de nada.",
+      "Opción C: Tener varias pestañas de redes sociales abiertas al mismo tiempo que el trámite.",
+      "Opción D: Pausar el trámite cada vez que llega una notificación."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Minimizar las distracciones te ayuda a concentrarte y completar tus trámites de manera eficiente.",
+      "incorrect": "Enfocarte en el trámite te permitirá completarlo más rápido y sin errores."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.4",
+    "level": "Básico 2",
+    "title": "¿Qué puedes hacer para reducir el impacto ambiental de usar dispositivos digitales para trámites?",
+    "scenario": "Roberto, de 16 años en Cuba, realiza algunos trámites en línea y se pregunta cómo puede ser más amigable con el medio ambiente.",
+    "options": [
+      "Opción A: Desconectar los cargadores cuando no los está usando y reducir la impresión innecesaria.",
+      "Opción B: Dejar los cargadores conectados todo el tiempo.",
+      "Opción C: Imprimir todos los documentos de los trámites, incluso si no es necesario.",
+      "Opción D: Mantener la pantalla del dispositivo con el brillo al máximo siempre."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Pequeñas acciones como ahorrar energía y reducir el uso de papel contribuyen al cuidado del medio ambiente.",
+      "incorrect": "Piensa en cómo puedes usar tus dispositivos de manera más eficiente para ayudar al medio ambiente."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.4",
+    "level": "Básico 2",
+    "title": "¿Cómo extender la vida útil de tus dispositivos electrónicos?",
+    "scenario": "María, de 15 años en Chile, utiliza su tableta para buscar información sobre trámites educativos.",
+    "options": [
+      "Opción A: Cuidar la batería, evitar la exposición a temperaturas extremas y mantener el software actualizado.",
+      "Opción B: Dejar el dispositivo cargando todo el tiempo.",
+      "Opción C: Exponer el dispositivo al sol para que se cargue más rápido.",
+      "Opción D: Desinstalar las actualizaciones de software."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Cuidar tus dispositivos prolonga su vida útil y reduce la necesidad de reemplazarlos.",
+      "incorrect": "Un buen cuidado de tus dispositivos electrónicos ayuda a disminuir la generación de residuos."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.4",
+    "level": "Básico 2",
+    "title": "¿Qué hacer con los dispositivos electrónicos viejos o dañados que ya no usas para trámites?",
+    "scenario": "Luis, de 17 años en Colombia, tiene un teléfono viejo que ya no funciona y no lo usa para trámites ni nada más.",
+    "options": [
+      "Opción A: Buscar puntos de recolección especializados en residuos electrónicos para su correcto desecho o reciclaje.",
+      "Opción B: Tirarlo a la basura común.",
+      "Opción C: Guardarlo en un cajón sin saber qué hacer con él.",
+      "Opción D: Desarmarlo y tirar las piezas en diferentes lugares."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! El correcto reciclaje de residuos electrónicos es importante para el medio ambiente.",
+      "incorrect": "Los dispositivos electrónicos contienen materiales que pueden ser dañinos si no se desechan correctamente. Busca opciones de reciclaje."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.1",
+    "level": "Intermedio",
+    "title": "¿Cómo realizar una búsqueda avanzada para encontrar información específica sobre becas universitarias?",
+    "scenario": "Carmen, una estudiante de 17 años en México, necesita encontrar becas específicas para estudiantes de ingeniería en universidades públicas con plazo de solicitud en los próximos tres meses.",
+    "options": [
+      "Opción A: Usar operadores de búsqueda como comillas, OR, y filtros de fecha para refinar su búsqueda: \"becas ingeniería\" universidad pública México fecha:últimos3meses",
+      "Opción B: Buscar simplemente 'becas universitarias' en cualquier buscador.",
+      "Opción C: Preguntar en grupos de redes sociales no especializados.",
+      "Opción D: Enviar correos a universidades al azar preguntando por becas."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Usar operadores de búsqueda avanzada te permite encontrar información mucho más específica y relevante.",
+      "incorrect": "Para encontrar información específica, es necesario usar estrategias de búsqueda avanzada que filtren los resultados irrelevantes."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.1",
+    "level": "Intermedio",
+    "title": "¿Qué estrategia de búsqueda es más efectiva para encontrar requisitos actualizados de un trámite gubernamental?",
+    "scenario": "Pedro, de 18 años en Argentina, necesita encontrar información actualizada sobre los requisitos para obtener su licencia de conducir, ya que sabe que el proceso cambió recientemente.",
+    "options": [
+      "Opción A: Buscar en el sitio web oficial del organismo de tránsito, utilizando los filtros de fecha para encontrar la información más reciente y verificar la fecha de última actualización de la página.",
+      "Opción B: Buscar en cualquier blog sobre conducción que aparezca en los resultados.",
+      "Opción C: Confiar en la información que le dio un amigo hace seis meses.",
+      "Opción D: Usar información guardada en su computadora del año pasado."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Para trámites que cambian con el tiempo, es crucial verificar la fecha de actualización y usar fuentes oficiales.",
+      "incorrect": "Cuando los requisitos de un trámite cambian, es importante verificar la información más reciente en fuentes oficiales."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.1",
+    "level": "Intermedio",
+    "title": "¿Cómo organizar una búsqueda de información para un proyecto de investigación escolar?",
+    "scenario": "Laura, de 16 años en Colombia, debe realizar un proyecto de investigación sobre energías renovables y necesita recopilar información de diversas fuentes confiables.",
+    "options": [
+      "Opción A: Crear un plan de búsqueda con preguntas específicas, identificar palabras clave en varios idiomas, y usar bases de datos académicas además de buscadores generales.",
+      "Opción B: Buscar 'energías renovables' en un solo buscador y usar solo los primeros resultados.",
+      "Opción C: Copiar información del primer sitio web que encuentre sobre el tema.",
+      "Opción D: Pedir a un compañero que le pase información sin verificar su origen."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Una búsqueda sistemática y organizada te permite encontrar información de calidad y diversa.",
+      "incorrect": "Los proyectos de investigación requieren una búsqueda planificada y el uso de múltiples fuentes confiables."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.2",
+    "level": "Intermedio",
+    "title": "¿Cómo evaluar la fiabilidad de un sitio web que ofrece información sobre opciones de estudio en el extranjero?",
+    "scenario": "Martín, de 17 años en Chile, está investigando sobre programas de intercambio estudiantil y encuentra un sitio web con ofertas muy atractivas.",
+    "options": [
+      "Opción A: Verificar quién está detrás del sitio web, buscar información sobre la organización, comprobar si tiene datos de contacto verificables, y contrastar la información con otras fuentes reconocidas.",
+      "Opción B: Confiar en el sitio si tiene un diseño profesional, sin importar quién lo administra.",
+      "Opción C: Asumir que toda la información es correcta si otros estudiantes lo han compartido en redes sociales.",
+      "Opción D: Registrarse inmediatamente y proporcionar datos personales si las ofertas parecen muy ventajosas."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Es crucial investigar la credibilidad de las fuentes, especialmente cuando involucran decisiones importantes como estudiar en el extranjero.",
+      "incorrect": "Antes de confiar en un sitio web, especialmente para decisiones importantes, debes verificar su credibilidad y contrastar su información."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.2",
+    "level": "Intermedio",
+    "title": "¿Cómo detectar información falsa sobre requisitos de ingreso a universidades?",
+    "scenario": "Alejandra, de 18 años en México, está investigando los requisitos para ingresar a una universidad prestigiosa y encuentra información contradictoria en diferentes sitios web.",
+    "options": [
+      "Opción A: Comparar la información con el sitio web oficial de la universidad, verificar las fechas de publicación, y contactar directamente a la oficina de admisiones para confirmar los requisitos actuales.",
+      "Opción B: Confiar en la información que tiene más detalles, aunque venga de fuentes no oficiales.",
+      "Opción C: Asumir que los requisitos más fáciles son los correctos.",
+      "Opción D: Compartir la información contradictoria en redes sociales para ver qué opinan otros usuarios."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Ante información contradictoria, siempre es mejor consultar directamente las fuentes oficiales.",
+      "incorrect": "Cuando encuentres información contradictoria sobre trámites importantes, debes verificar en las fuentes oficiales."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.3",
+    "level": "Intermedio",
+    "title": "¿Cómo organizar un sistema de carpetas para gestionar eficientemente la información académica digital?",
+    "scenario": "Javier, un estudiante de 16 años en Uruguay, tiene múltiples materias, proyectos, y documentos digitales para su escuela secundaria y necesita un sistema para encontrar rápidamente lo que busca.",
+    "options": [
+      "Opción A: Crear un sistema jerárquico de carpetas por año escolar, materias y tipos de documentos, con nombres claros y consistentes, y hacer respaldos periódicos.",
+      "Opción B: Guardar todos los archivos en una sola carpeta y usar la función de búsqueda cuando necesite algo.",
+      "Opción C: Crear muchas carpetas sin un sistema claro, confiando en que recordará dónde guardó cada archivo.",
+      "Opción D: Mantener todo en la carpeta de descargas sin organización."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Un sistema de carpetas jerárquico y bien organizado te permite acceder rápidamente a tus archivos y proteger tu información.",
+      "incorrect": "La organización sistemática de tus archivos digitales ahorra tiempo y reduce el estrés al buscar documentos importantes."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.3",
+    "level": "Intermedio",
+    "title": "¿Qué estrategias de almacenamiento y respaldo son más adecuadas para documentos escolares importantes?",
+    "scenario": "Elena, de 17 años en Colombia, está trabajando en su proyecto final de graduación que representa el 40% de su calificación en varias materias.",
+    "options": [
+      "Opción A: Guardar el proyecto en el dispositivo principal, hacer copias en la nube (como Google Drive), en un dispositivo externo, y configurar el guardado automático en las aplicaciones.",
+      "Opción B: Guardar una única copia en su computadora personal.",
+      "Opción C: Hacer respaldos solo cuando recuerde, sin un sistema específico.",
+      "Opción D: Confiar en que su computadora nunca fallará y no necesita respaldos."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Contar con múltiples copias en diferentes ubicaciones te protege contra pérdidas accidentales de información.",
+      "incorrect": "Es fundamental tener un sistema de respaldo para proteger documentos importantes. La regla 3-2-1 (tres copias, en dos tipos de medios, con una fuera de sitio) es una buena práctica."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "1.3",
+    "level": "Intermedio",
+    "title": "¿Cómo clasificar y organizar la información digital recopilada para un proyecto de investigación extenso?",
+    "scenario": "Martín, de 18 años en Chile, está realizando una investigación sobre historia local que incluye documentos, entrevistas, fotografías y videos recopilados durante varios meses.",
+    "options": [
+      "Opción A: Crear un sistema de clasificación por tipo de contenido, tema específico y fecha, usando etiquetas, metadatos y un documento índice que facilite encontrar cada pieza de información.",
+      "Opción B: Guardar todo junto sin categorizar, confiando en recordar el contenido de cada archivo.",
+      "Opción C: Clasificar solo los documentos que parecen más importantes en el momento.",
+      "Opción D: Pedir a alguien más que organice todo el material por él."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Un sistema de clasificación detallado con múltiples criterios facilita enormemente la gestión de grandes volúmenes de información.",
+      "incorrect": "Los proyectos de investigación extensos requieren sistemas de organización rigurosos para manejar eficientemente la información."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "2.1",
+    "level": "Intermedio",
+    "title": "¿Cómo preparar y conducir una entrevista virtual con un profesional para un proyecto escolar?",
+    "scenario": "Daniel, de 16 años en México, necesita entrevistar a un ingeniero ambiental para un proyecto sobre sostenibilidad y ha concertado una videollamada con un profesional que trabaja en otro estado.",
+    "options": [
+      "Opción A: Preparar preguntas estructuradas con antelación, probar la tecnología antes de la entrevista, presentarse profesionalmente, escuchar activamente y hacer preguntas de seguimiento basadas en las respuestas.",
+      "Opción B: Improvisar preguntas durante la llamada sin preparación previa.",
+      "Opción C: Leer mecánicamente una lista de preguntas sin escuchar realmente las respuestas.",
+      "Opción D: Interrumpir frecuentemente al entrevistado con opiniones personales."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Una entrevista efectiva requiere preparación, tecnología funcionando correctamente y buenas habilidades de comunicación.",
+      "incorrect": "Para realizar una buena entrevista, es esencial prepararse bien y mostrar respeto por el tiempo del entrevistado."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "2.1",
+    "level": "Intermedio",
+    "title": "¿Cómo participar efectivamente en un debate en línea sobre política educativa?",
+    "scenario": "Laura, de 17 años en Argentina, ha sido invitada a participar en un foro virtual organizado por su escuela donde se debatirán propuestas para mejorar el sistema educativo local.",
+    "options": [
+      "Opción A: Investigar el tema a fondo, preparar argumentos basados en datos, escuchar respetuosamente otras perspectivas, expresar ideas de forma clara y estructurada, y mantener un tono constructivo.",
+      "Opción B: Defender agresivamente su punto de vista sin considerar otras perspectivas.",
+      "Opción C: Participar sin haber investigado el tema, basándose solo en opiniones personales.",
+      "Opción D: Criticar a otros participantes personalmente cuando no estén de acuerdo con sus ideas."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Un debate constructivo se basa en el respeto mutuo, la preparación adecuada y la capacidad de articular ideas claramente.",
+      "incorrect": "Para participar efectivamente en debates, necesitas prepararte bien y mantener siempre el respeto hacia otras perspectivas."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "2.1",
+    "level": "Intermedio",
+    "title": "¿Cómo comunicarse eficazmente con un equipo internacional en un proyecto colaborativo en línea?",
+    "scenario": "Carlos, de 16 años en Perú, participa en un proyecto de ciencias que conecta estudiantes de diferentes países de América Latina. Deben coordinar tareas y compartir resultados regularmente.",
+    "options": [
+      "Opción A: Acordar canales de comunicación claros, establecer normas de interacción respetuosa, considerar las diferencias culturales y de zona horaria, y ser preciso y contextual en los mensajes escritos.",
+      "Opción B: Comunicarse exclusivamente en su idioma nativo sin considerar si todos lo entienden.",
+      "Opción C: Enviar mensajes largos y complicados sin estructura clara.",
+      "Opción D: Asumir que todos entienden el contexto sin proporcionar explicaciones necesarias."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! La comunicación intercultural efectiva requiere sensibilidad, claridad y adaptación a las diferencias.",
+      "incorrect": "Trabajar con personas de diferentes culturas requiere adaptación y consideración de las diferencias comunicativas y contextuales."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.1",
+    "level": "Intermedio",
+    "title": "¿Cómo crear un informe digital interactivo para presentar los resultados de un experimento científico?",
+    "scenario": "Valeria, de 17 años en Chile, debe presentar los resultados de un experimento de biología de forma digital, incluyendo datos, análisis y conclusiones.",
+    "options": [
+      "Opción A: Usar una herramienta como Google Sites o Notion para crear un informe con texto estructurado, gráficos interactivos, tablas de datos, imágenes del experimento y enlaces a fuentes adicionales.",
+      "Opción B: Hacer un documento de texto simple sin elementos visuales ni organización clara.",
+      "Opción C: Crear una presentación con diapositivas sobrecargadas de texto sin elementos visuales.",
+      "Opción D: Enviar solo las fotos del experimento sin explicación textual."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Un informe digital interactivo combina diferentes elementos para comunicar información compleja de manera clara y atractiva.",
+      "incorrect": "Los informes científicos digitales deben aprovechar las ventajas del medio para presentar información de manera clara, visual e interactiva."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.1",
+    "level": "Intermedio",
+    "title": "¿Cómo diseñar una hoja de cálculo avanzada para analizar datos de una investigación escolar?",
+    "scenario": "Miguel, de 16 años en Colombia, ha recopilado datos de una encuesta sobre hábitos alimenticios de 100 compañeros de su escuela y necesita analizarlos para su proyecto de estadística.",
+    "options": [
+      "Opción A: Crear una hoja de cálculo con validación de datos, fórmulas estadísticas automáticas (como promedio, mediana, desviación estándar), filtros para segmentar datos y gráficos dinámicos que muestren tendencias.",
+      "Opción B: Ingresar los datos sin organización ni validación.",
+      "Opción C: Calcular manualmente cada estadística sin usar fórmulas automáticas.",
+      "Opción D: Pedir a alguien más que analice los datos por él."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Las funciones avanzadas de las hojas de cálculo permiten un análisis riguroso y eficiente de grandes conjuntos de datos.",
+      "incorrect": "Para analizar datos de forma efectiva, aprovecha las funciones avanzadas que ofrecen las hojas de cálculo modernas."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.1",
+    "level": "Intermedio",
+    "title": "¿Cómo crear un portafolio digital que muestre tus proyectos y habilidades académicas?",
+    "scenario": "Ana, de 18 años en México, quiere crear un portafolio digital que reúna sus mejores trabajos escolares para postularse a universidades.",
+    "options": [
+      "Opción A: Diseñar un sitio web o plataforma especializada con secciones temáticas claras, muestras de diferentes tipos de trabajos (escritos, visuales, proyectos), reflexiones sobre su proceso de aprendizaje, y una presentación profesional.",
+      "Opción B: Subir archivos sin organización a una carpeta compartida.",
+      "Opción C: Incluir solo trabajos escritos ignorando otros formatos o habilidades.",
+      "Opción D: Copiar el diseño y contenido del portafolio de un compañero."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Excelente! Un portafolio digital bien estructurado demuestra tanto tus habilidades técnicas como tu capacidad para organizar y presentar tu trabajo.",
+      "incorrect": "Un buen portafolio digital debe mostrar la diversidad de tus habilidades y estar organizado de forma profesional y accesible."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.2",
+    "level": "Intermedio",
+    "title": "¿Cómo editar un video documental para un proyecto de historia local?",
+    "scenario": "Lucas, de 17 años en Argentina, ha grabado entrevistas con personas mayores de su comunidad y material de lugares históricos para crear un documental sobre la historia de su barrio.",
+    "options": [
+      "Opción A: Organizar el material por temas, crear un guion estructurado, usar software de edición para combinar entrevistas con imágenes de apoyo, añadir títulos explicativos, música apropiada con licencia y transiciones profesionales.",
+      "Opción B: Unir clips de video al azar sin un orden narrativo claro.",
+      "Opción C: Incluir solo las entrevistas completas sin editar ni añadir contexto visual.",
+      "Opción D: Usar música comercial sin permiso y efectos visuales excesivos que distraen del contenido."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! La edición efectiva de un documental requiere planificación, estructura narrativa clara y uso apropiado de elementos complementarios.",
+      "incorrect": "La creación de documentales requiere una cuidadosa planificación y edición para contar una historia coherente y atractiva."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.3",
+    "level": "Intermedio",
+    "title": "¿Cómo gestionar un proyecto colaborativo digital entre estudiantes de diferentes escuelas?",
+    "scenario": "Sofía, de 17 años en México, coordina un proyecto de investigación ambiental que involucra a estudiantes de tres escuelas diferentes que deben compartir y editar documentos conjuntamente.",
+    "options": [
+      "Opción A: Configurar un espacio de trabajo digital compartido con permisos adecuados, establecer un sistema de nomenclatura de archivos, crear un calendario de entregas, y definir responsabilidades claras para cada miembro.",
+      "Opción B: Enviar documentos por correo electrónico a todos los participantes cada vez que haya cambios.",
+      "Opción C: Permitir que cada grupo trabaje aisladamente y juntar todo al final sin coordinación previa.",
+      "Opción D: Asumir todas las responsabilidades para evitar complicaciones de coordinación."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! La colaboración efectiva en proyectos digitales requiere estructura, organización y comunicación clara.",
+      "incorrect": "Los proyectos colaborativos digitales necesitan sistemas organizados para compartir archivos y coordinar el trabajo de forma eficiente."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.3",
+    "level": "Intermedio",
+    "title": "¿Cómo preparar y compartir una presentación digital para un evento académico internacional?",
+    "scenario": "Martín, de 16 años en Chile, debe presentar los resultados de su proyecto científico en un congreso estudiantil virtual con participantes de varios países.",
+    "options": [
+      "Opción A: Crear la presentación en un formato universal accesible en diferentes sistemas, probar anticipadamente la plataforma de videoconferencia, compartir una versión de respaldo en la nube, y considerar posibles barreras idiomáticas o tecnológicas de la audiencia.",
+      "Opción B: Usar un formato de archivo poco común que solo funciona en su computadora.",
+      "Opción C: Enviar la presentación por correo electrónico minutos antes de su intervención.",
+      "Opción D: No preparar material visual y simplemente hablar sobre su proyecto sin apoyo visual."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Compartir contenido digital en eventos internacionales requiere considerar la accesibilidad y prever posibles dificultades técnicas.",
+      "incorrect": "Al presentar digitalmente en contextos internacionales, es crucial anticipar problemas técnicos y asegurar que tu contenido sea accesible para todos."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.4",
+    "level": "Intermedio",
+    "title": "¿Cómo gestionar los derechos de autor en un proyecto multimedia escolar que será publicado en línea?",
+    "scenario": "Daniel, de 17 años en Colombia, está creando un sitio web educativo sobre historia latinoamericana que incluirá textos, imágenes, videos y música de diversas fuentes.",
+    "options": [
+      "Opción A: Usar contenido con licencias Creative Commons apropiadas, solicitar permisos por escrito para material con derechos reservados, crear un documento detallado de atribuciones, y conocer las limitaciones de uso educativo en su país.",
+      "Opción B: Usar cualquier contenido que encuentre en internet sin verificar sus licencias.",
+      "Opción C: Atribuir el crédito solo a algunas fuentes que considera importantes.",
+      "Opción D: Modificar ligeramente el contenido con derechos reservados pensando que así evita problemas legales."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Una gestión responsable de derechos de autor implica entender diferentes tipos de licencias y respetar la propiedad intelectual.",
+      "incorrect": "Publicar contenido en línea requiere un conocimiento adecuado de derechos de autor y licencias para evitar infracciones."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "3.4",
+    "level": "Intermedio",
+    "title": "¿Cómo crear contenido digital original respetando la propiedad intelectual de otros?",
+    "scenario": "Laura, de 16 años en Argentina, está desarrollando un podcast educativo donde analiza obras literarias clásicas y quiere incluir fragmentos de audiolibros y música.",
+    "options": [
+      "Opción A: Delimitar claramente su análisis original del contenido citado, usar fragmentos breves bajo el principio de uso justo o 'fair use', obtener licencias para la música de fondo, y documentar todas las fuentes utilizadas.",
+      "Opción B: Leer capítulos completos de audiolibros comerciales en su podcast.",
+      "Opción C: Parafrasear ideas de críticos literarios sin citarlos.",
+      "Opción D: Usar música comercial como fondo sin permiso ni atribución."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! La creación de contenido original puede incorporar obras de otros, pero siguiendo principios éticos y legales de uso justo y atribución.",
+      "incorrect": "Al crear contenido que incorpora obras de otros, debes entender conceptos como el uso justo y asegurarte de dar el crédito adecuado."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.1",
+    "level": "Intermedio",
+    "title": "¿Cómo implementar un sistema de seguridad completo para proteger tus dispositivos y datos escolares?",
+    "scenario": "Carlos, de 16 años en México, usa su computadora personal para proyectos escolares importantes y quiere asegurar que sus documentos estén protegidos contra diversas amenazas.",
+    "options": [
+      "Opción A: Configurar un sistema con antivirus actualizado, realizar respaldos regulares en múltiples ubicaciones, usar contraseñas fuertes y diferentes para cada servicio, activar la autenticación de dos factores, y mantener el software actualizado.",
+      "Opción B: Instalar solo un antivirus gratuito básico y considerar que es suficiente protección.",
+      "Opción C: Usar la misma contraseña simple para todas sus cuentas para no olvidarla.",
+      "Opción D: Compartir sus credenciales de acceso con amigos para que puedan ayudarle si tiene problemas."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! La seguridad digital efectiva requiere un enfoque de múltiples capas que aborde diferentes tipos de amenazas.",
+      "incorrect": "Proteger tus dispositivos y datos requiere más que una sola medida; es necesario un enfoque integral de seguridad."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.1",
+    "level": "Intermedio",
+    "title": "¿Cómo identificar y responder a un intento de phishing dirigido a estudiantes?",
+    "scenario": "María, de 17 años en Perú, recibe un correo electrónico que parece ser de su universidad solicitando que actualice sus credenciales de acceso a través de un enlace.",
+    "options": [
+      "Opción A: Verificar la dirección del remitente, buscar señales de alarma como errores gramaticales o urgencia injustificada, no hacer clic en el enlace, contactar directamente a la institución por canales oficiales, y reportar el correo como phishing.",
+      "Opción B: Hacer clic en el enlace para verificar si parece legítimo.",
+      "Opción C: Responder al correo preguntando si es oficial.",
+      "Opción D: Proporcionar la información solicitada si el correo parece profesional."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Saber identificar intentos de phishing y responder adecuadamente es fundamental para proteger tu información personal.",
+      "incorrect": "El phishing es una amenaza común; nunca hagas clic en enlaces sospechosos ni proporciones información personal sin verificar la legitimidad del remitente."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.2",
+    "level": "Intermedio",
+    "title": "¿Cómo gestionar tu huella digital para proteger tu privacidad y reputación en línea?",
+    "scenario": "Andrea, de 16 años en Chile, está preocupada por su presencia en internet ya que pronto solicitará admisión a universidades y becas.",
+    "options": [
+      "Opción A: Revisar y ajustar la configuración de privacidad en todas sus redes sociales, hacer búsquedas periódicas de su nombre, solicitar la eliminación de contenido inapropiado, ser consciente de lo que comparte públicamente, y cultivar una presencia digital positiva.",
+      "Opción B: Dejar todas sus cuentas públicas sin revisar qué información es visible para extraños.",
+      "Opción C: Publicar todo lo que piensa sin considerar posibles consecuencias futuras.",
+      "Opción D: Crear perfiles falsos para publicar contenido controvertido."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Gestionar activamente tu huella digital es esencial en un mundo donde la información en línea puede afectar oportunidades educativas y profesionales.",
+      "incorrect": "Tu presencia en línea puede tener impacto en tu futuro; es importante gestionarla de manera consciente y responsable."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.2",
+    "level": "Intermedio",
+    "title": "¿Cómo proteger la información personal al usar redes WiFi públicas para tareas escolares?",
+    "scenario": "Pablo, de 17 años en Colombia, necesita terminar y enviar un trabajo importante mientras está en una cafetería usando la red WiFi abierta del local.",
+    "options": [
+      "Opción A: Usar una conexión VPN, verificar que los sitios web usen HTTPS, evitar acceder a cuentas sensibles, no realizar transacciones financieras, y desactivar el compartir archivos y la conexión automática a redes WiFi.",
+      "Opción B: Conectarse a cualquier red WiFi disponible sin verificar su seguridad.",
+      "Opción C: Ingresar a todas sus cuentas bancarias y personales sin precaución especial.",
+      "Opción D: Compartir archivos personales a través de la red pública."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! Las redes WiFi públicas pueden representar riesgos significativos para tu privacidad y seguridad si no tomas precauciones adecuadas.",
+      "incorrect": "Al usar redes WiFi públicas, es importante tomar medidas adicionales para proteger tu información personal."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.3",
+    "level": "Intermedio",
+    "title": "¿Cómo crear un entorno de estudio digital equilibrado y saludable?",
+    "scenario": "Javier, de 16 años en Argentina, pasa muchas horas estudiando en línea y ha notado fatiga visual, dolores de espalda y dificultad para dormir.",
+    "options": [
+      "Opción A: Diseñar un espacio ergonómico, seguir la regla 20-20-20 para descansos visuales, usar filtros de luz azul, establecer horarios definidos de uso digital, alternar entre actividades digitales y físicas, y configurar notificaciones para limitar distracciones.",
+      "Opción B: Estudiar continuamente sin descansos hasta terminar todas las tareas.",
+      "Opción C: Usar el teléfono o la computadora hasta justo antes de dormir.",
+      "Opción D: Mantener todas las notificaciones activadas durante las sesiones de estudio."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Un enfoque equilibrado del uso de tecnología para estudiar previene problemas físicos y mejora la concentración y el bienestar.",
+      "incorrect": "El uso prolongado de dispositivos digitales requiere estrategias específicas para proteger tu salud física y mental."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.3",
+    "level": "Intermedio",
+    "title": "¿Cómo gestionar el tiempo de pantalla para maximizar el aprendizaje y minimizar los efectos negativos?",
+    "scenario": "Valentina, de 15 años en Chile, debe realizar varias tareas escolares en línea pero también quiere evitar la sobrecarga digital y mantener tiempo para otras actividades.",
+    "options": [
+      "Opción A: Usar aplicaciones de gestión del tiempo para establecer límites, priorizar tareas por importancia, agrupar actividades similares, programar descansos regulares, y definir momentos libres de tecnología para socializar y practicar actividades físicas.",
+      "Opción B: Realizar múltiples tareas digitales simultáneamente (multitasking) para ser más eficiente.",
+      "Opción C: Permitir que las redes sociales interrumpan constantemente su estudio.",
+      "Opción D: Pasar todo su tiempo libre en actividades digitales de entretenimiento."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! La gestión consciente del tiempo de pantalla permite aprovechar los beneficios de la tecnología mientras se mantiene un estilo de vida equilibrado.",
+      "incorrect": "Una buena gestión del tiempo de pantalla involucra planificación, establecimiento de límites y equilibrio entre actividades digitales y no digitales."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.4",
+    "level": "Intermedio",
+    "title": "¿Cómo minimizar el impacto ambiental de tus actividades digitales escolares?",
+    "scenario": "Diego, de 16 años en México, es consciente del impacto ambiental de la tecnología y quiere hacer que sus actividades académicas digitales sean más sostenibles.",
+    "options": [
+      "Opción A: Optimizar la eficiencia energética de sus dispositivos, reducir el almacenamiento en la nube innecesario, preferir conexiones WiFi sobre datos móviles, imprimir solo cuando sea imprescindible usando la opción a doble cara, y extender la vida útil de sus dispositivos con mantenimiento adecuado.",
+      "Opción B: Reemplazar sus dispositivos cada vez que sale un modelo nuevo.",
+      "Opción C: Mantener múltiples copias innecesarias de archivos grandes en diferentes servicios en la nube.",
+      "Opción D: Imprimir todos los materiales de estudio aunque pueda leerlos digitalmente."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Muy bien! Las decisiones conscientes sobre cómo usamos la tecnología pueden reducir significativamente nuestra huella de carbono digital.",
+      "incorrect": "La tecnología tiene un impacto ambiental significativo que podemos reducir a través de hábitos digitales más sostenibles."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-choice",
+    "competence": "4.4",
+    "level": "Intermedio",
+    "title": "¿Cómo tomar decisiones informadas sobre el consumo y disposición de tecnología desde una perspectiva ambiental?",
+    "scenario": "Lucía, de 17 años en Uruguay, necesita una nueva computadora para sus estudios y quiere hacer una elección responsable con el medio ambiente.",
+    "options": [
+      "Opción A: Investigar marcas con políticas ambientales responsables, considerar equipos reacondicionados certificados, evaluar la reparabilidad y durabilidad del dispositivo, planificar el reciclaje adecuado de su equipo antiguo, y minimizar la compra de accesorios innecesarios.",
+      "Opción B: Comprar siempre el último modelo con las especificaciones más altas aunque no las necesite.",
+      "Opción C: Desechar su equipo antiguo en la basura regular.",
+      "Opción D: Ignorar las políticas ambientales de los fabricantes al tomar su decisión."
+    ],
+    "correctAnswerIndex": 0,
+    "feedback": {
+      "correct": "¡Correcto! El consumo consciente de tecnología considera el ciclo de vida completo del producto y su impacto ambiental.",
+      "incorrect": "Las decisiones de compra y disposición de tecnología tienen importantes implicaciones ambientales que debemos considerar."
+    },
+    "questionSlot": 3
+  },
+  {
+    "type": "multiple-response",
+    "competence": "4.4",
+    "level": "Básico 2",
+    "title": "Reconocer el impacto ambiental del uso de servicios de streaming",
+    "scenario": "Carla mira series en su tablet todos los días. Nota que al reproducir en alta definición, la batería se descarga más rápido y su conexión consume más datos. Se pregunta qué hábitos aumentan el impacto ambiental.",
+    "options": [
+      "Ver videos en resolución más baja cuando no es necesario",
+      "Dejar la tablet cargando toda la noche mientras mira series",
+      "Descargar capítulos y verlos sin conexión a internet",
+      "Reproducir videos continuamente aunque no los esté mirando",
+      "Apagar la pantalla cuando solo escucha música"
+    ],
+    "correctAnswerIndex": [
+      0,
+      2,
+      4
+    ],
+    "feedback": {
+      "correct": "Has identificado prácticas que reducen el consumo energético y de datos.",
+      "incorrect": "Algunas opciones elegidas aumentan el consumo de energía y emisiones, revisa de nuevo."
+    },
+    "questionSlot": 1
+  },
+  {
+    "type": "multiple-response",
+    "competence": "2.1",
+    "level": "Básico 2",
+    "title": "Estrategias efectivas para comunicarse en entornos digitales",
+    "scenario": "Ana necesita enviar un mensaje importante a su profesor sobre un proyecto escolar. Quiere asegurarse de que su comunicación sea clara y profesional.",
+    "options": [
+      "Usar un lenguaje formal y respetuoso",
+      "Incluir toda la información necesaria en el primer mensaje",
+      "Revisar el mensaje antes de enviarlo para corregir errores",
+      "Enviar el mensaje en mayúsculas para que sea más visible",
+      "Usar emojis para hacer el mensaje más amigable"
+    ],
+    "correctAnswerIndex": [
+      0,
+      1,
+      2
+    ],
+    "feedback": {
+      "correct": "¡Excelente! Has identificado las mejores prácticas para una comunicación efectiva.",
+      "incorrect": "Revisa las opciones que elegiste. Algunas prácticas pueden no ser apropiadas en contextos formales."
+    },
+    "questionSlot": 2
+  },
+  {
+    "type": "multiple-response",
+    "competence": "4.1",
+    "level": "Básico 2",
+    "title": "Medidas de seguridad para proteger dispositivos electrónicos",
+    "scenario": "Pedro ha notado que su teléfono está funcionando más lento últimamente y recibe anuncios extraños. Quiere proteger mejor sus dispositivos.",
+    "options": [
+      "Instalar un antivirus actualizado",
+      "Usar contraseñas fuertes y diferentes para cada cuenta",
+      "Mantener el software del dispositivo actualizado",
+      "Compartir la contraseña con familiares para emergencias",
+      "Hacer clic en todos los enlaces de correos electrónicos sospechosos"
+    ],
+    "correctAnswerIndex": [
+      0,
+      1,
+      2
+    ],
+    "feedback": {
+      "correct": "¡Muy bien! Estas medidas ayudan a mantener tus dispositivos seguros.",
+      "incorrect": "Algunas opciones pueden poner en riesgo tu seguridad digital. Revisa nuevamente."
+    },
+    "questionSlot": 3
+  }
+]

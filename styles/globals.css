@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ladico-primary: #6366f1;
+  --ladico-primary-dark: #4f46e5;
+  --ladico-secondary: #8b5cf6;
+  --ladico-accent: #06b6d4;
+  --ladico-gray-50: #f8fafc;
+  --ladico-gray-100: #f1f5f9;
+  --ladico-gray-200: #e2e8f0;
+  --ladico-gray-600: #475569;
+  --ladico-gray-900: #0f172a;
+  --border-radius-sm: 12px;
+  --border-radius-md: 20px;
+  --border-radius-lg: 32px;
+  --border-radius-xl: 48px;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .ladico-gradient {
+    background: linear-gradient(135deg, var(--ladico-primary) 0%, var(--ladico-secondary) 100%);
+  }
+
+  .ladico-card {
+    @apply bg-white rounded-3xl shadow-sm border-2 border-gray-100 hover:border-indigo-200 transition-all duration-300;
+  }
+
+  .ladico-button-primary {
+    @apply bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-3 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl;
+  }
+
+  .ladico-button-secondary {
+    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-8 rounded-xl border border-gray-200 transition-all duration-200 hover:border-gray-300;
+  }
+
+  .ladico-button {
+    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-4 px-8 rounded-2xl transition-all duration-200 border-2 border-indigo-600 hover:border-indigo-700;
+  }
+
+  .ladico-button-outline {
+    @apply bg-white hover:bg-gray-50 text-indigo-600 font-medium py-4 px-8 rounded-2xl border-2 border-indigo-600 hover:border-indigo-700 transition-all duration-200;
+  }
+
+  .ladico-input {
+    @apply w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-indigo-500 focus:outline-none transition-all bg-white;
+  }
+
+  .ladico-section {
+    @apply py-20 px-6;
+  }
+}
+
+/* Smooth animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
