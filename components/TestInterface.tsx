@@ -335,6 +335,11 @@ export default function TestInterface({
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 relative ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
+            {/* Título e instrucciones */}
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
+                {currentQuestion.title}
+              </h2>
             {/* Escenario */}
             <div className="mb-6 sm:mb-8">
               <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
@@ -343,16 +348,9 @@ export default function TestInterface({
                 </p>
               </div>
             </div>
-
-            {/* Título e instrucciones */}
-            <div className="mb-6 sm:mb-8">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
-                {currentQuestion.title}
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 bg-blue-50 px-3 sm:px-4 py-2 rounded-full inline-block">
-                Selecciona sólo una respuesta
-              </p>
-
+            <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 bg-blue-50 px-3 sm:px-4 py-2 rounded-full inline-block">
+              Selecciona sólo una respuesta
+            </p>
               {/* Opciones */}
               <div className="space-y-3 sm:space-y-4">
                 {currentQuestion.options.map((option, index) => (
