@@ -1,0 +1,34 @@
+# Node modules
+node_modules/
+
+# Next.js build output
+.next/
+out/
+dist/
+
+# Environment files
+.env*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor/IDE configs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dependency locks (si no quieres subirlos)
+# yarn.lock
+# package-lock.json
+
+# Coverage (si usas testing)
+coverage/
+
+# Typescript build (si lo compilas)
+*.tsbuildinfo
