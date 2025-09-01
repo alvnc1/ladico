@@ -64,7 +64,7 @@ export default function TestInterface({
   const invalidatedRef = useRef<boolean>(false)
 
   // Timer por pregunta
-  const QUESTION_TIME = 10 // seg   <-- ajusta si quieres
+  const QUESTION_TIME = 60 // seg   <-- ajusta si quieres
   const [timeLeft, setTimeLeft] = useState<number>(QUESTION_TIME)
   const timerIntervalRef = useRef<number | null>(null)
   const [timeoutBanner, setTimeoutBanner] = useState(false)
