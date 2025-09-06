@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Ladico | Simple y Directo",
-  description: "La plataforma más simple para transformar tu experiencia digital",
+  description: "La plataforma más simple para evaluar tus competencias digitales.",
 }
 
 export default function RootLayout({

@@ -55,7 +55,7 @@ export default function QuestionsAdminPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#286675]"></div>
       </div>
     )
   }
@@ -69,7 +69,7 @@ export default function QuestionsAdminPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Banco de Preguntas</h1>
               <p className="text-gray-600">Gestiona y visualiza todas las preguntas del sistema.</p>
             </div>
-            <Button onClick={() => router.push("/admin")} className="Ladico-button-primary">
+            <Button onClick={() => router.push("/admin")} className="text-white bg-[#286675] hover:bg-[#3a7d89]">
               Agregar Nueva Pregunta
             </Button>
           </div>
@@ -94,7 +94,7 @@ export default function QuestionsAdminPage() {
                 <Card
                   key={question.id}
                   className={`cursor-pointer transition-all hover:shadow-lg ${
-                    selectedQuestion?.id === question.id ? "ring-2 ring-purple-500" : ""
+                    selectedQuestion?.id === question.id ? "ring-2 ring-[#286675]" : ""
                   }`}
                   onClick={() => setSelectedQuestion(question)}
                 >

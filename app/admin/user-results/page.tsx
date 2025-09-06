@@ -305,7 +305,7 @@ export default function UserResultsPage() {
                     ]
                     XLSX.writeFile(wb, `usuarios_ladico_${new Date().toISOString().slice(0, 10)}.xlsx`)
                   }}
-                  className="border rounded-2xl bg-[#286575] hover:bg-[#3a7d89] text-white"
+                  className="border bg-[#286575] hover:bg-[#3a7d89] text-white"
                   title="Descargar en Excel (filtrados)"
                 >
                   Exportar Excel
