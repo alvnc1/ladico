@@ -127,9 +127,9 @@ export default function AdvancedEj2Page() {
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between text-white">
-            <div className="flex items-center gap-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4">
               <Link href="/dashboard">
                 <img src="/ladico_green.png" alt="Ladico Logo" className="w-16 h-16 sm:w-20 sm:h-20 object-contain" />
               </Link>
@@ -142,9 +142,9 @@ export default function AdvancedEj2Page() {
       </div>
 
       {/* Progreso */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-white mb-4">
-          <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-3 py-1 rounded-full">
+          <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
             Pregunta 2 de 3
           </span>
           <div className="flex space-x-2">
@@ -158,66 +158,68 @@ export default function AdvancedEj2Page() {
         </div>
       </div>
 
-      {/* Enunciado */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-2">
-        <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575]/20">
-          <CardContent className="p-4 sm:p-6 lg:p-8 space-y-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Tecnologías para la inclusión social</h2>
-            <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
-              <p className="text-gray-700">
-                Selecciona la tecnología más adecuada para cada grupo de la comunidad y 
-                vincúlala con el objetivo principal que mejor responda a sus necesidades de inclusión digital.
+      {/* Tarjeta Ladico: Enunciado + Tablero + Acción */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575]/20 w-full max-w-[840px] mx-auto">
+          <CardContent className="p-4 sm:p-6 lg:p-8 space-y-6">
+            {/* Enunciado */}
+            <div className="space-y-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                Tecnologías para la inclusión social
+              </h2>
+              <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
+                <p className="text-gray-700">
+                  Selecciona la tecnología más adecuada para cada grupo de la comunidad y
+                  vincúlala con el objetivo principal que mejor responda a sus necesidades de inclusión digital.
+                </p>
+              </div>
+              <p className="text-xs sm:text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-full inline-block">
+                <b>Asignación múltiple</b>
               </p>
-              
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-full inline-block">
-              <b>Asignación múltiple</b>
-            </p>
+
+            {/* Tablero */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <GroupCard
+                title="Adultos Mayores"
+                techOptions={TECH_OPTIONS.adultos}
+                techValue={tech.adultos}
+                onTechChange={(v) => setTech((s) => ({ ...s, adultos: v }))}
+                objectiveValue={obj.adultos}
+                onObjectiveChange={(v) => setObj((s) => ({ ...s, adultos: v as Objective }))}
+                chosenTechs={chosenTechs}
+              />
+              <GroupCard
+                title="Migrantes"
+                techOptions={TECH_OPTIONS.migrantes}
+                techValue={tech.migrantes}
+                onTechChange={(v) => setTech((s) => ({ ...s, migrantes: v }))}
+                objectiveValue={obj.migrantes}
+                onObjectiveChange={(v) => setObj((s) => ({ ...s, migrantes: v as Objective }))}
+                chosenTechs={chosenTechs}
+              />
+              <GroupCard
+                title="Personas con Discapacidad Visual"
+                techOptions={TECH_OPTIONS.visual}
+                techValue={tech.visual}
+                onTechChange={(v) => setTech((s) => ({ ...s, visual: v }))}
+                objectiveValue={obj.visual}
+                onObjectiveChange={(v) => setObj((s) => ({ ...s, visual: v as Objective }))}
+                chosenTechs={chosenTechs}
+              />
+            </div>
+
+            {/* Acción */}
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={handleNext}
+                className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
+              >
+                Siguiente
+              </Button>
+            </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Tablero */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <GroupCard
-          title="Adultos Mayores"
-          techOptions={TECH_OPTIONS.adultos}
-          techValue={tech.adultos}
-          onTechChange={(v) => setTech((s) => ({ ...s, adultos: v }))}
-          objectiveValue={obj.adultos}
-          onObjectiveChange={(v) => setObj((s) => ({ ...s, adultos: v as Objective }))}
-          chosenTechs={chosenTechs}
-        />
-        <GroupCard
-          title="Migrantes"
-          techOptions={TECH_OPTIONS.migrantes}
-          techValue={tech.migrantes}
-          onTechChange={(v) => setTech((s) => ({ ...s, migrantes: v }))}
-          objectiveValue={obj.migrantes}
-          onObjectiveChange={(v) => setObj((s) => ({ ...s, migrantes: v as Objective }))}
-          chosenTechs={chosenTechs}
-        />
-        <GroupCard
-          title="Personas con Discapacidad Visual"
-          techOptions={TECH_OPTIONS.visual}
-          techValue={tech.visual}
-          onTechChange={(v) => setTech((s) => ({ ...s, visual: v }))}
-          objectiveValue={obj.visual}
-          onObjectiveChange={(v) => setObj((s) => ({ ...s, visual: v as Objective }))}
-          chosenTechs={chosenTechs}
-        />
-      </div>
-
-      {/* Siguiente (siempre habilitado) */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-10">
-        <div className="flex justify-end">
-          <Button
-            onClick={handleNext}
-            className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
-          >
-            Siguiente
-          </Button>
-        </div>
       </div>
     </div>
   )
@@ -242,7 +244,7 @@ function GroupCard(props: {
         <div className="space-y-1">
           <label className="text-xs text-gray-600">Tecnología</label>
           <select
-            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
+            className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
             value={techValue}
             onChange={(e) => onTechChange(e.target.value)}
           >
