@@ -295,7 +295,7 @@ export default function Page() {
                 </div>
               </section>
 
-              {/* Orden final (derecha): vacíos segmentados y asignados azules; chip ovalado y X al inicio centrada */}
+              {/* Orden final (derecha): el chip ocupa el slot; sin recuadro doble; borde AZUL al estar en el slot */}
               <section className="bg-white border border-gray-200 rounded-2xl p-4">
                 <h3 className="font-semibold text-gray-900 mb-3">Orden de mayor a menor prioridad</h3>
                 <div className="space-y-3">
@@ -306,37 +306,40 @@ export default function Page() {
                         key={i}
                         onDragOver={allowDrop}
                         onDrop={() => onDropToSlot(i)}
-                        className={`min-h-[56px] rounded-xl p-3 transition relative
-                          ${isFilled
-                            ? "border-2 border-blue-400 bg-blue-50"
-                            : "border-2 border-dashed border-gray-300 bg-white"}
+                        className={`rounded-xl transition relative
+                          ${
+                            isFilled
+                              ? "border-2 border-transparent bg-transparent p-0 min-h-0"
+                              : "min-h-[56px] border-2 border-dashed border-gray-300 bg-white p-3"
+                          }
                           ${dragData ? "ring-1 ring-[#286575]/40" : ""}`}
                         aria-label={`Caja destino ${i + 1}`}
                       >
                         {isFilled ? (
-                          <div
-                            draggable
-                            onDragStart={() => onDragStart("slot", i)}
-                            onDragEnd={onDragEnd}
-                            className="cursor-grab active:cursor-grabbing"
-                          >
-                            {/* Chip ovalado con X al inicio centrada */}
-                            <div className="flex items-center gap-2 bg-white border border-black/60 rounded-xl px-3 py-2">
-                              <button
-                                onClick={() => removeFromSlot(i)}
-                                className="leading-none text-gray-500 hover:text-gray-700"
-                                aria-label="Quitar"
-                                type="button"
-                                title="Quitar"
-                              >
-                                ×
-                              </button>
-                              <span className="text-sm text-gray-800">{techById(slot!).text}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-400">Suelta aquí</span>
-                        )}
+  <div
+    draggable
+    onDragStart={() => onDragStart("slot", i)}
+    onDragEnd={onDragEnd}
+    className="cursor-grab active:cursor-grabbing"
+  >
+    {/* Mismo tamaño y tipografía que a la izquierda: p-3, border (no border-2) */}
+    <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3">
+      <button
+        onClick={() => removeFromSlot(i)}
+        className="leading-none text-gray-500 hover:text-gray-700"
+        aria-label="Quitar"
+        type="button"
+        title="Quitar"
+      >
+        ×
+      </button>
+      <span>{techById(slot!).text}</span>
+    </div>
+  </div>
+) : (
+  <span className="text-sm text-gray-400">Suelta aquí</span>
+)}
+
                       </div>
                     )
                   })}
