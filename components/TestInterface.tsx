@@ -1,3 +1,4 @@
+// components/TestInterface.tsx
 "use client"
 
 import { useEffect, useRef, useState } from "react"
@@ -9,18 +10,24 @@ import { getCompetenceTitle } from "@/components/data/digcompSkills"
 import Link from "next/link"
 import { AlertTriangle, X } from "lucide-react"
 
-interface TestInterfaceProps1 {
+interface TestInterfaceProps {
   testSession: TestSession
   onAnswerSubmit: (answerIndex: number, questionIndex: number) => void
   onTestComplete: (session: TestSession) => void
+  questionTimeSeconds?: number // opcional: override del tiempo por pregunta (default 60)
 }
 
 export default function TestInterface({
   testSession,
   onAnswerSubmit,
   onTestComplete,
-}: TestInterfaceProps1) {
-  if (!testSession || !testSession.questions) {
+  questionTimeSeconds = 60,
+}: TestInterfaceProps) {
+  // ------- Guards básicos -------
+  const questions = testSession?.questions ?? []
+  const totalQuestions = Array.isArray(questions) ? questions.length : 0
+
+  if (!totalQuestions) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center p-6 bg-white rounded-lg shadow-lg">
@@ -39,15 +46,19 @@ export default function TestInterface({
     )
   }
 
-  // Estado navegación / respuestas
-  const initialAnswer = testSession.answers?.[testSession.currentQuestionIndex] ?? null
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(initialAnswer)
-  const [currentIndex, setCurrentIndex] = useState(testSession.currentQuestionIndex ?? 0)
+  // ------- Estado navegación / respuestas -------
+  const safeInitialIndex = Math.min(
+    Math.max(testSession.currentQuestionIndex ?? 0, 0),
+    totalQuestions - 1
+  )
+  const initialAnswer = testSession.answers?.[safeInitialIndex] ?? null
 
-  const currentQuestion = testSession.questions[currentIndex]
-  const totalQuestions = 3
+  const [currentIndex, setCurrentIndex] = useState(safeInitialIndex)
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(initialAnswer)
+
+  const currentQuestion = questions[currentIndex]
   const progress = ((currentIndex + 1) / totalQuestions) * 100
-  const competenceCode = currentQuestion.competence
+  const competenceCode = currentQuestion?.competence
   const competenceName = getCompetenceTitle(competenceCode)
 
   const handleAnswerSelect = (answerIndex: number) => {
@@ -55,19 +66,20 @@ export default function TestInterface({
     onAnswerSubmit(answerIndex, currentIndex)
   }
 
-  // -------- Anti-cheat & Timer --------
+  // ------- Anti-cheat & Timer -------
   const [attemptsLeft, setAttemptsLeft] = useState(3)
   const [showWarning, setShowWarning] = useState(false)
   const [invalidated, setInvalidated] = useState(false)
+  const [timeoutBanner, setTimeoutBanner] = useState(false)
+
   const violationCooldownRef = useRef<number>(0)
   const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const invalidatedRef = useRef<boolean>(false)
 
   // Timer por pregunta
-  const QUESTION_TIME = 60 // seg   <-- ajusta si quieres
+  const QUESTION_TIME = Math.max(5, Number(questionTimeSeconds) || 60)
   const [timeLeft, setTimeLeft] = useState<number>(QUESTION_TIME)
   const timerIntervalRef = useRef<number | null>(null)
-  const [timeoutBanner, setTimeoutBanner] = useState(false)
 
   const fmtTime = (s: number) => {
     const m = Math.floor(s / 60)
@@ -76,11 +88,19 @@ export default function TestInterface({
     return `${pad(m)}:${pad(r)}`
   }
 
-  const startTimer = () => {
+  const clearAllTimers = () => {
     if (timerIntervalRef.current) {
       window.clearInterval(timerIntervalRef.current)
       timerIntervalRef.current = null
     }
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current)
+      autoAdvanceTimerRef.current = null
+    }
+  }
+
+  const startTimer = () => {
+    clearAllTimers()
     setTimeoutBanner(false)
     setTimeLeft(QUESTION_TIME)
     timerIntervalRef.current = window.setInterval(() => {
@@ -92,11 +112,7 @@ export default function TestInterface({
             setInvalidated(true)
             setShowWarning(false)
             setTimeoutBanner(true)
-            if (timerIntervalRef.current) {
-              window.clearInterval(timerIntervalRef.current)
-              timerIntervalRef.current = null
-            }
-            if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current)
+            clearAllTimers()
             autoAdvanceTimerRef.current = setTimeout(() => handleNext(true), 3000)
           }
           return 0
@@ -118,12 +134,7 @@ export default function TestInterface({
         invalidatedRef.current = true
         setInvalidated(true)
         setShowWarning(false)
-
-        if (timerIntervalRef.current) {
-          window.clearInterval(timerIntervalRef.current)
-          timerIntervalRef.current = null
-        }
-        if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current)
+        clearAllTimers()
         autoAdvanceTimerRef.current = setTimeout(() => handleNext(true), 3000)
         return 0
       }
@@ -151,37 +162,27 @@ export default function TestInterface({
       document.removeEventListener("visibilitychange", onVisibility)
       window.removeEventListener("blur", onBlur)
       document.removeEventListener("mouseout", onMouseOut)
-      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current)
-      if (timerIntervalRef.current) {
-        window.clearInterval(timerIntervalRef.current)
-        timerIntervalRef.current = null
-      }
+      clearAllTimers()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleNext = (fromInvalidation = false) => {
-    if (autoAdvanceTimerRef.current) {
-      clearTimeout(autoAdvanceTimerRef.current)
-      autoAdvanceTimerRef.current = null
-    }
-    if (timerIntervalRef.current) {
-      window.clearInterval(timerIntervalRef.current)
-      timerIntervalRef.current = null
-    }
+    clearAllTimers()
     violationCooldownRef.current = 0
     invalidatedRef.current = false
 
     setCurrentIndex((prevIndex) => {
-      // registrar respuesta salvo que venga de invalidación
+      // Registrar respuesta salvo que venga de invalidación
       if (!fromInvalidation && selectedAnswer !== null) {
         onAnswerSubmit(selectedAnswer, prevIndex)
       }
 
       const isLast = prevIndex >= totalQuestions - 1
       if (isLast) {
-        const finalSession = {
+        const finalSession: TestSession = {
           ...testSession,
+          currentQuestionIndex: prevIndex,
           answers: testSession.answers.map((answer, idx) =>
             idx === prevIndex ? (fromInvalidation ? answer : selectedAnswer) : answer
           ),
@@ -200,8 +201,24 @@ export default function TestInterface({
       return nextIndex
     })
   }
-  // -------- fin anti-cheat & timer --------
 
+  const handlePrev = () => {
+    clearAllTimers()
+    violationCooldownRef.current = 0
+    invalidatedRef.current = false
+
+    const prevIndex = Math.max(currentIndex - 1, 0)
+    if (prevIndex !== currentIndex) {
+      setCurrentIndex(prevIndex)
+      setSelectedAnswer(testSession.answers[prevIndex] ?? null)
+      setAttemptsLeft(3)
+      setShowWarning(false)
+      setInvalidated(false)
+      startTimer()
+    }
+  }
+
+  // ------- Render -------
   const isLastQuestion = currentIndex === totalQuestions - 1
 
   return (
@@ -220,7 +237,7 @@ export default function TestInterface({
               </Link>
 
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
-                {currentQuestion.dimension} | {competenceCode}
+                {currentQuestion?.dimension} | {competenceCode}
                 {competenceName ? ` ${competenceName}` : ""} - {" Nivel "}
                 {testSession.level?.toString().toLowerCase?.() === "intermedio"
                   ? "Intermedio"
@@ -335,25 +352,27 @@ export default function TestInterface({
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 relative ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
-            {/* Título e instrucciones */}
-            <div className="mb-6 sm:mb-8">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
-                {currentQuestion.title}
-              </h2>
             {/* Escenario */}
             <div className="mb-6 sm:mb-8">
               <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
-                  {currentQuestion.scenario}
+                  {currentQuestion?.scenario}
                 </p>
               </div>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 bg-blue-50 px-3 sm:px-4 py-2 rounded-full inline-block">
-              Selecciona sólo una respuesta
-            </p>
+
+            {/* Título e instrucciones */}
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
+                {currentQuestion?.title}
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 bg-blue-50 px-3 sm:px-4 py-2 rounded-full inline-block">
+                Selecciona sólo una respuesta
+              </p>
+
               {/* Opciones */}
               <div className="space-y-3 sm:space-y-4">
-                {currentQuestion.options.map((option, index) => (
+                {currentQuestion?.options?.map((option: string, index: number) => (
                   <label
                     key={index}
                     className={`flex items-start space-x-3 sm:space-x-4 p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 ${
@@ -399,27 +418,7 @@ export default function TestInterface({
               <div className="flex space-x-3 w-full sm:w-auto">
                 {currentIndex > 0 && (
                   <Button
-                    onClick={() => {
-                      // al retroceder, reseteamos timer/flags igual que al avanzar
-                      if (timerIntervalRef.current) {
-                        window.clearInterval(timerIntervalRef.current)
-                        timerIntervalRef.current = null
-                      }
-                      if (autoAdvanceTimerRef.current) {
-                        clearTimeout(autoAdvanceTimerRef.current)
-                        autoAdvanceTimerRef.current = null
-                      }
-                      violationCooldownRef.current = 0
-                      invalidatedRef.current = false
-
-                      const prevIndex = currentIndex - 1
-                      setCurrentIndex(prevIndex)
-                      setSelectedAnswer(testSession.answers[prevIndex] ?? null)
-                      setAttemptsLeft(3)
-                      setShowWarning(false)
-                      setInvalidated(false)
-                      startTimer()
-                    }}
+                    onClick={handlePrev}
                     variant="outline"
                     className="flex-1 sm:flex-none px-6 sm:px-8 py-3 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl font-medium transition-all text-sm sm:text-base"
                   >

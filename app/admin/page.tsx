@@ -1,3 +1,4 @@
+// app/admin/page.tsx
 "use client"
 
 import type React from "react"
@@ -10,14 +11,12 @@ import { db } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Upload, FileText, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function AdminPanel() {
-  const { user, userData } = useAuth()
+  const { user } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
   const [uploading, setUploading] = useState(false)
@@ -28,9 +27,8 @@ export default function AdminPanel() {
   const [datasetUrl, setDatasetUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    
     if (user && user.email) {
-      setIsAdmin(user.email.endsWith('@admin.com'))
+      setIsAdmin(user.email.endsWith("@admin.com"))
     } else {
       setIsAdmin(false)
     }
@@ -47,7 +45,7 @@ export default function AdminPanel() {
         const content = event.target?.result as string
         JSON.parse(content)
         setFileContent(content)
-      } catch (error) {
+      } catch {
         setFileError("El archivo no contiene JSON válido")
         setFileContent(null)
       }
@@ -70,26 +68,26 @@ export default function AdminPanel() {
     setUploading(true)
 
     try {
-      
       const questions = JSON.parse(fileContent)
-
-      
       const questionsArray = Array.isArray(questions) ? questions : [questions]
 
-      
-      const validQuestions = questionsArray.filter(question => {
+      // Validación estricta con campos obligatorios del formato extendido
+      const validQuestions = questionsArray.filter((q) => {
         return (
-          question.type === "multiple-choice" &&
-          question.competence &&
-          question.level &&
-          question.title &&
-          question.scenario &&
-          Array.isArray(question.options) &&
-          question.options.length >= 2 &&
-          typeof question.correctAnswerIndex === "number" &&
-          question.feedback &&
-          question.feedback.correct &&
-          question.feedback.incorrect
+          q.type === "multiple-choice" &&
+          q.competence &&
+          q.level &&
+          q.gender &&
+          q.age &&
+          q.country &&
+          q.title &&
+          q.scenario &&
+          Array.isArray(q.options) &&
+          q.options.length >= 2 &&
+          typeof q.correctAnswerIndex === "number" &&
+          q.feedback &&
+          q.feedback.correct &&
+          q.feedback.incorrect
         )
       })
 
@@ -105,12 +103,9 @@ export default function AdminPanel() {
         })
       }
 
-      
       let addedCount = 0
       for (const question of validQuestions) {
-        await addDoc(collection(db, "questions"), {
-          ...question,
-        })
+        await addDoc(collection(db, "questions"), { ...question })
         addedCount++
       }
 
@@ -119,17 +114,14 @@ export default function AdminPanel() {
         description: `Se han agregado ${addedCount} preguntas a la base de datos.`,
       })
 
-      
       setFileContent(null)
-
-      
       const fileInput = document.getElementById("fileInput") as HTMLInputElement
-      if (fileInput) {
-        fileInput.value = ""
-      }
+      if (fileInput) fileInput.value = ""
     } catch (error) {
       console.error("Error al procesar el archivo:", error)
-      setFileError(error instanceof Error ? error.message : "Error desconocido al procesar el archivo")
+      setFileError(
+        error instanceof Error ? error.message : "Error desconocido al procesar el archivo",
+      )
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Error al procesar el archivo.",
@@ -147,21 +139,32 @@ export default function AdminPanel() {
 
   const handleUploadDataset = async () => {
     if (!datasetFile) {
-      toast({ title: "Sin archivo", description: "Selecciona un CSV o XLSX", variant: "destructive" })
+      toast({
+        title: "Sin archivo",
+        description: "Selecciona un CSV o XLSX",
+        variant: "destructive",
+      })
       return
     }
     try {
       setUploading(true)
       const fd = new FormData()
-      fd.append('file', datasetFile)
-      const res = await fetch('/api/datasets/comp-1-3/advanced/ej1/upload', { method: 'POST', body: fd })
+      fd.append("file", datasetFile)
+      const res = await fetch("/api/datasets/comp-1-3/advanced/ej1/upload", {
+        method: "POST",
+        body: fd,
+      })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Error desconocido')
+      if (!res.ok) throw new Error(json.error || "Error desconocido")
       setDatasetUrl(json.url)
       toast({ title: "Dataset subido", description: json.filename })
     } catch (err) {
       console.error(err)
-      toast({ title: "Error al subir dataset", description: (err as Error).message, variant: "destructive" })
+      toast({
+        title: "Error al subir dataset",
+        description: (err as Error).message,
+        variant: "destructive",
+      })
     } finally {
       setUploading(false)
     }
@@ -169,22 +172,21 @@ export default function AdminPanel() {
 
   const handleDeleteAllQuestions = async () => {
     if (!db || !isAdmin) return
-
-    if (!confirm("¿Estás seguro? Esta acción eliminará TODAS las preguntas de la base de datos y no se puede deshacer.")) {
+    if (
+      !confirm(
+        "¿Estás seguro? Esta acción eliminará TODAS las preguntas de la base de datos y no se puede deshacer.",
+      )
+    ) {
       return
     }
-
     try {
       setUploading(true)
       const querySnapshot = await getDocs(collection(db, "questions"))
       let deletedCount = 0
-
-      
       for (const document of querySnapshot.docs) {
         await deleteDoc(document.ref)
         deletedCount++
       }
-
       toast({
         title: "Base de datos limpiada",
         description: `Se han eliminado ${deletedCount} preguntas.`,
@@ -216,22 +218,10 @@ export default function AdminPanel() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <FileText className="h-6 w-6 mr-2" />
-              Panel de Administración - Cargar Preguntas
+              Panel de Administración — Cargar Preguntas
             </CardTitle>
           </CardHeader>
           <CardContent>
-            
-            <div className="mb-8 p-4 border rounded-md bg-muted/30">
-              <h3 className="font-medium mb-2">Datasets XLSX (demo)</h3>
-              <div className="flex flex-wrap gap-2">
-                <a href="/api/datasets/comp-1-3/advanced/ej1">
-                  <Button variant="secondary">Descargar Comp 1.3 — Avanzado — Ej1</Button>
-                </a>
-                <a href="/exercises/comp-1-3/advanced/ej1">
-                  <Button variant="outline">Abrir ejercicio</Button>
-                </a>
-              </div>
-            </div>
             {fileError && (
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
@@ -246,42 +236,25 @@ export default function AdminPanel() {
                 <pre className="text-xs text-gray-800">{`{ 
   "type": "multiple-choice", 
   "competence": "1.3", 
-  "level": "Básico 2", 
+  "level": "Básico 2",
+  "gender": "género",
+  "age": 25,
+  "country": "Chile",
   "title": "Título de la pregunta", 
   "scenario": "Escenario o contexto más la pregunta", 
-  "options": [ 
-    "A): Primera opción", 
-    "B): Segunda opción", 
-    "C): Tercera opción", 
-    "D): Cuarta opción" ], 
-  "correctAnswerIndex": opción correcta, 
+  "options": [ "Primera opción", "Segunda opción", "Tercera opción", "Cuarta opción" ], 
+  "correctAnswerIndex": 1, 
   "feedback": { 
     "correct": "Retroalimentación para respuesta correcta", 
     "incorrect": "Retroalimentación para respuesta incorrecta" 
-}}`}</pre>
+  }
+}`}</pre>
               </div>
               <p className="text-sm text-gray-600">
                 El archivo debe contener un solo objeto JSON o un array de objetos con la estructura mostrada arriba.
                 <br />
-                <strong>Nota:</strong> El índice de la respuesta correcta (correctAnswerIndex) empieza en 0 para la primera opción.
+                <strong>Nota:</strong> El índice de la respuesta correcta (<code>correctAnswerIndex</code>) empieza en 0.
               </p>
-            </div>
-
-            
-            <div className="mb-8 p-4 border rounded-lg">
-              <h2 className="text-lg font-medium mb-4">Dataset XLSX/CSV — Comp 1.3 Avanzado (Ej1)</h2>
-              <div className="flex items-center gap-2 mb-3">
-                <Input type="file" accept=".xlsx,.csv" onChange={handleDatasetFile} />
-                <Button type="button" onClick={handleUploadDataset} disabled={!datasetFile || uploading}>
-                  {uploading ? "Subiendo..." : "Subir dataset"}
-                </Button>
-              </div>
-              <p className="text-xs text-gray-500">Se almacena localmente (carpeta public/datasets) y se expone via API para descarga en ejercicios.</p>
-                <div className="mt-2">
-                  <a href="/exercises/comp-1-3/advanced/ej1" target="_blank">
-                    <Button variant="outline">Abrir página del ejercicio</Button>
-                  </a>
-                </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">

@@ -24,11 +24,7 @@ export default function TestPage() {
   const [testSession, setTestSession] = useState<TestSession | null>(null)
   const [loading, setLoading] = useState(true)
 
- 
   const initRan = useRef(false)
-
-
-
 
   useEffect(() => {
     if (initRan.current) return
@@ -37,7 +33,6 @@ export default function TestPage() {
     bootstrap()
   }, [user, userData])
 
- 
   const bootstrap = async () => {
     try {
       const competenceId = params.competenceId as string
@@ -46,28 +41,39 @@ export default function TestPage() {
 
       const comps = await loadCompetences()
 
-     
       if (userData.completedCompetences.includes(competenceId)) {
         router.push(`/test/${competenceId}/results?completed=true&score=100&passed=true&correct=3&level=${levelParam}`)
         return
       }
 
-      const loadedQuestions = await loadQuestionsByCompetence(competenceId, levelName, 3)
-      if (loadedQuestions.length < 3) throw new Error(`No hay suficientes preguntas para la competencia ${competenceId}`)
+      // 🔽🔽🔽 CAMBIO: pasamos el país del usuario al servicio
+      const loadedQuestions = await loadQuestionsByCompetence(
+        competenceId,
+        levelName,
+        3,
+        { country: userData?.country ?? null } // ⬅️ filtra por país + fallback “global” / “all”
+      )
+      // 🔼🔼🔼
+
+      if (loadedQuestions.length < 3) {
+        throw new Error(`No hay suficientes preguntas para la competencia ${competenceId} en tu país`)
+      }
       setQuestions(loadedQuestions)
 
       const { session } = await getOrCreateActiveSession(user!.uid, competenceId, levelParam, loadedQuestions)
       setTestSession(session)
     } catch (e) {
       console.error("Error inicializando test:", e)
-      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo iniciar la evaluación", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "No se pudo iniciar la evaluación",
+        variant: "destructive"
+      })
       router.push('/dashboard')
     } finally {
       setLoading(false)
     }
   }
-
- 
 
   const handleAnswerSubmit = async (answerIndex: number, questionIndex: number) => {
     if (!testSession) return
@@ -81,9 +87,7 @@ export default function TestPage() {
 
   const handleTestComplete = async (finalSession: TestSession) => {
     try {
-
       let correctAnswers = 0
-
 
       await Promise.all(finalSession.questions.map(async (question, index) => {
         const userAnswer = finalSession.answers[index]
@@ -103,7 +107,6 @@ export default function TestPage() {
           console.log(`❌ Respuesta ${index + 1} marcada como incorrecta.`)
         }
 
-
         await updateQuestionStats(question.id, wasCorrect)
       }))
 
@@ -117,16 +120,13 @@ export default function TestPage() {
         passed,
       }
 
-     
       await completeSession(completedSession, correctAnswers)
-
 
       try {
         await saveUserResult(completedSession)
       } catch (error) {
         console.error("Error saving user result:", error)
       }
-
 
       if (passed && userData && db) {
         try {
@@ -137,10 +137,6 @@ export default function TestPage() {
 
           await updateDoc(doc(db, "users", user!.uid), {
             completedCompetences: updatedCompetences,
-
-
-
-
             LadicoScore: userData.LadicoScore + (passed ? 10 : 0),
           })
         } catch (error) {
@@ -148,17 +144,13 @@ export default function TestPage() {
         }
       }
 
-
-     
       const comps = await loadCompetences()
       const currentComp = comps.find(c => c.id === (params.competenceId as string))
       const dimension = currentComp?.dimension || ""
       const levelParam = (searchParams.get("level") || "basico").toLowerCase()
 
-     
       const areaCompetences = comps.filter(c => c.dimension === dimension).sort((a, b) => a.code.localeCompare(b.code))
 
-     
       let allCompletedAtLevel = true
       let nextCompetenceId: string | null = null
       for (const c of areaCompetences) {
@@ -170,7 +162,6 @@ export default function TestPage() {
         }
       }
 
-     
       const wasAreaAlreadyComplete = allCompletedAtLevel && nextCompetenceId !== params.competenceId
       const justCompletedArea = allCompletedAtLevel && !wasAreaAlreadyComplete
 
@@ -180,7 +171,6 @@ export default function TestPage() {
       console.log(`  - justCompletedArea: ${justCompletedArea}`)
       console.log(`  - nextCompetenceId: ${nextCompetenceId}`)
 
-     
       const testResultData = {
         questions: finalSession.questions,
         answers: finalSession.answers,
@@ -192,7 +182,6 @@ export default function TestPage() {
         isAreaComplete: justCompletedArea
       }
 
-
       try {
         sessionStorage.setItem('testResultData', JSON.stringify(testResultData))
         console.log('Datos del test guardados en sessionStorage:', testResultData)
@@ -200,9 +189,7 @@ export default function TestPage() {
         console.error('Error guardando datos en sessionStorage:', error)
       }
 
-     
       const areaCompletedParam = justCompletedArea ? "1" : "0"
-     
       router.push(`/test/${params.competenceId}/results?score=${score}&passed=${passed}&correct=${correctAnswers}&areaCompleted=${areaCompletedParam}&level=${levelParam}`)
     } catch (error) {
       console.error("Error saving test results:", error)

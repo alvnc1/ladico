@@ -1,3 +1,4 @@
+// contexts/AuthContext.tsx
 "use client"
 
 import type React from "react"
@@ -13,15 +14,19 @@ import {
 import { doc, setDoc, onSnapshot, type Unsubscribe } from "firebase/firestore"
 import { auth, db } from "@/lib/firebase"
 
-interface UserData {
+export type UserRole = "admin" | "profesor" | "user"
+
+export interface UserData {
   uid: string
   name: string
   email: string
   age: number
   country: string
+  gender: string
   LadicoScore: number
   completedCompetences: string[]
   currentLevel: "basico" | "intermedio" | "avanzado"
+  role?: UserRole
 }
 
 interface AuthContextType {
@@ -29,30 +34,39 @@ interface AuthContextType {
   userData: UserData | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, name: string, age: number, country: string) => Promise<void>
+  register: (
+    email: string,
+    password: string,
+    name: string,
+    age: number,
+    country: string,
+    gender: string
+  ) => Promise<void>
   logout: () => Promise<void>
+  isAdmin: boolean
+  isProfesor: boolean
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error("useAuth must be used within an AuthProvider")
+  return ctx
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isProfesor, setIsProfesor] = useState(false)
 
   useEffect(() => {
-    let authUnsubscribe: (() => void) | undefined
-    let userDocUnsubscribe: Unsubscribe | undefined
+    let authUnsub: (() => void) | undefined
+    let userDocUnsub: Unsubscribe | undefined
 
-    const initAuth = async () => {
+    const init = async () => {
       try {
         if (!auth) {
           console.error("Firebase Auth not initialized")
@@ -60,135 +74,161 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return
         }
 
-        authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+        authUnsub = onAuthStateChanged(auth, async (u) => {
           try {
-            if (user) {
-              setUser(user)
-
+            if (u) {
+              setUser(u)
 
               if (db) {
-                userDocUnsubscribe = onSnapshot(doc(db, "users", user.uid), (docSnapshot) => {
-                  if (docSnapshot.exists()) {
-                    setUserData(docSnapshot.data() as UserData)
+                userDocUnsub = onSnapshot(
+                  doc(db, "users", u.uid),
+                  async (snap) => {
+                    const fromDoc = snap.exists() ? (snap.data() as UserData) : null
+                    const email = u.email || ""
+
+                    // Inferir role si no existe en Firestore (puedes reemplazar por custom claims)
+                    const inferredRole: UserRole =
+                      fromDoc?.role ??
+                      (email.endsWith("@admin.com")
+                        ? "admin"
+                        : email.endsWith("@profesor.com")
+                        ? "profesor"
+                        : "user")
+
+                    const composed: UserData = {
+                      uid: u.uid,
+                      name: fromDoc?.name ?? u.displayName ?? "",
+                      email: fromDoc?.email ?? email,
+                      age: fromDoc?.age ?? 0,
+                      country: fromDoc?.country ?? "",
+                      gender: fromDoc?.gender ?? "",
+                      LadicoScore: fromDoc?.LadicoScore ?? 0,
+                      completedCompetences: fromDoc?.completedCompetences ?? [],
+                      currentLevel: fromDoc?.currentLevel ?? "basico",
+                      role: inferredRole,
+                    }
+
+                    setUserData(composed)
+                    setIsAdmin(inferredRole === "admin")
+                    setIsProfesor(inferredRole === "profesor")
+
+                    // Persistir role inferido si faltaba
+                    if (fromDoc && !fromDoc.role) {
+                      try {
+                        await setDoc(
+                          doc(db, "users", u.uid),
+                          { role: inferredRole },
+                          { merge: true }
+                        )
+                      } catch (e) {
+                        console.warn("No se pudo persistir role inferido:", e)
+                      }
+                    }
+
+                    setLoading(false)
+                  },
+                  (err) => {
+                    console.error("Error en listener del documento del usuario:", err)
+                    setLoading(false)
                   }
-                  setLoading(false)
-                }, (error) => {
-                  console.error("Error en listener del documento del usuario:", error)
-                  setLoading(false)
-                })
+                )
               } else {
                 setLoading(false)
               }
             } else {
               setUser(null)
               setUserData(null)
-
-              if (userDocUnsubscribe) {
-                userDocUnsubscribe()
-                userDocUnsubscribe = undefined
-              }
+              setIsAdmin(false)
+              setIsProfesor(false)
+              if (userDocUnsub) userDocUnsub()
               setLoading(false)
             }
-          } catch (error) {
-            console.error("Error in auth state change:", error)
+          } catch (e) {
+            console.error("Error in auth state change:", e)
             setLoading(false)
           }
         })
-      } catch (error) {
-        console.error("Error initializing auth:", error)
+      } catch (e) {
+        console.error("Error initializing auth:", e)
         setLoading(false)
       }
     }
 
-
-    initAuth()
+    init()
 
     return () => {
-      if (authUnsubscribe) {
-        authUnsubscribe()
-      }
-      if (userDocUnsubscribe) {
-        userDocUnsubscribe()
-      }
+      if (authUnsub) authUnsub()
+      if (userDocUnsub) userDocUnsub()
     }
   }, [])
 
-  const register = async (email: string, password: string, name: string, age: number, country: string) => {
-    if (!auth || !db) {
-      throw new Error("Firebase services not initialized")
+  const register: AuthContextType["register"] = async (
+    email,
+    password,
+    name,
+    age,
+    country,
+    gender
+  ) => {
+    if (!auth || !db) throw new Error("Firebase services not initialized")
+
+    // Validaciones mínimas
+    if (!email || !password || !name || age == null || !country || !gender) {
+      throw new Error("Todos los campos son requeridos")
+    }
+    if (password.length < 6) {
+      throw new Error("La contraseña debe tener al menos 6 caracteres")
     }
 
-    try {
+    const { user: u } = await createUserWithEmailAndPassword(auth, email.trim(), password)
+    await updateProfile(u, { displayName: name })
 
-      if (!email || !password || !name || !age || !country) {
-        throw new Error("Todos los campos son requeridos")
-      }
+    // Rol por dominio (mismo criterio que en el listener)
+    const role: UserRole = email.endsWith("@admin.com")
+      ? "admin"
+      : email.endsWith("@profesor.com")
+      ? "profesor"
+      : "user"
 
-      if (password.length < 6) {
-        throw new Error("La contraseña debe tener al menos 6 caracteres")
-      }
-
-      const { user } = await createUserWithEmailAndPassword(auth, email.trim(), password)
-
-      await updateProfile(user, { displayName: name })
-
-      const userData: UserData = {
-        uid: user.uid,
-        name,
-        email: email.trim(),
-        age,
-        country,
-        LadicoScore: 0,
-        completedCompetences: [],
-        currentLevel: "basico",
-      }
-
-      await setDoc(doc(db, "users", user.uid), userData)
-      setUserData(userData)
-    } catch (error) {
-      console.error("Registration error:", error)
-      throw error
+    const data: UserData = {
+      uid: u.uid,
+      name,
+      email: email.trim(),
+      age,
+      country,
+      gender,
+      LadicoScore: 0,
+      completedCompetences: [],
+      currentLevel: "basico",
+      role,
     }
+
+    await setDoc(doc(db, "users", u.uid), data)
+    setUserData(data)
+    setIsAdmin(role === "admin")
+    setIsProfesor(role === "profesor")
   }
 
-  const login = async (email: string, password: string) => {
-    if (!auth) {
-      throw new Error("Firebase Auth not initialized")
-    }
-
-    try {
-
-      if (!email || !password) {
-        throw new Error("Email y contraseña son requeridos")
-      }
-
-      await signInWithEmailAndPassword(auth, email.trim(), password)
-    } catch (error) {
-      console.error("Login error:", error)
-      throw error
-    }
+  const login: AuthContextType["login"] = async (email, password) => {
+    if (!auth) throw new Error("Firebase Auth not initialized")
+    if (!email || !password) throw new Error("Email y contraseña son requeridos")
+    await signInWithEmailAndPassword(auth, email.trim(), password)
   }
 
-  const logout = async () => {
-    if (!auth) {
-      throw new Error("Firebase Auth not initialized")
-    }
-
-    try {
-      await signOut(auth)
-    } catch (error) {
-      console.error("Logout error:", error)
-      throw error
-    }
+  const logout: AuthContextType["logout"] = async () => {
+    if (!auth) throw new Error("Firebase Auth not initialized")
+    await signOut(auth)
   }
 
-  const value = {
+  const value: AuthContextType = {
     user,
     userData,
     loading,
     login,
     register,
     logout,
+    isAdmin,
+    isProfesor,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

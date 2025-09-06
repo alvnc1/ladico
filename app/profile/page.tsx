@@ -1,50 +1,105 @@
+// app/account/page.tsx
 "use client"
 
-import { useAuth } from "@/contexts/AuthContext"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Lock, Trash2, User, Link as LinkIcon } from "lucide-react"
+import { Lock, Trash2, User, Link as LinkIcon, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Sidebar from "@/components/Sidebar"
+import { useAuth } from "@/contexts/AuthContext"
+import { db } from "@/lib/firebase"
+import { doc, updateDoc } from "firebase/firestore"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 
 type TabKey = "profile" | "auth" | "delete"
 
+const countries = [
+  "Argentina","Bolivia","Brasil","Chile","Colombia","Costa Rica","Cuba",
+  "Ecuador","El Salvador","Guatemala","Honduras","México","Nicaragua",
+  "Panamá","Paraguay","Perú","República Dominicana","Uruguay","Venezuela",
+]
+
+const genders = ["Femenino", "Masculino", "No binario", "Prefiero no decir"]
+
 export default function AccountPage() {
-  const { user, userData } = useAuth()
+  const { user, userData, isProfesor } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<TabKey>("profile")
+
+  // Estado editable (solo profesor)
+  const [country, setCountry] = useState<string>("")
+  const [gender, setGender] = useState<string>("")
+  const [age, setAge] = useState<string>("")
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!user) router.push("/")
   }, [user, router])
 
-  // Colores Ladico
-  const brand = {
-    primary: "#286675",
-    primarySoft: "#94b2ba",
+  useEffect(() => {
+    setCountry((userData?.country ?? "").trim())
+    setGender((userData?.gender ?? "").trim())
+    setAge(userData?.age != null ? String(userData.age) : "")
+  }, [userData?.country, userData?.gender, userData?.age])
+
+  const brand = useMemo(
+    () => ({
+      primary: "#286675",
+      primarySoft: "#94b2ba",
+    }),
+    []
+  )
+
+  const handleSave = async () => {
+    if (!user || !isProfesor) return
+    try {
+      setSaving(true)
+
+      const ageNum =
+        age.trim() === "" ? null : Number.isFinite(Number(age)) ? Number(age) : NaN
+      if (ageNum as number as any === NaN) {
+        alert("Edad debe ser un número válido.")
+        return
+      }
+
+      const payload: Record<string, any> = {
+        country: country.trim() || "",
+        gender: gender.trim() || "",
+        age: ageNum,
+      }
+
+      await updateDoc(doc(db, "users", user.uid), payload)
+      alert("Datos actualizados correctamente.")
+    } catch (e: any) {
+      console.error(e)
+      alert(e?.message || "No se pudo actualizar la información.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
-    // === Igual que Dashboard: contenedor flex + Sidebar + main con lg:ml-64 ===
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
 
-      {/* main con los mismos paddings que Dashboard */}
       <main className="flex-1 lg:ml-64 px-4 lg:px-8 py-4 lg:py-11">
-        {/* ancho máximo igual que Dashboard */}
         <div className="max-w-7xl mx-auto">
-          {/* Encabezado alineado como "Competencias" */}
           <div className="mb-6 lg:mb-8">
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1 lg:mb-2">Mi cuenta</h1>
-            {/* Línea separadora sutil */}
             <div className="h-px w-full" style={{ background: `${brand.primary}22` }} />
           </div>
 
-          {/* Contenido principal en tarjeta, similar a los bloques del Dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-[260px,1fr] gap-6">
             {/* Sidebar interno */}
             <aside
-              className="rounded-2xl p-3 md:p-4 bg-white"
+              className="rounded-2xl p-3 md:p-4 bg-white self-start"
               style={{ border: `1px solid ${brand.primary}22` }}
             >
               <nav className="space-y-2">
@@ -88,25 +143,127 @@ export default function AccountPage() {
               className="rounded-2xl bg-white"
               style={{ border: `1px solid ${brand.primary}22` }}
             >
-              {/* Encabezado de panel */}
               <div className="px-5 py-4 border-b" style={{ borderColor: `${brand.primary}22` }}>
                 {tab === "profile" && (
                   <h2 className="text-base font-semibold text-gray-900">Información personal</h2>
                 )}
                 {tab === "auth" && (
-                  <h2 className="text-base font-semibold text-gray-900">Métodos de inicio de sesión</h2>
+                  <h2 className="text-base font-semibold text-gray-900">
+                    Métodos de inicio de sesión
+                  </h2>
                 )}
                 {tab === "delete" && (
                   <h2 className="text-base font-semibold text-gray-900">Eliminar cuenta</h2>
                 )}
               </div>
 
-              {/* Contenido */}
               <div className="p-5 md:p-6">
                 {tab === "profile" && (
                   <div className="space-y-4">
                     <Row label="Nombre" value={userData?.name || "-"} />
                     <Row label="Correo" value={user?.email || "-"} />
+
+                    {/* Rol visible */}
+                    <div className="grid grid-cols-1 md:grid-cols-[220px,1fr] py-3 border-b border-gray-300">
+                      <div className="text-sm text-gray-600 flex items-center gap-2">
+                        Rol
+                        <Shield className="w-3.5 h-3.5 text-gray-400" />
+                      </div>
+                      <div className="text-sm text-gray-900">
+                        {userData?.role ?? "user"}
+                        {isProfesor && (
+                          <span
+                            className="ml-2 inline-flex items-center rounded-full border px-2 py-0.5 text-xs"
+                            style={{ borderColor: `${brand.primary}55`, color: brand.primary }}
+                          >
+                            profesor
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Campos nuevos: solo edita profesor; resto, lectura */}
+                    {isProfesor ? (
+                      <>
+                        {/* País */}
+                        <div className="grid grid-cols-1 md:grid-cols-[220px,1fr] py-3 border-b border-gray-300">
+                          <div className="text-sm text-gray-600">País</div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-full max-w-sm">
+                              <Select onValueChange={setCountry} defaultValue={country} disabled={saving}>
+                                <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
+                                  <SelectValue placeholder="Selecciona" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
+                                  {countries.map((c) => (
+                                    <SelectItem key={c} value={c}>
+                                      {c}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Género */}
+                        <div className="grid grid-cols-1 md:grid-cols-[220px,1fr] py-3 border-b border-gray-300">
+                          <div className="text-sm text-gray-600">Género</div>
+                          <div className="w-full max-w-sm">
+                            <Select onValueChange={setGender} defaultValue={gender} disabled={saving}>
+                              <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
+                                <SelectValue placeholder="Selecciona" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
+                                {genders.map((g) => (
+                                  <SelectItem key={g} value={g}>
+                                    {g}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* Edad */}
+                        <div className="grid grid-cols-1 md:grid-cols-[220px,1fr] py-3 border-b border-gray-300">
+                          <div className="text-sm text-gray-600">Edad</div>
+                          <div className="w-full max-w-sm">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={age}
+                              onChange={(e) => setAge(e.target.value)}
+                              className="rounded-2xl border-2 border-gray-200 focus-visible:ring-0 focus-visible:border-[#286675] h-11 lg:h-12"
+                              disabled={saving}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                          <Button
+                            className="rounded-2xl bg-[#286675] hover:bg-[#1f4e59] text-white"
+                            onClick={handleSave}
+                            disabled={
+                              saving ||
+                              (country.trim() === (userData?.country ?? "").trim() &&
+                                gender.trim() === (userData?.gender ?? "").trim() &&
+                                (age.trim() === "" ? null : Number(age)) ===
+                                  (userData?.age ?? null))
+                            }
+                          >
+                            {saving ? "Guardando..." : "Guardar"}
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Row label="País" value={userData?.country || "-"} />
+                        <Row label="Género" value={userData?.gender || "-"} />
+                        <Row label="Edad" value={String(userData?.age ?? "-")} />
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -156,10 +313,7 @@ export default function AccountPage() {
             </section>
           </div>
 
-          {/* Footer simple (opcional) */}
-          <div className="px-1 lg:px-0 pt-8 pb-2 text-xs text-gray-500">
-            © {new Date().getFullYear()} Ladico
-          </div>
+          <div className="px-1 lg:px-0 pt-8 pb-2 text-xs text-gray-500">© {new Date().getFullYear()} Ladico</div>
         </div>
       </main>
     </div>

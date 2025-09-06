@@ -4,6 +4,9 @@ export interface Question {
   dimension: number
   competence: string
   level: string
+  gender?: string;
+  age?: number | string;
+  country?: string;
   title: string
   scenario: string
   options: string[]

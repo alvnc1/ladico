@@ -33,3 +33,6 @@ coverage/
 # Typescript build (si lo compilas)
 *.tsbuildinfo
 
+# Ignorar archivos de admin Firebase
+/lib/firebaseAdmin.ts
+/app/admin/delete-users/route.ts
