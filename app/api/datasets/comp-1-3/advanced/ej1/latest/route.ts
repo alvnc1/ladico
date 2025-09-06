@@ -3,7 +3,7 @@ import path from 'path'
 
 export const dynamic = 'force-dynamic'
 
-const DATA_DIR = path.join(process.cwd(), 'public', 'datasets', 'comp-1-3', 'advanced', 'ej1')
+const DATA_DIR = path.join(process.cwd(), 'public', 'datasets', 'comp-1-3', 'avanzado', 'ej1')
 const INDEX_FILE = path.join(DATA_DIR, 'index.json')
 
 export async function GET() {

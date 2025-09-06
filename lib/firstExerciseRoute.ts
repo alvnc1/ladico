@@ -8,6 +8,12 @@ export type LevelSlug = "basico" | "intermedio" | "avanzado"
 export function firstExerciseRoute(competenceId: string, level: LevelSlug): string {
   // Mapa explícito de rutas iniciales por competencia/nivel
   const map: Record<string, Partial<Record<LevelSlug, string>>> = {
+    // Búsqueda y gestión de información
+    "1.3": {
+      basico: "/test/1.3?level=básico",                     // si ya existe el básico “tipo banco de preguntas”
+      intermedio: "/exercises/comp-1-3/intermedio/ej1",     // ✅ tu ejercicio estático
+      avanzado: "/exercises/comp-1-3/avanzado/ej1",
+    },         // si luego lo usas
     // Seguridad 4.3
     "4.3": {
       basico: "/test/4.3?level=básico",                     // si ya existe el básico “tipo banco de preguntas”
