@@ -30,7 +30,10 @@ import { useRouter } from "next/navigation";
 // --- Config de puntaje/sesión para P2 ---
 const COMPETENCE = "1.3";
 const LEVEL = "intermedio";
-const SESSION_KEY = "session:1.3:Intermedio";
+
+/** ⚠️ CLAVE POR-USUARIO: evita pisar sesiones entre cuentas */
+const SESSION_PREFIX = "session:1.3:Intermedio";
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
 /* ================= Pantalla principal ================= */
 
@@ -268,42 +271,45 @@ export function FileExplorerEmbedded() {
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  
   const QUESTION_IDX_ZERO_BASED = 1; // P2
-  const QUESTION_IDX_ONE_BASED = 2;  // para setPoint
+  const QUESTION_IDX_ONE_BASED = 2; // para setPoint
 
-  // Carga sesión cacheada (si existe)
+  /* ==== Sesión por-usuario (evita mezclar) ==== */
+  // Carga sesión cacheada (si existe) cuando conocemos el uid
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const sid = localStorage.getItem(SESSION_KEY)
-    if (sid) setSessionId(sid)
-  }, [])
+    if (!user || typeof window === "undefined") return;
+    const sid = localStorage.getItem(sessionKeyFor(user.uid));
+    if (sid) setSessionId(sid);
+  }, [user?.uid]);
 
-  // asegurar/recuperar sesión
+  // Si no hay cache, crear/asegurar una sesión y guardarla con clave por-usuario
   useEffect(() => {
-      if (!user) return
-      if (sessionId) return
-      ;(async () => {
-        try {
-          const { id } = await ensureSession({
-            userId: user.uid,
-            competence: "1.3",
-            level: "Intermedio",
-            totalQuestions: 3,
-          })
-          setSessionId(id)
-          if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, id)
-        } catch (e) {
-          console.error("No se pudo asegurar la sesión de test (P2):", e)
+    if (!user) return;
+    if (sessionId) return;
+    (async () => {
+      try {
+        const { id } = await ensureSession({
+          userId: user.uid,
+          competence: COMPETENCE,
+          level: "Intermedio",
+          totalQuestions: 3,
+        });
+        setSessionId(id);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(sessionKeyFor(user.uid), id);
         }
-      })()
-    }, [user, sessionId])
+      } catch (e) {
+        console.error("No se pudo asegurar la sesión de test (P2):", e);
+      }
+    })();
+  }, [user?.uid, sessionId]);
 
   const currentFolder = useMemo(() => getFolderByPath(tree, path), [tree, path]);
 
   const children = useMemo(() => {
     let list = currentFolder.children || [];
-    if (query.trim()) list = list.filter((i) => i.name.toLowerCase().includes(query.toLowerCase()));
+    if (query.trim())
+      list = list.filter((i) => i.name.toLowerCase().includes(query.toLowerCase()));
     return [...list].sort((a, b) =>
       isFolder(a) === isFolder(b) ? a.name.localeCompare(b.name) : isFolder(a) ? -1 : 1
     );
@@ -415,35 +421,44 @@ export function FileExplorerEmbedded() {
 
     // 1) Progreso local
     setPoint(COMPETENCE, LEVEL, QUESTION_IDX_ONE_BASED, point);
-    // Asegura tener sesión fresca SIEMPRE en este clic (evita carreras)
-    let sid = sessionId
+
+    // 2) Firestore — usa sesión por-usuario y guarda el acierto (true/false)
+    let sid = sessionId;
     try {
       if (!sid && user) {
-        const { id } = await ensureSession({
-          userId: user.uid,
-          competence: "1.3",
-          level: "Intermedio",
-          totalQuestions: 3,
-        })
-        sid = id
-        setSessionId(id)
-        if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, id)
+        // intenta recuperar de LS por-usuario
+        const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
+        if (cached) {
+          sid = cached;
+        } else {
+          // crear si no existe todavía
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Intermedio",
+            totalQuestions: 3,
+          });
+          sid = id;
+          setSessionId(id);
+          if (typeof window !== "undefined") localStorage.setItem(sessionKeyFor(user.uid), id);
+        }
       }
     } catch (e) {
-      console.error("No se pudo (re)asegurar la sesión al guardar P2:", e)
+      console.error("No se pudo (re)asegurar la sesión al guardar P2:", e);
     }
 
-    // Marcamos siempre como respondida para avanzar a P3
     try {
       if (sid) {
-        await markAnswered(sid, 1, true)
+        // Guarda en answers[1] = true/false, NO “true” fijo
+        await markAnswered(sid, QUESTION_IDX_ZERO_BASED, point === 1);
       }
     } catch (e) {
-      console.warn("No se pudo marcar P2 respondida:", e)
+      console.warn("No se pudo marcar P2 respondida:", e);
     }
 
-    router.push("/exercises/comp-1-3/intermedio/ej3")
-  }
+    // 3) Avanzar
+    router.push("/exercises/comp-1-3/intermedio/ej3");
+  };
 
   return (
     <div className="border rounded-2xl shadow-lg h-[520px] flex flex-col overflow-hidden" ref={ref}>
@@ -622,11 +637,17 @@ export function FileExplorerEmbedded() {
                     onDrop={isFolder(item) ? (e) => onDropInto(e, item.id) : undefined}
                   >
                     <div className="w-full h-20 rounded flex items-center justify-center">
-                      {isFolder(item) ? <Folder className="w-10 h-10" /> : (
-                        item.mime === "audio" ? <FileAudio className="w-10 h-10" /> :
-                        item.mime === "image" ? <ImageIcon className="w-10 h-10" /> :
-                        item.mime === "video" ? <Video className="w-10 h-10" /> :
-                        item.mime === "text" ? <FileText className="w-10 h-10" /> :
+                      {isFolder(item) ? (
+                        <Folder className="w-10 h-10" />
+                      ) : item.mime === "audio" ? (
+                        <FileAudio className="w-10 h-10" />
+                      ) : item.mime === "image" ? (
+                        <ImageIcon className="w-10 h-10" />
+                      ) : item.mime === "video" ? (
+                        <Video className="w-10 h-10" />
+                      ) : item.mime === "text" ? (
+                        <FileText className="w-10 h-10" />
+                      ) : (
                         <File className="w-10 h-10" />
                       )}
                     </div>
@@ -684,11 +705,17 @@ export function FileExplorerEmbedded() {
                       >
                         <td className="py-2">
                           <div className="flex items-center gap-2">
-                            {isFolder(item) ? <Folder className="w-5 h-5" /> : (
-                              item.mime === "audio" ? <FileAudio className="w-5 h-5" /> :
-                              item.mime === "image" ? <ImageIcon className="w-5 h-5" /> :
-                              item.mime === "video" ? <Video className="w-5 h-5" /> :
-                              item.mime === "text" ? <FileText className="w-5 h-5" /> :
+                            {isFolder(item) ? (
+                              <Folder className="w-5 h-5" />
+                            ) : item.mime === "audio" ? (
+                              <FileAudio className="w-5 h-5" />
+                            ) : item.mime === "image" ? (
+                              <ImageIcon className="w-5 h-5" />
+                            ) : item.mime === "video" ? (
+                              <Video className="w-5 h-5" />
+                            ) : item.mime === "text" ? (
+                              <FileText className="w-5 h-5" />
+                            ) : (
                               <File className="w-5 h-5" />
                             )}
                             {renamingId === item.id ? (
@@ -703,7 +730,10 @@ export function FileExplorerEmbedded() {
                                 }}
                               />
                             ) : (
-                              <button className="truncate max-w-[420px] text-left" onClick={() => setSelectedId(item.id)}>
+                              <button
+                                className="truncate max-w-[420px] text-left"
+                                onClick={() => setSelectedId(item.id)}
+                              >
                                 {item.name}
                               </button>
                             )}

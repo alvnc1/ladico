@@ -18,6 +18,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ensureSession, markAnswered } from "@/lib/testSession";
 import { setPoint } from "@/lib/levelProgress";
 
+// Clave de sesión por-usuario (igual que en ej1/ej2)
+const SESSION_PREFIX = "session:1.3:Intermedio";
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
+
+
 /* ================= Pantalla principal (P3) ================= */
 
 export default function LadicoDeletedListRecoveryExercise() {
@@ -107,7 +112,13 @@ function clsx(...xs: Array<string | false | undefined>) {
   return xs.filter(Boolean).join(" ");
 }
 const normalize = (s: string) =>
-  s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quita tildes de forma segura
+    .toLowerCase()
+    .replace(/\s+/g, " ")            // colapsa espacios múltiples
+    .trim();
+
 
 type WindowKind = "recycle" | "note" | "list" | "folder" | "mail" | null;
 
@@ -132,18 +143,37 @@ function DesktopRecoveryExercise() {
   // ====== Config sesión/puntaje (P3) ======
   const COMPETENCE = "1.3";
   const LEVEL = "intermedio";
-  const SESSION_KEY = "session:1.3:Intermedio";
   const QUESTION_IDX_ZERO = 2; // P3 (0-based)
   const QUESTION_IDX_ONE = 3;  // P3 (1-based) para setPoint
 
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const ensuringRef = useRef(false); // evita dobles llamados en StrictMode
+
+  // 1) Cargar sesión cacheada por-usuario
   useEffect(() => {
-    if (!user) return;
-    const cached = typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null;
-    if (cached) {
-      setSessionId(cached);
+    if (!user || typeof window === "undefined") return;
+    const sid = localStorage.getItem(sessionKeyFor(user.uid));
+    if (sid) setSessionId(sid);
+  }, [user?.uid]);
+
+  // 2) Asegurar/crear sesión por-usuario si no hay cache
+  useEffect(() => {
+    if (!user) {
+      setSessionId(null);
       return;
     }
+
+    const LS_KEY = sessionKeyFor(user.uid);
+    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+
+    if (cached) {
+      if (!sessionId) setSessionId(cached);
+      return;
+    }
+
+    if (ensuringRef.current) return;
+    ensuringRef.current = true;
+
     (async () => {
       try {
         const { id } = await ensureSession({
@@ -153,12 +183,14 @@ function DesktopRecoveryExercise() {
           totalQuestions: 3,
         });
         setSessionId(id);
-        localStorage.setItem(SESSION_KEY, id);
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test:", e);
+        console.error("No se pudo asegurar la sesión de test (P3):", e);
+      } finally {
+        ensuringRef.current = false;
       }
     })();
-  }, [user]);
+  }, [user?.uid, sessionId]);
 
   // ====== Estado del ejercicio ======
   const deskRef = useRef<HTMLDivElement | null>(null);
@@ -216,8 +248,9 @@ function DesktopRecoveryExercise() {
     if (it.kind === "mail") setOpen("mail");
   };
 
-  // ----- Validación general del ejercicio -----
-  const ANSWER = "leche";
+  // ----- Validación del ejercicio -----
+  // ⚠️ Respuesta correcta = "papel higiénico"
+  const ANSWER = "papel higiénico";
   const passConditions = () => {
     const restored = icons.some((x) => x.id === "lista"); // archivo restaurado al escritorio
     const correctWord = normalize(input) === normalize(ANSWER);
@@ -251,7 +284,7 @@ function DesktopRecoveryExercise() {
     for (let r = row; r <= maxRows; r++) {
       for (let c = r === row ? col : 0; c <= maxCols; c++) {
         const x = GRID.marginX + c * GRID.w;
-        const y = GRID.marginY + r * GRID.h;
+        const y = GRID.marginY + c * 0 + r * GRID.h;
         if (!taken.has(`${x},${y}`)) return { x, y };
       }
     }
@@ -268,11 +301,37 @@ function DesktopRecoveryExercise() {
     // 1) progreso local
     setPoint(COMPETENCE, LEVEL, QUESTION_IDX_ONE, point);
 
-    // 2) Firestore
+    // 2) Firestore (sesión POR-USUARIO; crea si falta)
+    let sid = sessionId;
+
     try {
-      const sid =
-        sessionId ||
-        (typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null);
+      if (!sid && user) {
+        const LS_KEY = sessionKeyFor(user.uid);
+        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+        if (cached) {
+          sid = cached;
+        } else if (!ensuringRef.current) {
+          ensuringRef.current = true;
+          try {
+            const { id } = await ensureSession({
+              userId: user.uid,
+              competence: COMPETENCE,
+              level: "Intermedio",
+              totalQuestions: 3,
+            });
+            sid = id;
+            setSessionId(id);
+            if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+          } finally {
+            ensuringRef.current = false;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("No se pudo (re)asegurar la sesión al guardar P3:", e);
+    }
+
+    try {
       if (sid) {
         await markAnswered(sid, QUESTION_IDX_ZERO, point === 1);
       }
