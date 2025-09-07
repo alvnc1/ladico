@@ -12,7 +12,9 @@ import { ensureSession, markAnswered } from "@/lib/testSession"
 
 const COMPETENCE = "4.3"
 const LEVEL = "intermedio"
-const SESSION_KEY = "session:4.3:Intermedio"
+/** ⚠️ CLAVE POR-USUARIO: evita pisar sesiones entre cuentas */
+const SESSION_PREFIX = "session:4.3:Intermedio";
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
 const OPTIONS = [
   {
@@ -50,32 +52,35 @@ export default function Page() {
 
   const [sessionId, setSessionId] = useState<string | null>(null)
 
-  // Carga sesión cacheada (si existe)
+  /* ==== Sesión por-usuario (evita mezclar) ==== */
+  // Carga sesión cacheada (si existe) cuando conocemos el uid
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const sid = localStorage.getItem(SESSION_KEY)
-    if (sid) setSessionId(sid)
-  }, [])
+    if (!user || typeof window === "undefined") return;
+    const sid = localStorage.getItem(sessionKeyFor(user.uid));
+    if (sid) setSessionId(sid);
+  }, [user?.uid]);
 
-  // Crea/asegura sesión tempranamente
-  useEffect(() => {
-    if (!user) return
-    if (sessionId) return
-    ;(async () => {
-      try {
-        const { id } = await ensureSession({
-          userId: user.uid,
-          competence: "4.3",
-          level: "Intermedio",
-          totalQuestions: 3,
-        })
-        setSessionId(id)
-        if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, id)
-      } catch (e) {
-        console.error("No se pudo asegurar la sesión de test (P2):", e)
-      }
-    })()
-  }, [user, sessionId])
+  // Si no hay cache, crear/asegurar una sesión y guardarla con clave por-usuario
+    useEffect(() => {
+      if (!user) return;
+      if (sessionId) return;
+      (async () => {
+        try {
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Intermedio",
+            totalQuestions: 3,
+          });
+          setSessionId(id);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(sessionKeyFor(user.uid), id);
+          }
+        } catch (e) {
+          console.error("No se pudo asegurar la sesión de test (P2):", e);
+        }
+      })();
+    }, [user?.uid, sessionId]);
 
   const [selected, setSelected] = useState<Set<Key>>(new Set())
 
@@ -105,18 +110,25 @@ export default function Page() {
     let sid = sessionId
     try {
       if (!sid && user) {
-        const { id } = await ensureSession({
-          userId: user.uid,
-          competence: "4.3",
-          level: "Intermedio",
-          totalQuestions: 3,
-        })
-        sid = id
-        setSessionId(id)
-        if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, id)
+        // intenta recuperar de LS por-usuario
+        const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
+        if (cached) {
+          sid = cached;
+        } else {
+          // crear si no existe todavía
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Intermedio",
+            totalQuestions: 3,
+          });
+          sid = id;
+          setSessionId(id);
+          if (typeof window !== "undefined") localStorage.setItem(sessionKeyFor(user.uid), id);
+        }
       }
     } catch (e) {
-      console.error("No se pudo (re)asegurar la sesión al guardar P2:", e)
+      console.error("No se pudo (re)asegurar la sesión al guardar P2:", e);
     }
 
     // Marcamos siempre como respondida para avanzar a P3
