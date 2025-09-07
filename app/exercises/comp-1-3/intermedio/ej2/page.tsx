@@ -19,17 +19,25 @@ import {
   Edit,
   Grid as GridIcon,
   List as ListIcon,
-  CheckCircle2,
-  Save,
-  AlertCircle,
 } from "lucide-react";
+
+// Puntaje/sesión y navegación
+import { useAuth } from "@/contexts/AuthContext";
+import { ensureSession, markAnswered } from "@/lib/testSession";
+import { setPoint } from "@/lib/levelProgress";
+import { useRouter } from "next/navigation";
+
+// --- Config de puntaje/sesión para P2 ---
+const COMPETENCE = "1.3";
+const LEVEL = "intermedio";
+const SESSION_KEY = "session:1.3:Intermedio";
 
 /* ================= Pantalla principal ================= */
 
 export default function LadicoFileExplorerExercise() {
   const totalQuestions = 3;
-  const [currentIndex] = useState(0);
-  const progress = ((currentIndex + 1) / totalQuestions) * 100;
+  const [currentIndex] = useState(1);
+  const progress = (2 / 3) * 100;
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -88,8 +96,8 @@ export default function LadicoFileExplorerExercise() {
               </div>
               <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
-                  Para aprobar: crea en <b>Computer/</b> una carpeta llamada <b>Música Latina</b> y arrastra
-                  <b> salsa.mp3</b> desde <b>Music</b> hacia esa carpeta. Luego pulsa <b>Guardar</b>.
+                  Crea en <b>Computer/</b> una carpeta llamada <b>Música Latina</b> y arrastra
+                  <b> salsa.mp3</b> desde <b>Music</b> hacia esa carpeta. Luego pulsa <b>Siguiente</b>.
                 </p>
               </div>
             </div>
@@ -112,8 +120,6 @@ export type FileItem = {
   children?: FileItem[];
 };
 
-const STORAGE_KEY = "ladico-exercise-1";
-
 const uid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
@@ -124,21 +130,6 @@ const deepClone = (n: FileItem): FileItem => ({
   ...n,
   children: n.children ? n.children.map(deepClone) : undefined,
 });
-
-function findNode(
-  root: FileItem,
-  id: string,
-  path: string[] = ["Computer"],
-  parents: FileItem[] = []
-): { node?: FileItem; path: string[]; parents: FileItem[] } {
-  if (root.id === id) return { node: root, path, parents };
-  if (!root.children) return { node: undefined, path: [], parents: [] };
-  for (const ch of root.children) {
-    const res = findNode(ch, id, [...path, ch.name], [...parents, root]);
-    if (res.node) return res;
-  }
-  return { node: undefined, path: [], parents: [] };
-}
 
 function removeNodeById(root: FileItem, id: string): [FileItem | undefined, FileItem] {
   const copy = deepClone(root);
@@ -174,12 +165,18 @@ function insertIntoFolder(root: FileItem, folderId: string, node: FileItem): Fil
 
 function isDescendant(root: FileItem, maybeAncestorId: string, maybeDescendantId: string): boolean {
   if (maybeAncestorId === maybeDescendantId) return true;
-  const { node: anc } = findNode(root, maybeAncestorId);
-  if (!anc || !anc.children) return false;
-  const stack = [...anc.children];
+  const findInside = (n: FileItem): boolean => {
+    if (!n.children) return false;
+    for (const c of n.children) {
+      if (c.id === maybeDescendantId) return true;
+      if (findInside(c)) return true;
+    }
+    return false;
+  };
+  const stack: FileItem[] = [root];
   while (stack.length) {
     const cur = stack.pop()!;
-    if (cur.id === maybeDescendantId) return true;
+    if (cur.id === maybeAncestorId) return findInside(cur);
     if (cur.children) stack.push(...cur.children);
   }
   return false;
@@ -253,8 +250,6 @@ function validateExercise(root: FileItem) {
   return { ok: true, reason: "¡Correcto!" };
 }
 
-type SaveResult = { passed: boolean; message: string; at: string };
-
 export function FileExplorerEmbedded() {
   const [tree, setTree] = useState<FileItem>(() => deepClone(demoRoot));
   const [path, setPath] = useState<string[]>(["Computer"]);
@@ -268,11 +263,41 @@ export function FileExplorerEmbedded() {
   const [ctxTargetId, setCtxTargetId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
-  // Estado de validación/guardado
-  const [ready, setReady] = useState(false);        // Cumple pero no guardado
-  const [saved, setSaved] = useState<SaveResult | null>(null);
-
   const ref = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
+  const { user } = useAuth();
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  
+  const QUESTION_IDX_ZERO_BASED = 1; // P2
+  const QUESTION_IDX_ONE_BASED = 2;  // para setPoint
+
+  // Carga sesión cacheada (si existe)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const sid = localStorage.getItem(SESSION_KEY)
+    if (sid) setSessionId(sid)
+  }, [])
+
+  // asegurar/recuperar sesión
+  useEffect(() => {
+      if (!user) return
+      if (sessionId) return
+      ;(async () => {
+        try {
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: "1.3",
+            level: "Intermedio",
+            totalQuestions: 3,
+          })
+          setSessionId(id)
+          if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, id)
+        } catch (e) {
+          console.error("No se pudo asegurar la sesión de test (P2):", e)
+        }
+      })()
+    }, [user, sessionId])
 
   const currentFolder = useMemo(() => getFolderByPath(tree, path), [tree, path]);
 
@@ -313,6 +338,10 @@ export function FileExplorerEmbedded() {
   };
 
   /* ---------------- Drag & Drop ----------------- */
+  const onDragOverAllow = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
   const setDragData = (e: React.DragEvent, id: string) => {
     try {
       e.dataTransfer.setData("application/x-node-id", id);
@@ -327,11 +356,6 @@ export function FileExplorerEmbedded() {
     e.dataTransfer.effectAllowed = "move";
   };
   const onDragEnd = () => setDragOverId(null);
-
-  const onDragOverAllow = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
 
   const onDropInto = (e: React.DragEvent, destId: string) => {
     e.preventDefault();
@@ -359,22 +383,6 @@ export function FileExplorerEmbedded() {
     setCtxOpen(true);
   };
 
-  const IconFor = (n: FileItem) => {
-    if (isFolder(n)) return <Folder className="w-10 h-10" />;
-    switch (n.mime) {
-      case "audio":
-        return <FileAudio className="w-10 h-10" />;
-      case "image":
-        return <ImageIcon className="w-10 h-10" />;
-      case "video":
-        return <Video className="w-10 h-10" />;
-      case "text":
-        return <FileText className="w-10 h-10" />;
-      default:
-        return <File className="w-10 h-10" />;
-    }
-  };
-
   // Drop en sidebar
   const sidebarDropHandlers = (folderId: string) => ({
     onDragOver: (e: React.DragEvent) => {
@@ -387,18 +395,7 @@ export function FileExplorerEmbedded() {
     onDrop: (e: React.DragEvent) => onDropInto(e, folderId),
   });
 
-  // Drop en breadcrumb
-  const breadcrumbDropHandlers = (folderId: string) => ({
-    onDragOver: (e: React.DragEvent) => {
-      onDragOverAllow(e);
-      setDragOverId(folderId);
-    },
-    onDragLeave: () => {
-      setDragOverId((cur) => (cur === folderId ? null : cur));
-    },
-    onDrop: (e: React.DragEvent) => onDropInto(e, folderId),
-  });
-
+  // helper breadcrumb (recupera id de carpeta por nombre en el path activo)
   const getFolderIdByNameUnderPath = (name: string, uptoIndex: number): string | null => {
     if (name === "Computer") return "root";
     let cur: FileItem | undefined = tree;
@@ -411,71 +408,45 @@ export function FileExplorerEmbedded() {
     return null;
   };
 
-  /* ---------- validación reactiva (listo para guardar) ---------- */
-  useEffect(() => {
+  /* ------------------- NEXT (validar + puntaje + navegar) ------------------- */
+  const handleNext = async () => {
     const res = validateExercise(tree);
-    setReady(res.ok);
-  }, [tree]);
+    const point: 0 | 1 = res.ok ? 1 : 0;
 
-  /* ------------------- guardado/submit ------------------- */
-  const handleSave = () => {
-    const res = validateExercise(tree);
-    const payload: SaveResult = {
-      passed: res.ok,
-      message: res.reason,
-      at: new Date().toISOString(),
-    };
-
+    // 1) Progreso local
+    setPoint(COMPETENCE, LEVEL, QUESTION_IDX_ONE_BASED, point);
+    // Asegura tener sesión fresca SIEMPRE en este clic (evita carreras)
+    let sid = sessionId
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ tree, result: payload })
-      );
-    } catch {}
-
-    // Event opcional para el host/LMS
-    try {
-      window.dispatchEvent(
-        new CustomEvent("ladico:exerciseSaved", {
-          detail: { id: "question-1", ...payload },
+      if (!sid && user) {
+        const { id } = await ensureSession({
+          userId: user.uid,
+          competence: "1.3",
+          level: "Intermedio",
+          totalQuestions: 3,
         })
-      );
-    } catch {}
+        sid = id
+        setSessionId(id)
+        if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, id)
+      }
+    } catch (e) {
+      console.error("No se pudo (re)asegurar la sesión al guardar P2:", e)
+    }
 
-    setSaved(payload);
-  };
+    // Marcamos siempre como respondida para avanzar a P3
+    try {
+      if (sid) {
+        await markAnswered(sid, 1, true)
+      }
+    } catch (e) {
+      console.warn("No se pudo marcar P2 respondida:", e)
+    }
+
+    router.push("/exercises/comp-1-3/intermedio/ej3")
+  }
 
   return (
     <div className="border rounded-2xl shadow-lg h-[520px] flex flex-col overflow-hidden" ref={ref}>
-      {/* Banda de estado */}
-      <div className="px-3 py-2 border-b bg-white/60 backdrop-blur">
-        {saved ? (
-          saved.passed ? (
-            <div className="flex items-center gap-2 text-green-700">
-              <CheckCircle2 className="w-5 h-5" />
-              <span className="font-medium">¡Respuesta correcta!</span>
-              <span className="text-sm opacity-80">Guardado {new Date(saved.at).toLocaleString()}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-amber-700">
-              <AlertCircle className="w-5 h-5" />
-              <span className="font-medium">Aún no está correcto:</span>
-              <span className="text-sm opacity-90">{saved.message}</span>
-            </div>
-          )
-        ) : ready ? (
-          <div className="flex items-center gap-2 text-sky-700">
-            <CheckCircle2 className="w-5 h-5" />
-            <span className="font-medium">Listo para guardar.</span>
-            <span className="text-sm opacity-90">Haz clic en “Guardar”.</span>
-          </div>
-        ) : (
-          <div className="text-gray-600 text-sm">
-            Completa la acción: crear <b>Música Latina</b> en Computer/ y mover <b>salsa.mp3</b> dentro.
-          </div>
-        )}
-      </div>
-
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <aside className="w-56 border-r bg-gray-50 p-2 overflow-auto">
@@ -563,7 +534,7 @@ export function FileExplorerEmbedded() {
                 <ArrowLeft className="w-4 h-4" />
               </button>
 
-              {/* Breadcrumb con drop */}
+              {/* Breadcrumb */}
               <div className="flex items-center text-sm text-gray-700">
                 {path.map((seg, i) => {
                   const folderId = seg === "Computer" ? "root" : getFolderIdByNameUnderPath(seg, i) ?? "root";
@@ -607,16 +578,6 @@ export function FileExplorerEmbedded() {
               <button className="p-1 rounded hover:bg-gray-100" onClick={() => setView("list")} title="Lista">
                 <ListIcon className={`w-5 h-5 ${view === "list" ? "text-blue-600" : "text-gray-600"}`} />
               </button>
-              <div className="h-6 w-px bg-gray-200" />
-              <Button
-                className={`px-3 py-1.5 text-sm rounded flex items-center gap-2 ${
-                  ready ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-700"
-                }`}
-                onClick={handleSave}
-              >
-                <Save className="w-4 h-4" />
-                Guardar
-              </Button>
             </div>
           </div>
 
@@ -660,8 +621,14 @@ export function FileExplorerEmbedded() {
                     onDragLeave={() => setDragOverId((cur) => (cur === item.id ? null : cur))}
                     onDrop={isFolder(item) ? (e) => onDropInto(e, item.id) : undefined}
                   >
-                    <div className={`w-full h-20 rounded flex items-center justify-center ${isFolder(item) ? "bg-amber-50" : "bg-gray-50"}`}>
-                      {IconFor(item)}
+                    <div className="w-full h-20 rounded flex items-center justify-center">
+                      {isFolder(item) ? <Folder className="w-10 h-10" /> : (
+                        item.mime === "audio" ? <FileAudio className="w-10 h-10" /> :
+                        item.mime === "image" ? <ImageIcon className="w-10 h-10" /> :
+                        item.mime === "video" ? <Video className="w-10 h-10" /> :
+                        item.mime === "text" ? <FileText className="w-10 h-10" /> :
+                        <File className="w-10 h-10" />
+                      )}
                     </div>
                     {renamingId === item.id ? (
                       <input
@@ -717,7 +684,13 @@ export function FileExplorerEmbedded() {
                       >
                         <td className="py-2">
                           <div className="flex items-center gap-2">
-                            {IconFor(item)}
+                            {isFolder(item) ? <Folder className="w-5 h-5" /> : (
+                              item.mime === "audio" ? <FileAudio className="w-5 h-5" /> :
+                              item.mime === "image" ? <ImageIcon className="w-5 h-5" /> :
+                              item.mime === "video" ? <Video className="w-5 h-5" /> :
+                              item.mime === "text" ? <FileText className="w-5 h-5" /> :
+                              <File className="w-5 h-5" />
+                            )}
                             {renamingId === item.id ? (
                               <input
                                 className="border rounded px-1 py-0.5 text-sm"
@@ -796,6 +769,16 @@ export function FileExplorerEmbedded() {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Footer / acciones */}
+          <div className="px-3 py-3 border-t bg-white flex items-center justify-end">
+            <Button
+              onClick={handleNext}
+              className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
+            >
+              Siguiente
+            </Button>
           </div>
         </section>
       </div>

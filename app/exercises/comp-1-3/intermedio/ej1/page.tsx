@@ -15,6 +15,20 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+/* ======= NUEVO: progreso/registro ========= */
+import { useAuth } from "@/contexts/AuthContext"; // NEW
+import { ensureSession, markAnswered } from "@/lib/testSession"; // NEW
+import { setPoint } from "@/lib/levelProgress"; // NEW
+import { useRouter } from "next/navigation"; // NEW
+
+// ======= NUEVO (puntaje/sesión) =======
+const COMPETENCE = "1.3";
+const LEVEL = "intermedio";
+
+const SESSION_PREFIX = "session:1.3:Intermedio";
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
+
+
 /* ----------------- Tipos de pregunta ----------------- */
 const QUESTION_TYPES = [
   { value: "multiple", label: "Opción múltiple" },
@@ -96,12 +110,57 @@ function evaluateQuestions(questions: Question[]): { score: number; details: Che
 
 /* ----------------- Builder ----------------- */
 export default function GoogleLikeFormBuilder() {
+  const router = useRouter(); // NEW
+  const { user } = useAuth(); // NEW
+  const [sessionId, setSessionId] = useState<string | null>(null); // NEW
+  const [done, setDone] = useState(false); // NEW
+
+  // Carga sesión cacheada (si existe)
+    useEffect(() => {
+      if (!user || typeof window === "undefined") return;
+      const LS_KEY = sessionKeyFor(user.uid);
+      const sid = localStorage.getItem(LS_KEY);
+      if (sid) setSessionId(sid);
+    }, [user?.uid]);
+    // Crea/asegura sesión tempranamente
+    useEffect(() => {
+      // si no hay user, “descachea” el estado local
+      if (!user) {
+        setSessionId(null);
+        return;
+      }
+
+      const LS_KEY = sessionKeyFor(user.uid);
+      const cached =
+        typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+
+      if (cached) {
+        setSessionId(cached);
+        return;
+      }
+
+      (async () => {
+        try {
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Intermedio",
+            totalQuestions: 3,
+          });
+          setSessionId(id);
+          localStorage.setItem(LS_KEY, id);
+        } catch (e) {
+          console.error("No se pudo asegurar la sesión de test:", e);
+        }
+      })();
+    }, [user?.uid]);
+
+
   const [formTitle, setFormTitle] = useState("Formulario sin título");
   const [formDesc, setFormDesc] = useState("Descripción del formulario");
   const [questions, setQuestions] = useState<Question[]>([newQuestion(1), newQuestion(2)]);
   const [selectedId, setSelectedId] = useState<string | null>(questions[0]?.id ?? null);
   const [currentIndex, setCurrentIndex] = useState(0)
-
 
   const totalQuestions = 3
   const progress = ((currentIndex + 1) / totalQuestions) * 100
@@ -266,14 +325,48 @@ const [pub, setPub] = useState<PublishState>({
     }, 900);
   };
 
+  // ====== NUEVO: lógica de aprobación/guardado al "enviar a coordinación (sim)" ======
+  const persistScoreAndAdvance = async (score: number) => {
+    const point: 0 | 1 = score >= 3 ? 1 : 0;
+
+    // progreso local (esto puede que también necesite user-scoping; ver nota al final)
+    setPoint(COMPETENCE, LEVEL, 1, point);
+
+    // 🔧 Usa la misma clave por-usuario para leer el SID
+    try {
+      const LS_KEY = user ? sessionKeyFor(user.uid) : null;
+      const sid =
+        sessionId ||
+        (LS_KEY && typeof window !== "undefined"
+          ? localStorage.getItem(LS_KEY)
+          : null);
+
+      if (sid) {
+        await markAnswered(sid, 0, point === 1); // índice 0 = P1
+      }
+    } catch (e) {
+      console.warn("No se pudo marcar P1 respondida:", e);
+    }
+
+    setDone(true);
+    router.push("/exercises/comp-1-3/intermedio/ej2");
+  };
+
+
   // Acciones simuladas dentro del modal
   const simCopy = () => {
     setPub((p) => ({ ...p, copied: true }));
   };
 
   const simMail = () => {
-  const result = evaluateQuestions(questions);
-  setPub(p => ({ ...p, mailed: true, result }));
+    const result = evaluateQuestions(questions);
+    setPub(p => ({ ...p, mailed: true, result }));
+    // ⬆️ solo marca mailed y muestra resultado en el modal (sin guardar ni navegar)
+  };
+
+  const handleNext = async () => {
+    const { score } = evaluateQuestions(questions);
+    await persistScoreAndAdvance(score); // guarda punto y navega a ej2
   };
 
   const simShare = () => {
@@ -348,7 +441,7 @@ const [pub, setPub] = useState<PublishState>({
                         Eres profesor/a del 4°B en el Colegio San Agustín y debes crear un formulario digital para recopilar datos de tus estudiantes de manera organizada y actualizada.
                         Tarea: Crear un formulario con los siguientes campos: Nombre, Apellido, Fecha de nacimiento, Género y Alérgico a medicamentos (Sí/No).
                         <br />
-                        Una vez creado, deberás publicarlo y compartir el enlace con la coordinación académica.
+                        Una vez creado, deberás publicarlo y enviar el enlace con la coordinación académica.
                       </p>
                     </div>
                   </div>
@@ -402,15 +495,22 @@ const [pub, setPub] = useState<PublishState>({
                 );
               })}
             </div>
-
             {/* botón publicar (simulación) */}
-            <div className="mt-6 flex justify-center">
-              <Button
-                onClick={handlePublishSim}
-                className="bg-[#286675] hover:bg-[#3a7d89] rounded-xl px-6 text-white"
-              >
-                Publicar
-              </Button>
+            <div className="mt-6 flex justify-between">
+            <Button
+            onClick={handlePublishSim}
+            className="bg-[#286675] hover:bg-[#3a7d89] rounded-xl px-6 text-white"
+            >
+            Publicar
+            </Button>
+
+
+            <Button
+            onClick={handleNext}
+            className="bg-[#286575] hover:bg-[#3a7d89] rounded-xl px-6 text-white"
+            >
+            Siguiente
+            </Button>
             </div>
             {/* Modal de simulación de publicación */}
             {pub.open && (
@@ -437,7 +537,7 @@ const [pub, setPub] = useState<PublishState>({
                       <>
                         <div>
                           <label className="text-sm font-medium text-gray-700">Enlace generado</label>
-                          <div className="mt-1 w-full border rounded-lg px-3 py-2 text-gray-700 bg-gray-50 select-all break-all">
+                          <div className="mt-1 w-full border rounded-xl px-3 py-2 text-gray-700 bg-gray-50 select-all break-all">
                             {pub.link}
                           </div>
                           <p className="text-xs text-gray-500 mt-1">
@@ -449,60 +549,26 @@ const [pub, setPub] = useState<PublishState>({
                           <Button
                             variant="outline"
                             onClick={simCopy}
-                            className={`rounded-lg ${pub.copied ? "border-emerald-300 bg-emerald-50 text-emerald-700" : ""}`}
+                            className={`rounded-xl ${pub.copied ? "border-emerald-300 bg-emerald-50 text-emerald-700" : ""}`}
                           >
-                            {pub.copied ? "✓ Copiado (sim)" : "Copiar enlace (sim)"}
+                            {pub.copied ? "✓ Copiado" : "Copiar enlace"}
                           </Button>
 
                           <Button
                             variant="outline"
                             onClick={simShare}
-                            className={`rounded-lg ${pub.shared ? "border-blue-300 bg-blue-50 text-blue-700" : ""}`}
+                            className={`rounded-xl ${pub.shared ? "border-blue-300 bg-blue-50 text-blue-700" : ""}`}
                           >
-                            {pub.shared ? "✓ Compartido (sim)" : "Compartir (sim)"}
+                            {pub.shared ? "✓ Compartido" : "Compartir"}
                           </Button>
 
                           <Button
                             variant="outline"
                             onClick={simMail}
-                            className={`rounded-lg ${pub.mailed ? "border-purple-300 bg-purple-50 text-purple-700" : ""}`}
+                            className={`rounded-xl ${pub.mailed ? "border-purple-300 bg-purple-50 text-purple-700" : ""}`}
                           >
-                            {pub.mailed ? "✓ Email enviado (sim)" : "Enviar a coordinación (sim)"}
+                            {pub.mailed ? "✓ Email enviado" : "Enviar a coordinación"}
                           </Button>
-
-                          {pub.mailed && pub.result && (
-                            <div className="mt-3 space-y-3">
-                              <div
-                                className={`rounded-xl border p-3 text-sm ${
-                                  pub.result.score >= 3
-                                    ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                                    : "border-red-300 bg-red-50 text-red-800"
-                                }`}
-                              >
-                                <b>Resultado:</b> {pub.result.score}/5 puntos.{" "}
-                                {pub.result.score >= 3 ? "✅ Ejercicio aprobado." : "❌ Aún no alcanza el mínimo (3/5)."}
-                              </div>
-
-                              <ul className="text-sm space-y-1">
-                                {pub.result.details.map((d, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <span className={d.ok ? "text-emerald-600" : "text-red-600"}>
-                                      {d.ok ? "✓" : "✗"}
-                                    </span>
-                                    <span>
-                                      <b>{d.label}:</b>{" "}
-                                      {d.ok ? "Correcto" : d.reason}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-
-                              <p className="text-xs text-gray-500">
-                                *La actividad “termina” cuando publicas y eliges “Enviar a coordinación (sim)”.
-                              </p>
-                            </div>
-                          )}
-
                         </div>
 
                         {/* Información objetivo para el usuario */}
@@ -522,7 +588,7 @@ const [pub, setPub] = useState<PublishState>({
                       onClick={() =>
                         setPub({ open: false, link: "", copied: false, mailed: false, shared: false, step: "idle" })
                       }
-                      className="rounded-lg"
+                      className="rounded-xl"
                     >
                       Cerrar
                     </Button>
@@ -530,7 +596,6 @@ const [pub, setPub] = useState<PublishState>({
                 </div>
               </div>
             )}
-
           </CardContent>
         </Card>
       </div>
