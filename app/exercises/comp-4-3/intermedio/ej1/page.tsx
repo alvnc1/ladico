@@ -7,7 +7,7 @@ import { X } from "lucide-react"
 import { setPoint } from "@/lib/levelProgress"
 
 // Hooks & helpers
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
 import { useRouter } from "next/navigation"
@@ -69,7 +69,9 @@ function droppableProps(onDropId: (id: MeasureId) => void) {
 // ====== Página ======
 const COMPETENCE = "4.3"
 const LEVEL = "intermedio"
-const SESSION_KEY = "session:4.3:Intermedio"
+/** Clave de sesión por-usuario para evitar duplicados */
+const SESSION_PREFIX = "session:1.3:Intermedio";
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
 export default function Page() {
   const router = useRouter()
@@ -90,29 +92,56 @@ export default function Page() {
   })
   const [done, setDone] = useState(false)
 
+
+  const ensuringRef = useRef(false);
   // Cargar/crear sesión al montar
-  useEffect(() => {
-    if (!user) return
-    const cached = typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null
-    if (cached) {
-      setSessionId(cached)
-      return
-    }
-    ;(async () => {
-      try {
-        const { id } = await ensureSession({
-          userId: user.uid,
-          competence: "4.3",
-          level: "Intermedio",
-          totalQuestions: 3,
-        })
-        setSessionId(id)
-        localStorage.setItem(SESSION_KEY, id)
-      } catch (e) {
-        console.error("No se pudo asegurar la sesión de test:", e)
+  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
+    useEffect(() => {
+      if (!user || typeof window === "undefined") return;
+      const LS_KEY = sessionKeyFor(user.uid);
+      const sid = localStorage.getItem(LS_KEY);
+      if (sid) setSessionId(sid);
+    }, [user?.uid]);
+
+
+  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
+    useEffect(() => {
+      if (!user) {
+        setSessionId(null);
+        return;
       }
-    })()
-  }, [user])
+  
+      const LS_KEY = sessionKeyFor(user.uid);
+      const cached =
+        typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+  
+      if (cached) {
+        // ya existe para este usuario
+        if (!sessionId) setSessionId(cached);
+        return;
+      }
+  
+      // Evita que se dispare doble en StrictMode o por renders repetidos
+      if (ensuringRef.current) return;
+      ensuringRef.current = true;
+  
+      (async () => {
+        try {
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Intermedio",
+            totalQuestions: 3,
+          });
+          setSessionId(id);
+          if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+        } catch (e) {
+          console.error("No se pudo asegurar la sesión de test:", e);
+        } finally {
+          ensuringRef.current = false;
+        }
+      })();
+    }, [user?.uid, sessionId]);
 
   const measureMap = useMemo(() => Object.fromEntries(MEASURES.map((m) => [m.id, m])), [])
 
@@ -178,12 +207,39 @@ export default function Page() {
     setPoint(COMPETENCE, LEVEL, 1, point)
 
     try {
-      const sid = sessionId || (typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null)
+      const LS_KEY = user ? sessionKeyFor(user.uid) : null;
+
+      // Usa la sesión existente (estado o LS); NO vuelvas a crear si ya hay una
+      let sid =
+        sessionId ||
+        (LS_KEY && typeof window !== "undefined"
+          ? localStorage.getItem(LS_KEY)
+          : null);
+
+      // Si aún no hay sesión (primer uso en este usuario), créala una sola vez
+      if (!sid && user && !ensuringRef.current) {
+        ensuringRef.current = true;
+        try {
+          const created = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Intermedio",
+            totalQuestions: 3,
+          });
+          sid = created.id;
+          setSessionId(created.id);
+          if (typeof window !== "undefined")
+            localStorage.setItem(LS_KEY!, created.id);
+        } finally {
+          ensuringRef.current = false;
+        }
+      }
+
       if (sid) {
-        await markAnswered(sid, 0, point === 1) // índice 0 = P1
+        await markAnswered(sid, 0, point === 1); // índice 0 = P1
       }
     } catch (e) {
-      console.warn("No se pudo marcar P1 respondida:", e)
+      console.warn("No se pudo marcar P1 respondida:", e);
     }
 
     router.push("/exercises/comp-4-3/intermedio/ej2")
