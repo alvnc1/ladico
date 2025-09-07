@@ -312,8 +312,6 @@ export default function AccountPage() {
               </div>
             </section>
           </div>
-
-          <div className="px-1 lg:px-0 pt-8 pb-2 text-xs text-gray-500">© {new Date().getFullYear()} Ladico</div>
         </div>
       </main>
     </div>
