@@ -3,7 +3,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
@@ -46,6 +46,9 @@ export default function AdvancedEj3Page() {
   const { user } = useAuth()
   const [sessionId, setSessionId] = useState<string | null>(null)
 
+  // Para evitar dobles creaciones en StrictMode/carreras
+  const ensuringRef = useRef(false)
+
   // 0) Reset por CAMBIO DE USUARIO (evita arrastrar estado entre cuentas)
   useEffect(() => {
     if (typeof window === "undefined" || !user) return
@@ -61,14 +64,19 @@ export default function AdvancedEj3Page() {
     }
   }, [user])
 
-  // 1) crea/recupera sesión Avanzado (4.3)
+  // 1) crea/recupera sesión Avanzado (4.3) POR USUARIO
   useEffect(() => {
     if (!user) return
-    const cached = localStorage.getItem(SESSION_KEY)
+
+    const cached = localStorage.getItem(SESSION_KEY + ":" + user.uid)
     if (cached) {
       setSessionId(cached)
       return
     }
+
+    if (ensuringRef.current) return
+    ensuringRef.current = true
+
     ;(async () => {
       try {
         const { id } = await ensureSession({
@@ -78,12 +86,14 @@ export default function AdvancedEj3Page() {
           totalQuestions: 3,
         })
         setSessionId(id)
-        localStorage.setItem(SESSION_KEY, id)
+        localStorage.setItem(SESSION_KEY + ":" + user.uid, id)
       } catch (e) {
         console.error("No se pudo asegurar la sesión Avanzado (P3):", e)
+      } finally {
+        ensuringRef.current = false
       }
     })()
-  }, [user])
+  }, [user?.uid])
 
   // 2) Reset por SESIÓN (solo una vez por id de sesión)
   useEffect(() => {
@@ -119,7 +129,10 @@ export default function AdvancedEj3Page() {
     setPoint(COMPETENCE, LEVEL, QUESTION_INDEX, p3)
 
     // 4) Marcar P3 en testSessions (índice 0-based → 2)
-    const sid = sessionId || (typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null)
+    const sid =
+      sessionId ||
+      (typeof window !== "undefined" && user ? localStorage.getItem(SESSION_KEY + ":" + user.uid) : null)
+
     if (sid) {
       try {
         await markAnswered(sid, QUESTION_INDEX - 1, p3 === 1)
@@ -128,7 +141,7 @@ export default function AdvancedEj3Page() {
       }
     }
 
-    // 5) Consolidar progreso local y **finalizar sesión** (como en intermedio)
+    // 5) Consolidar progreso local y **finalizar sesión**
     const prog = getProgress(COMPETENCE, LEVEL)
     const totalPts = levelPoints(prog) // 0..3
     const passed = isLevelPassed(prog) // >=2
@@ -138,12 +151,34 @@ export default function AdvancedEj3Page() {
     const q2 = getPoint(prog, 2)
     const q3 = getPoint(prog, 3)
 
+    // --- NUEVO: marcar explícitamente “nivel completado” para que el dashboard lo muestre al volver ---
+    try {
+      if (typeof window !== "undefined") {
+        // Flags redundantes y una “version key” para que el dashboard invalide cualquier memo local
+        const flag1 = `level:${COMPETENCE}:${LEVEL}:completed`
+        const flag2 = `ladico:completed:${COMPETENCE}:${LEVEL}`
+        if (passed) {
+          localStorage.setItem(flag1, "1")
+          localStorage.setItem(flag2, "1")
+        } else {
+          localStorage.removeItem(flag1)
+          localStorage.removeItem(flag2)
+        }
+        // “bump” que el Dashboard puede observar para refrescar su estado sin recargar
+        localStorage.setItem("ladico:progress:version", String(Date.now()))
+      }
+    } catch {
+      /* no-op */
+    }
+
     if (sid) {
       try {
         // Esto permite que el dashboard marque el nivel como completado
         await finalizeSession(sid, { correctCount: totalPts, total: 3, passMin: 2 })
-        // Limpia la sesión local para forzar refresco en el dashboard
-        localStorage.removeItem(SESSION_KEY)
+        // Limpia la sesión local (por-usuario) para forzar refresco en el dashboard
+        if (typeof window !== "undefined" && user) {
+          localStorage.removeItem(SESSION_KEY + ":" + user.uid)
+        }
       } catch (e) {
         console.warn("No se pudo finalizar la sesión de test:", e)
       }
@@ -162,11 +197,14 @@ export default function AdvancedEj3Page() {
       // extras útiles para debug/resultados
       sub3: String(sub),
       sid: sid || "",
+      // También pasamos una clave de refresco para que, si el usuario vuelve,
+      // el dashboard pueda invalidar caches basadas en query
+      refresh: String(Date.now()),
     })
 
     // 6) Ruta correcta para resultados en Avanzado
     router.push(`/test/comp-4-3-advanced/results?${qs.toString()}`)
-  }, [router, sessionId])
+  }, [router, sessionId, user?.uid])
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -205,7 +243,7 @@ export default function AdvancedEj3Page() {
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
           <div
             className="h-full bg-[#286575] rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
+            style={{ width: `100%` }}
           />
         </div>
       </div>
@@ -227,14 +265,14 @@ export default function AdvancedEj3Page() {
                 Usa las herramientas de la plataforma para frenar el acoso y proteger tu privacidad a futuro.
               </p>
               {/* Link al SIM (nueva pestaña) */}
-            <p className="text-sm mt-4">
-              <Link
-                href="/exercises/comp-4-3/avanzado/ej3/sim"
-                className="text-blue-600 hover:underline font-medium"
-              >
-                Ir a bandeja de mensajes
-              </Link>
-            </p>
+              <p className="text-sm mt-4">
+                <Link
+                  href="/exercises/comp-4-3/avanzado/ej3/sim"
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  Ir a bandeja de mensajes
+                </Link>
+              </p>
             </div>
 
             {/* === Tipo de ejercicio === */}
