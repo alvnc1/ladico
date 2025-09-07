@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useRef} from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,7 +17,9 @@ import { ensureSession, markAnswered, finalizeSession } from "@/lib/testSession"
 
 const COMPETENCE = "4.3" as const
 const LEVEL = "intermedio" as const
-const SESSION_KEY = "session:4.3:Intermedio"
+// Clave de sesión por-usuario (igual que en ej1/ej2)
+const SESSION_PREFIX = "session:4.3:Intermedio";
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
 // Tecnologías (exactamente las 5 pedidas)
 const TECHNOLOGIES = [
@@ -40,31 +42,50 @@ export default function Page() {
 
   // ====== Sesión Firestore ======
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const ensuringRef = useRef(false); // evita dobles llamados en StrictMode
 
+  // 1) Cargar sesión cacheada por-usuario
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const sid = localStorage.getItem(SESSION_KEY)
-    if (sid) setSessionId(sid)
-  }, [])
+    if (!user || typeof window === "undefined") return;
+    const sid = localStorage.getItem(sessionKeyFor(user.uid));
+    if (sid) setSessionId(sid);
+  }, [user?.uid]);
 
+  // 2) Asegurar/crear sesión por-usuario si no hay cache
   useEffect(() => {
-    if (!user) return
-    if (sessionId) return
-    ;(async () => {
+    if (!user) {
+      setSessionId(null);
+      return;
+    }
+
+    const LS_KEY = sessionKeyFor(user.uid);
+    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+
+    if (cached) {
+      if (!sessionId) setSessionId(cached);
+      return;
+    }
+
+    if (ensuringRef.current) return;
+    ensuringRef.current = true;
+
+    (async () => {
       try {
         const { id } = await ensureSession({
           userId: user.uid,
-          competence: "4.3",
+          competence: COMPETENCE,
           level: "Intermedio",
           totalQuestions: 3,
-        })
-        setSessionId(id)
-        if (typeof window !== "undefined") localStorage.setItem(SESSION_KEY, id)
+        });
+        setSessionId(id);
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test (P3):", e)
+        console.error("No se pudo asegurar la sesión de test (P3):", e);
+      } finally {
+        ensuringRef.current = false;
       }
-    })()
-  }, [user, sessionId])
+    })();
+  }, [user?.uid, sessionId]);
 
   // ====== Estado Drag & Drop ======
   const [pool, setPool] = useState<number[]>(() => shuffle(TECHNOLOGIES.map(t => t.id)))
@@ -163,18 +184,36 @@ export default function Page() {
     const q2 = getPoint(prog, 2)
     const q3 = getPoint(prog, 3)
 
+    let sid = sessionId;
     try {
-      const sid = sessionId || (typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null)
-      if (sid) {
-        await markAnswered(sid, 2, point === 1)
-        await finalizeSession(sid, { correctCount: totalPts, total: 3, passMin: 2 })
+      if (!sid && user) {
+        const LS_KEY = sessionKeyFor(user.uid);
+        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+        if (cached) {
+          sid = cached;
+        } else if (!ensuringRef.current) {
+          ensuringRef.current = true;
+          try {
+            const { id } = await ensureSession({
+              userId: user.uid,
+              competence: COMPETENCE,
+              level: "Intermedio",
+              totalQuestions: 3,
+            });
+            sid = id;
+            setSessionId(id);
+            if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+          } finally {
+            ensuringRef.current = false;
+          }
+        }
       }
     } catch (e) {
-      console.warn("No se pudo cerrar la sesión de test:", e)
+      console.warn("No se pudo (re)asegurar la sesión al guardar P3:", e);
     }
 
     if (typeof window !== "undefined") {
-      localStorage.removeItem(SESSION_KEY)
+      localStorage.removeItem(sessionKeyFor(user.uid))
     }
 
     const qs = new URLSearchParams({

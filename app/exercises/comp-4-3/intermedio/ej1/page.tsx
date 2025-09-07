@@ -70,7 +70,7 @@ function droppableProps(onDropId: (id: MeasureId) => void) {
 const COMPETENCE = "4.3"
 const LEVEL = "intermedio"
 /** Clave de sesión por-usuario para evitar duplicados */
-const SESSION_PREFIX = "session:1.3:Intermedio";
+const SESSION_PREFIX = "session:4.3:Intermedio";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
 export default function Page() {
