@@ -241,31 +241,35 @@ export default function UserResultsPage() {
                   placeholder="Buscar por nombre, email o UID…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 rounded-xl"
                 />
               </div>
 
               {/* Grupo de orden */}
               <div className="flex gap-2 flex-wrap">
                 <Button
+                  className="rounded-xl"
                   variant={sortMode === "selected" ? "default" : "outline"}
                   onClick={() => setSortMode("selected")}
                 >
                   Por mi selección
                 </Button>
                 <Button
+                  className="rounded-xl"
                   variant={sortMode === "completed" ? "default" : "outline"}
                   onClick={() => setSortMode("completed")}
                 >
                   Más completas
                 </Button>
                 <Button
+                  className="rounded-xl"
                   variant={sortMode === "competence" ? "default" : "outline"}
                   onClick={() => setSortMode("competence")}
                 >
                   Por competencia
                 </Button>
                 <Button
+                  className="rounded-xl"
                   variant={sortMode === "default" ? "default" : "outline"}
                   onClick={() => setSortMode("default")}
                 >
@@ -276,7 +280,7 @@ export default function UserResultsPage() {
                 <Button
                   onClick={handleBulkDelete}
                   disabled={selectedUids.size === 0 || deleting}
-                  className="bg-rose-600 hover:bg-rose-700 text-white gap-2"
+                  className="bg-rose-600 hover:bg-rose-700 text-white gap-2 rounded-xl"
                   title={selectedUids.size ? `Eliminar ${selectedUids.size} seleccionados` : "Selecciona usuarios"}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -305,7 +309,7 @@ export default function UserResultsPage() {
                     ]
                     XLSX.writeFile(wb, `usuarios_ladico_${new Date().toISOString().slice(0, 10)}.xlsx`)
                   }}
-                  className="border bg-[#286575] hover:bg-[#3a7d89] text-white"
+                  className="border bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl"
                   title="Descargar en Excel (filtrados)"
                 >
                   Exportar Excel
@@ -321,8 +325,9 @@ export default function UserResultsPage() {
                   value={compInput}
                   onChange={(e) => setCompInput(e.target.value)}
                   onKeyDown={onCompKeyDown}
+                  className="rounded-xl"
                 />
-                <Button variant="outline" onClick={addCompetence} title="Agregar">
+                <Button variant="outline" onClick={addCompetence} title="Agregar" className="rounded-xl">
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>

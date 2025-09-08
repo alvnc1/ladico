@@ -88,7 +88,7 @@ export default function Dashboard() {
     "Búsqueda y gestión de información": filteredCompetences.filter((c) => c?.code?.startsWith("1.")),
     "Comunicación y colaboración": filteredCompetences.filter((c) => c?.code?.startsWith("2.")),
     "Creación de contenidos digitales": filteredCompetences.filter((c) => c?.code?.startsWith("3.")),
-    Seguridad: filteredCompetences.filter((c) => c?.code?.startsWith("4.")),
+    "Seguridad": filteredCompetences.filter((c) => c?.code?.startsWith("4.")),
     "Resolución de problemas": filteredCompetences.filter((c) => c?.code?.startsWith("5.")),
   }
 
@@ -126,7 +126,59 @@ export default function Dashboard() {
       <Sidebar />
       <main className="flex-1 lg:ml-64 px-4 lg:px-8 py-4 lg:py-8">
         <div className="max-w-7xl mx-auto">
-          {/* ===== encabezado omitido por brevedad (sin cambios) ===== */}
+          <div className="mb-6 lg:mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6 mb-6">
+              <div className="text-center lg:text-left">
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1 lg:mb-2">Competencias</h1>
+                <p className="text-sm lg:text-base text-gray-600">
+                  Evalúate a tu propio ritmo en las competencias digitales. Elige una competencia y comienza a ganar
+                  Ladicos.
+                </p>
+              </div>
+
+              <div className="text-center flex-shrink-0">
+                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-r from-[#94b2ba] to-[#286675] rounded-full flex items-center justify-center text-white mb-2 shadow-xl border-4 border-white mx-auto">
+                  <div>
+                    <div className="text-lg lg:text-2xl font-bold">{userData?.LadicoScore || 0}</div>
+                    <div className="text-xs font-medium">Ladicos</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl lg:rounded-3xl p-4 lg:p-6 shadow-lg border-2 border-gray-100">
+              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 lg:h-5 lg:w-5" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar por competencia o área…"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 lg:pl-12 h-10 lg:h-12 text-sm lg:text-base rounded-xl lg:rounded-2xl border-2 border-gray-200 focus:border-[#286675] transition-colors"
+                  />
+                </div>
+
+                <div className="flex gap-2 lg:gap-3">
+                  {["Todas", "Iniciadas", "Pendientes"].map((filter) => (
+                    <Button
+                      key={filter}
+                      variant={filterType === filter ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFilterType(filter)}
+                      className={`px-3 lg:px-4 py-2 lg:py-2.5 text-xs lg:text-sm font-medium rounded-xl lg:rounded-2xl transition-all duration-200 ${
+                        filterType === filter
+                          ? "bg-gradient-to-r from-[#94b2ba] to-[#286675] text-white shadow-md border-transparent"
+                          : "bg-white text-[#286675] border-2 border-[#94b2ba] hover:border-[#286675] hover:text-[#286675]"
+                      }`}
+                    >
+                      {filter}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="space-y-8 lg:space-y-12">
             {Object.entries(groupedCompetences).map(([dimension, list]) =>
