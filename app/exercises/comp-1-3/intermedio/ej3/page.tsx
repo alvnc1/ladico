@@ -136,7 +136,7 @@ type DesktopIconItem = {
 
 function DesktopRecoveryExercise() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
 
   // ====== Config sesión/puntaje (P3) ======
   const COMPETENCE = "1.3";
@@ -303,6 +303,12 @@ function DesktopRecoveryExercise() {
     const q2 = getPoint(prog, 2);
     const q3 = getPoint(prog, 3);
 
+    // === Modo profesor: forzar aprobado ===
+    const isTeacher = userData?.role === "profesor";
+    const finalTotalPts = isTeacher ? 3 : totalPts; // cuenta 3/3
+    const finalPassed   = isTeacher ? true : passed;
+    const finalScore    = isTeacher ? 100 : score;
+
     // 2) Firestore (sesión POR-USUARIO; crea si falta)
     let sid = sessionId;
     try {
@@ -341,11 +347,13 @@ function DesktopRecoveryExercise() {
       console.warn("No se pudo marcar P3 respondida:", e);
     }
 
+    try { if (user) localStorage.removeItem(sessionKeyFor(user.uid)); } catch {}
+
     // 3) Navegar a RESULTS de 1.3 (pasando sid para que finalizeSession corra allí)
     const qs = new URLSearchParams({
-      score: String(score),
-      passed: String(passed),
-      correct: String(totalPts),
+      score: String(finalScore),
+      passed: String(finalPassed),
+      correct: String(finalTotalPts),
       total: "3",
       competence: "1.3",
       level: "intermedio",

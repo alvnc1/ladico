@@ -140,7 +140,7 @@ function AdvancedResultsContent() {
                 <Button onClick={() => router.push("/dashboard")} className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow">
                   Volver al Dashboard
                 </Button>
-                <Button onClick={() => router.push("/exercises/comp-1-3-advanced/ej1")} variant="outline" className="flex-1 border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3">
+                <Button onClick={() => router.push("/exercises/comp-1-3/avanzado/ej1")} variant="outline" className="flex-1 border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3">
                   Repetir ejercicio
                 </Button>
               </div>

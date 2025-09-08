@@ -58,13 +58,9 @@ export default function CompetenceCard({
   const circumference = useMemo(() => 2 * Math.PI * 18, [])
 
   const effectiveProgressPct = useMemo(() => {
-    // 🔸 Profesor en Avanzado completado → anillo siempre 100%
-    if (isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed) {
-      return 100
-    }
-    if (locallyStarted && !levelStatus.inProgress && !levelStatus.completed) {
-      return 15
-    }
+    // Profesor en Avanzado completado → anillo 100%
+    if (isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed) return 100
+    if (locallyStarted && !levelStatus.inProgress && !levelStatus.completed) return 15
     return levelStatus.progressPct
   }, [isTeacher, currentAreaLevel, levelStatus.progressPct, levelStatus.inProgress, levelStatus.completed, locallyStarted])
 
@@ -76,9 +72,7 @@ export default function CompetenceCard({
   const showDash = levelStatus.inProgress || levelStatus.completed || locallyStarted
 
   const labelText = useMemo(() => {
-    if (!levelStatus.inProgress && !levelStatus.completed && !locallyStarted) {
-      return "-"
-    }
+    if (!levelStatus.inProgress && !levelStatus.completed && !locallyStarted) return "-"
     return `Nivel ${levelNumber}`
   }, [levelStatus.inProgress, levelStatus.completed, locallyStarted, levelNumber])
 
@@ -99,21 +93,15 @@ export default function CompetenceCard({
     return "Bloqueado"
   })()
 
-  // En niveles 1/2 (Básico/Intermedio), mostrar “Volver a intentar” solo si se puede avanzar
+  // En Básico/Intermedio, “Volver a intentar” solo si se puede avanzar
   const showRetryButton = isTeacher && canAdvanceToNextLevel
 
   const handleStartOrContinue = () => {
     if (!canStartOrContinue) return
     setLocallyStarted(true)
-
     const targetLevelNumber = canAdvanceToNextLevel ? levelNumber + 1 : levelNumber
-    const levelMap: Record<number, "Básico" | "Intermedio" | "Avanzado"> = {
-      1: "Básico",
-      2: "Intermedio",
-      3: "Avanzado",
-    }
+    const levelMap: Record<number, "Básico" | "Intermedio" | "Avanzado"> = { 1: "Básico", 2: "Intermedio", 3: "Avanzado" }
     const targetLevelName = levelMap[targetLevelNumber]
-
     const url = firstExerciseRoute(competence.id, levelToSlug(targetLevelName))
     router.push(url)
   }
@@ -133,9 +121,27 @@ export default function CompetenceCard({
     router.push(`/test/${competence.id}?level=${slug}&retry=1`)
   }
 
+  // ⬇️ Reiniciar niveles SIN navegar: limpia progreso y avisa al Dashboard
   const handleResetTeacherLevels = () => {
     if (currentAreaLevel !== "Avanzado") return
-    router.push(`/test/${competence.id}?level=avanzado&resetAll=1`)
+    try {
+      if (typeof window !== "undefined") {
+        const compId = competence.id
+        // Flag para que el dashboard pinte estado inicial (Nivel 1)
+        localStorage.setItem(`ladico:resetLevels:${compId}`, "1")
+        // Limpiar progreso local de los 3 niveles
+        ;(["basico", "intermedio", "avanzado"] as const).forEach((lvl) => {
+          localStorage.removeItem(`ladico:${compId}:${lvl}:progress`)
+          localStorage.removeItem(`level:${compId}:${lvl}:completed`)
+          localStorage.removeItem(`ladico:completed:${compId}:${lvl}`)
+        })
+        // Notificar al dashboard
+        localStorage.setItem("ladico:progress:version", String(Date.now()))
+        window.dispatchEvent(new Event("ladico:refresh"))
+      }
+    } catch {
+      /* no-op */
+    }
   }
 
   return (
@@ -179,18 +185,17 @@ export default function CompetenceCard({
 
           {/* Botonera */}
           {isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed ? (
-            // SOLO cuando Avanzado está COMPLETADO
             <div className="mt-3 flex gap-2">
               <Button
                 onClick={handleRetryTeacher}
                 variant="outline"
-                className="w-full rounded-full py-3 text-sm font-semibold border-2 border-[#94b2ba] text-[#286675] hover:bg-[#f1f6f8]"
+                className="w-full rounded-full py-2.5 sm:py-3 text-xs font-semibold border-2 border-[#94b2ba] text-[#286675] hover:bg-[#f1f6f8]"
               >
                 Volver a intentar
               </Button>
               <Button
                 onClick={handleResetTeacherLevels}
-                className="w-full rounded-full py-3 text-sm font-semibold bg-[#286675] hover:bg-[#1e4a56] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] border-transparent font-bold"
+                className="w-full rounded-full py-2.5 sm:py-3 text-xs font-semibold bg-[#286675] hover:bg-[#1e4a56] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] border-transparent font-bold"
               >
                 Reiniciar niveles
               </Button>
@@ -200,13 +205,13 @@ export default function CompetenceCard({
               <Button
                 onClick={handleRetryTeacher}
                 variant="outline"
-                className="w-full rounded-full py-3 text-sm font-semibold border-2 border-[#94b2ba] text-[#286675] hover:bg-[#f1f6f8]"
+                className="w-full rounded-full py-2.5 sm:py-3 text-xs font-semibold border-2 border-[#94b2ba] text-[#286675] hover:bg-[#f1f6f8]"
               >
                 Volver a intentar
               </Button>
               <Button
                 onClick={handleStartOrContinue}
-                className={`w-full rounded-full py-3 text-sm font-semibold transition-all duration-200 border
+                className={`w-full rounded-full py-2.5 sm:py-3 text-xs font-semibold transition-all duration-200 border
                 ${
                   canStartOrContinue
                     ? "bg-[#286675] hover:bg-[#1e4a56] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] border-transparent font-bold"

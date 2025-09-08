@@ -25,7 +25,10 @@ export default function EjercicioComp13Avanzado1() {
   const { toast } = useToast()
   const router = useRouter()
 
-  const { user } = useAuth()
+  // ⬇️ también traemos userData para detectar rol
+  const { user, userData } = useAuth()
+  const isTeacher = userData?.role === "profesor" // 👈 modo profesor
+
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
 
@@ -156,12 +159,18 @@ export default function EjercicioComp13Avanzado1() {
 
   // Reglas de aprobación por paso (punto = 1/0)
   const MIN_OK_STEP1 = 2   // Avanzado: 2 de 4 estadísticos
-  const MIN_OK_STEP2 = 3   // todas las 3 (ajústalo si quieres)
-  const MIN_OK_STEP3 = 3   // todas las 3 (ajústalo si quieres)
+  const MIN_OK_STEP2 = 3   // 3/3
+  const MIN_OK_STEP3 = 3   // 3/3
 
-  const q1Passed = totalOk1 >= MIN_OK_STEP1
-  const q2Passed = totalOk2 >= MIN_OK_STEP2
-  const q3Passed = totalOk3 >= MIN_OK_STEP3
+  // Booleans por paso
+  const q1PassedRaw = totalOk1 >= MIN_OK_STEP1
+  const q2PassedRaw = totalOk2 >= MIN_OK_STEP2
+  const q3PassedRaw = totalOk3 >= MIN_OK_STEP3
+
+  // 👇 En modo profesor, todos los pasos cuentan como aprobados
+  const q1Passed = isTeacher ? true : q1PassedRaw
+  const q2Passed = isTeacher ? true : q2PassedRaw
+  const q3Passed = isTeacher ? true : q3PassedRaw
 
   // Progreso (mismo estilo que TestInterface)
   const totalQuestions = 3
@@ -169,7 +178,8 @@ export default function EjercicioComp13Avanzado1() {
 
   // ====== Persistencia por paso (igual que intermedio) ======
   const persistStepPoint = async (zeroIdx: 0 | 1 | 2, passed: boolean) => {
-    const point: 0 | 1 = passed ? 1 : 0
+    const effective = isTeacher ? true : passed // 👈 override profesor
+    const point: 0 | 1 = effective ? 1 : 0
     // Local (1-based)
     setPoint(COMPETENCE, LEVEL, zeroIdx + 1, point)
     // Firestore (sesión)
@@ -197,23 +207,26 @@ export default function EjercicioComp13Avanzado1() {
 
   // Finalizar (guarda P3 y navega a resultados con sid y q1..q3)
   const handleFinish = async () => {
-    // Verifica que no haya campos vacíos
+    // Si NO es profesor, exige todas las casillas respondidas
     const answered = [mediaH, medianaM, modaH, desvM, c1, c2, c3, g1, g2, g3].every((x) => x !== '')
-    if (!answered) {
+    if (!isTeacher && !answered) {
       toast({ title: 'Respuestas incompletas', description: 'Completa todas las casillas antes de finalizar.' })
       return
     }
 
-    // Guarda P3
+    // Guarda P3 (con override profesor si aplica)
     await persistStepPoint(2, q3Passed)
 
-    // Score general (como ya lo hacías)
-    const correctas = totalOk1 + totalOk2 + totalOk3
+    // ✅ Resultados a nivel “pregunta/paso” (3 en total)
+    const finalQ1 = q1Passed
+    const finalQ2 = q2Passed
+    const finalQ3 = q3Passed
+    const correctas = (finalQ1 ? 1 : 0) + (finalQ2 ? 1 : 0) + (finalQ3 ? 1 : 0)
     const total = 3
     const score = Math.round((correctas / total) * 100)
-    const passed = correctas >= (total * 0.7)
+    const passed = correctas >= 2 // 2/3 para aprobar
 
-    // A la URL también mandamos q1/q2/q3 y sid
+    // Enviar también q1/q2/q3 y sid
     const sid = await ensureSid()
     const params = new URLSearchParams({
       score: String(score),
@@ -221,9 +234,9 @@ export default function EjercicioComp13Avanzado1() {
       total: String(total),
       passed: String(passed),
       competence: '1.3-avanzado',
-      q1: q1Passed ? "1" : "0",
-      q2: q2Passed ? "1" : "0",
-      q3: q3Passed ? "1" : "0",
+      q1: finalQ1 ? "1" : "0",
+      q2: finalQ2 ? "1" : "0",
+      q3: finalQ3 ? "1" : "0",
       sid: sid ?? "",
     })
     router.push(`/test/comp-1-3-advanced/results?${params.toString()}`)
