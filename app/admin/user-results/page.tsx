@@ -224,7 +224,7 @@ export default function UserResultsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 lg:p-6">
-      <Card>
+      <Card className="rounded-xl shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />

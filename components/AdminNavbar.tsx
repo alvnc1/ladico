@@ -49,7 +49,7 @@ export default function AdminNavbar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
                 item.active
                   ? "bg-[#286675] text-white"
                   : "hover:bg-gray-700 text-gray-300 hover:text-white"

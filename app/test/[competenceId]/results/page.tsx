@@ -12,6 +12,8 @@ import { db } from "@/lib/firebase"
 import { useAuth } from "@/contexts/AuthContext"
 import type { TestSession, Question } from "@/types"
 
+type AnswerValue = number | number[] | null;
+
 function TestResultsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -32,7 +34,7 @@ function TestResultsContent() {
   const [areaCounts, setAreaCounts] = useState<{ completed: number; total: number } | null>(null)
   const [nextCompetenceInfo, setNextCompetenceInfo] = useState<{ id: string; name: string } | null>(null)
   const [testQuestions, setTestQuestions] = useState<Question[]>([])
-  const [userAnswers, setUserAnswers] = useState<(number | null)[]>([])
+  const [userAnswers, setUserAnswers] = useState<AnswerValue[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [loadingQuestions, setLoadingQuestions] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
@@ -56,7 +58,9 @@ function TestResultsContent() {
     try {
       const levels = ['basico', 'intermedio', 'avanzado']
       let allQuestions: Question[] = []
-      let allAnswers: (number | null)[] = []
+      let allAnswers: (number | number[] | null)[] = []
+
+      
 
       for (const level of levels) {
         const sessionQuery = query(
@@ -75,6 +79,7 @@ function TestResultsContent() {
           if (sessionData.answers) allAnswers.push(...sessionData.answers)
         }
       }
+      
 
       if (allQuestions.length > 0) {
         setTestQuestions(allQuestions)

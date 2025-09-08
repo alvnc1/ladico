@@ -9,44 +9,56 @@ interface QuestionPreviewProps {
 }
 
 export default function QuestionPreview({ question }: QuestionPreviewProps) {
+  // Array con índices de las respuestas correctas
+  const correctIndexes: number[] =
+    question.type === "multiple-response"
+      ? (question.correctAnswerIndex as number[])
+      : [question.correctAnswerIndex as number]
+
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-2xl rounded-xl">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">{question.title}</CardTitle>
           <div className="flex space-x-2">
-            <Badge variant="outline">Dimensión {question.dimension}</Badge>
+            <Badge variant="outline">{question.country || "Sin país"}</Badge>
             <Badge variant="outline">{question.competence}</Badge>
             <Badge variant="secondary">{question.level}</Badge>
+            <Badge variant="secondary">
+              {question.type === "multiple-response" ? "MR" : "MC"}
+            </Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="p-4 bg-blue-50 rounded-lg">
+        <div className="p-4 bg-blue-50 rounded-xl">
           <p className="text-gray-700 leading-relaxed">{question.scenario}</p>
         </div>
 
         <div className="space-y-2">
           <h4 className="font-semibold text-gray-900">Opciones:</h4>
-          {question.options.map((option, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg border-2 ${
-                index === question.correctAnswerIndex ? "border-green-500 bg-green-50" : "border-gray-200 bg-gray-50"
-              }`}
-            >
-              <span className="font-medium">{String.fromCharCode(65 + index)}.</span> {option}
-              {index === question.correctAnswerIndex && <Badge className="ml-2 bg-green-600">Correcta</Badge>}
-            </div>
-          ))}
+          {question.options.map((option, index) => {
+            const isCorrect = correctIndexes.includes(index)
+            return (
+              <div
+                key={index}
+                className={`p-3 rounded-xl border-2 ${
+                  isCorrect ? "border-green-500 bg-green-50" : "border-gray-200 bg-gray-50"
+                }`}
+              >
+                <span className="font-medium">{String.fromCharCode(65 + index)}.</span> {option}
+                {isCorrect && <Badge className="ml-2 bg-green-600">Correcta</Badge>}
+              </div>
+            )
+          })}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-3 bg-green-50 rounded-lg">
+          <div className="p-3 bg-green-50 rounded-xl">
             <h5 className="font-semibold text-green-800 mb-1">Feedback Correcto:</h5>
             <p className="text-sm text-green-700">{question.feedback.correct}</p>
           </div>
-          <div className="p-3 bg-red-50 rounded-lg">
+          <div className="p-3 bg-red-50 rounded-xl">
             <h5 className="font-semibold text-red-800 mb-1">Feedback Incorrecto:</h5>
             <p className="text-sm text-red-700">{question.feedback.incorrect}</p>
           </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { collection, getDocs } from "firebase/firestore"
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Question } from "@/types"
 import QuestionPreview from "@/components/QuestionPreview"
@@ -9,46 +9,49 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { Trash } from "lucide-react" // Icono de eliminar
 
 export default function QuestionsAdminPage() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
   const router = useRouter()
-
- 
   const loadQuestionsRan = useRef(false)
 
   useEffect(() => {
-   
-    if (loadQuestionsRan.current) {
-      console.log("⚠️ Admin questions useEffect ya ejecutado previamente, saltando...")
-      return
-    }
-    
+    if (loadQuestionsRan.current) return
     loadQuestionsRan.current = true
     loadQuestions()
   }, [])
 
   const loadQuestions = async () => {
     try {
-      if (!db) {
-        console.error("Firestore not initialized")
-        return
-      }
-
+      if (!db) return
       const querySnapshot = await getDocs(collection(db, "questions"))
       const loadedQuestions: Question[] = []
-
       querySnapshot.forEach((doc) => {
         loadedQuestions.push({ id: doc.id, ...doc.data() } as Question)
       })
-
       setQuestions(loadedQuestions)
     } catch (error) {
       console.error("Error loading questions:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // --- NUEVO: Eliminar una pregunta ---
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar esta pregunta? Esta acción no se puede deshacer.")) return
+
+    try {
+      await deleteDoc(doc(db, "questions", questionId))
+      setQuestions((prev) => prev.filter((q) => q.id !== questionId))
+      // Si la pregunta eliminada era la seleccionada, limpiar preview
+      if (selectedQuestion?.id === questionId) setSelectedQuestion(null)
+    } catch (error) {
+      console.error("Error eliminando la pregunta:", error)
+      alert("No se pudo eliminar la pregunta. Revisa la consola para más detalles.")
     }
   }
 
@@ -63,20 +66,17 @@ export default function QuestionsAdminPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Banco de Preguntas</h1>
-              <p className="text-gray-600">Gestiona y visualiza todas las preguntas del sistema.</p>
-            </div>
-            <Button onClick={() => router.push("/admin")} className="text-white bg-[#286675] hover:bg-[#3a7d89]">
-              Agregar Nueva Pregunta
-            </Button>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Banco de Preguntas</h1>
+            <p className="text-gray-600">Gestiona y visualiza todas las preguntas del sistema.</p>
           </div>
+          <Button onClick={() => router.push("/admin")} className="text-white bg-[#286675] hover:bg-[#3a7d89] rounded-xl">
+            Agregar Nueva Pregunta
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-900">Preguntas Disponibles ({questions.length})</h2>
 
@@ -93,7 +93,7 @@ export default function QuestionsAdminPage() {
               questions.map((question) => (
                 <Card
                   key={question.id}
-                  className={`cursor-pointer transition-all hover:shadow-lg ${
+                  className={`cursor-pointer transition-all rounded-xl hover:shadow-lg relative ${
                     selectedQuestion?.id === question.id ? "ring-2 ring-[#286675]" : ""
                   }`}
                   onClick={() => setSelectedQuestion(question)}
@@ -101,13 +101,24 @@ export default function QuestionsAdminPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-gray-900 truncate">{question.title}</h3>
-                      <div className="flex space-x-1">
+                      <div className="flex items-center space-x-1">
                         <Badge variant="outline" className="text-xs">
-                          D{question.dimension}
+                          {question.country || "Sin país"}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
                           {question.competence}
                         </Badge>
+                        {/* Botón eliminar */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation() // Evita seleccionar la pregunta
+                            handleDeleteQuestion(question.id)
+                          }}
+                        >
+                          <Trash className="h-4 w-4 text-red-500" />
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
@@ -129,7 +140,7 @@ export default function QuestionsAdminPage() {
             {selectedQuestion ? (
               <QuestionPreview question={selectedQuestion} />
             ) : (
-              <Card>
+              <Card className="rounded-xl shadow-lg">
                 <CardContent className="p-8 text-center">
                   <p className="text-gray-500">Selecciona una pregunta para ver la vista previa.</p>
                 </CardContent>

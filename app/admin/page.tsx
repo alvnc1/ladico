@@ -54,27 +54,32 @@ export default function AdminPanel() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!fileContent) {
-      setFileError("No se ha cargado ningún archivo")
-      return
+      setFileError("No se ha cargado ningún archivo");
+      return;
     }
 
     if (!db) {
-      setFileError("Error de conexión a la base de datos")
-      return
+      setFileError("Error de conexión a la base de datos");
+      return;
     }
 
-    setUploading(true)
+    setUploading(true);
 
     try {
-      const questions = JSON.parse(fileContent)
-      const questionsArray = Array.isArray(questions) ? questions : [questions]
+      const questions = JSON.parse(fileContent);
+      const questionsArray = Array.isArray(questions) ? questions : [questions];
 
-      // Validación estricta con campos obligatorios del formato extendido
+      // Validación para multiple-choice y multiple-response
       const validQuestions = questionsArray.filter((q) => {
-        return (
-          q.type === "multiple-choice" &&
+        const isMultiChoice = q.type === "multiple-choice";
+        const isMultiResponse = q.type === "multiple-response";
+
+        if (!(isMultiChoice || isMultiResponse)) return false;
+
+        // Campos obligatorios comunes
+        const commonValid =
           q.competence &&
           q.level &&
           q.gender &&
@@ -84,15 +89,30 @@ export default function AdminPanel() {
           q.scenario &&
           Array.isArray(q.options) &&
           q.options.length >= 2 &&
-          typeof q.correctAnswerIndex === "number" &&
           q.feedback &&
           q.feedback.correct &&
-          q.feedback.incorrect
-        )
-      })
+          q.feedback.incorrect;
+
+        if (!commonValid) return false;
+
+        // Validación específica por tipo
+        if (isMultiChoice) {
+          return typeof q.correctAnswerIndex === "number";
+        }
+        if (isMultiResponse) {
+          return (
+            Array.isArray(q.correctAnswerIndex) &&
+            q.correctAnswerIndex.every((i: any) => typeof i === "number")
+          );
+        }
+
+        return false;
+      });
 
       if (validQuestions.length === 0) {
-        throw new Error("No hay preguntas válidas en el archivo. Verifica el formato.")
+        throw new Error(
+          "No hay preguntas válidas en el archivo. Verifica el formato."
+        );
       }
 
       if (validQuestions.length !== questionsArray.length) {
@@ -100,37 +120,43 @@ export default function AdminPanel() {
           title: "Advertencia",
           description: `Solo ${validQuestions.length} de ${questionsArray.length} preguntas tienen formato válido.`,
           variant: "destructive",
-        })
+        });
       }
 
-      let addedCount = 0
+      let addedCount = 0;
       for (const question of validQuestions) {
-        await addDoc(collection(db, "questions"), { ...question })
-        addedCount++
+        await addDoc(collection(db, "questions"), { ...question });
+        addedCount++;
       }
 
       toast({
         title: "Éxito",
         description: `Se han agregado ${addedCount} preguntas a la base de datos.`,
-      })
+      });
 
-      setFileContent(null)
-      const fileInput = document.getElementById("fileInput") as HTMLInputElement
-      if (fileInput) fileInput.value = ""
+      setFileContent(null);
+      const fileInput = document.getElementById("fileInput") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
     } catch (error) {
-      console.error("Error al procesar el archivo:", error)
+      console.error("Error al procesar el archivo:", error);
       setFileError(
-        error instanceof Error ? error.message : "Error desconocido al procesar el archivo",
-      )
+        error instanceof Error
+          ? error.message
+          : "Error desconocido al procesar el archivo"
+      );
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Error al procesar el archivo.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Error al procesar el archivo.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
+
 
   const handleDatasetFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null
@@ -214,9 +240,9 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
-        <Card>
+        <Card className="rounded-xl shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center ">
               <FileText className="h-6 w-6 mr-2" />
               Panel de Administración — Cargar Preguntas
             </CardTitle>
@@ -232,20 +258,25 @@ export default function AdminPanel() {
 
             <div className="mb-8">
               <h2 className="text-lg font-medium mb-4">Formato requerido</h2>
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4 overflow-auto">
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4 overflow-auto">
                 <pre className="text-xs text-gray-800">{`{ 
-  "type": "multiple-choice", 
+  "type": "multiple-choice" || "multiple-response", 
   "competence": "1.3", 
   "level": "Básico 2",
-  "gender": "género",
-  "age": 25,
-  "country": "Chile",
-  "title": "Título de la pregunta", 
-  "scenario": "Escenario o contexto más la pregunta", 
-  "options": [ "Primera opción", "Segunda opción", "Tercera opción", "Cuarta opción" ], 
-  "correctAnswerIndex": 1, 
-  "feedback": { 
-    "correct": "Retroalimentación para respuesta correcta", 
+  "gender": "{género}",
+  "age": {edad},
+  "country": "{país}",
+  "title": "Título de la pregunta",
+  "scenario": "Escenario o contexto más la pregunta",
+  "options": [
+    "Primera opción",
+    "Segunda opción",
+    "Tercera opción",
+    "Cuarta opción"
+  ],
+  "correctAnswerIndex": "opción correcta" || "opciones correctas",
+  "feedback": {
+    "correct": "Retroalimentación para respuesta correcta",
     "incorrect": "Retroalimentación para respuesta incorrecta" 
   }
 }`}</pre>
@@ -258,7 +289,7 @@ export default function AdminPanel() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
                 <Upload className="h-10 w-10 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">Selecciona un archivo JSON</h3>
                 <p className="text-sm text-gray-500 mb-4">
@@ -275,7 +306,7 @@ export default function AdminPanel() {
                   type="button"
                   variant="outline"
                   onClick={() => document.getElementById("fileInput")?.click()}
-                  className="mb-2"
+                  className="mb-2 rounded-xl"
                 >
                   Seleccionar archivo
                 </Button>

@@ -17,6 +17,58 @@ interface TestInterfaceProps {
   questionTimeSeconds?: number // opcional: override del tiempo por pregunta (default 60)
 }
 
+function CircularTimer({
+  timeLeft,
+  total,
+  invalidated,
+}: { timeLeft: number; total: number; invalidated: boolean }) {
+  const R = 28;           // radio del círculo (px)
+  const STROKE = 6;       // grosor del trazo
+  const C = 2 * Math.PI * R;
+  const clamped = Math.max(0, Math.min(timeLeft, total));
+  const pct = clamped / total;
+  const dashoffset = C * (1 - pct);
+
+  return (
+    <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-10">
+      <div className="relative w-20 h-20 rounded-full bg-white shadow-lg flex items-center justify-center">
+        {/* fondo del anillo */}
+        <svg className="w-20 h-20 rotate-[-90deg]" viewBox="0 0 80 80">
+          <circle
+            cx="40"
+            cy="40"
+            r={R}
+            fill="none"
+            stroke="#e5e7eb"                // gris claro
+            strokeWidth={STROKE}
+          />
+          {/* progreso */}
+          <circle
+            cx="40"
+            cy="40"
+            r={R}
+            fill="none"
+            stroke={invalidated ? "#ef4444" : "#286575"}  // rojo si invalidada, púrpura como la imagen
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={dashoffset}
+            style={{ transition: "stroke-dashoffset 0.3s linear" }}
+          />
+        </svg>
+
+        {/* número al centro */}
+        <div className={`absolute inset-0 flex items-center justify-center`}>
+          <span className={`font-bold text-xl ${invalidated ? "text-red-600" : "text-[#286575]"}`}>
+            {clamped}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function TestInterface({
   testSession,
   onAnswerSubmit,
@@ -52,11 +104,15 @@ export default function TestInterface({
     totalQuestions - 1
   )
   const initialAnswer = testSession.answers?.[safeInitialIndex] ?? null
+  const initialStored = testSession.answers?.[safeInitialIndex] as number | number[] | null
 
   const [currentIndex, setCurrentIndex] = useState(safeInitialIndex)
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(initialAnswer)
-
   const currentQuestion = questions[currentIndex]
+  const [selectedAnswer, setSelectedAnswer] = useState<number | number[] | null>(
+    currentQuestion?.type === "multiple-response"
+      ? (Array.isArray(initialStored) ? [...initialStored] : [])   // MR: array (vacío si no hay)
+      : (typeof initialStored === "number" ? initialStored : null) // MC: índice o null
+  )
   const progress = ((currentIndex + 1) / totalQuestions) * 100
   const competenceCode = currentQuestion?.competence
   const competenceName = getCompetenceTitle(competenceCode)
@@ -225,7 +281,7 @@ export default function TestInterface({
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-3">
           <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
             <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4">
               <Link href="/dashboard">
@@ -247,7 +303,7 @@ export default function TestInterface({
               </span>
             </div>
 
-            {/* badges intentos y tiempo */}
+          {/* badges intentos*/}
             <div className="flex items-center gap-2">
               <span
                 className={`text-xs font-bold px-2 py-1 rounded-full border ${
@@ -261,49 +317,37 @@ export default function TestInterface({
                 }`}
                 title="Intentos restantes para no salir de la página"
               >
-                {invalidated ? "Invalidada" : `${attemptsLeft}/3`}
+                {invalidated ? "Invalidada" : `${attemptsLeft}/3 intentos`}
               </span>
-
-              <span
-                className={`text-xs font-bold px-2 py-1 rounded-full border ${
-                  timeLeft <= 10
-                    ? "bg-red-50 text-red-700 border-red-200"
-                    : "bg-blue-50 text-blue-700 border-blue-200"
-                }`}
-                title="Tiempo restante"
-              >
-                ⏱ {fmtTime(timeLeft)}
+            </div>
+          </div>
+          
+          {/* Progreso compacto, pegado al header */}
+          <div className="mt-1">
+            <div className="flex items-center justify-between text-[#286575] mb-2">
+              <span className="text-xs sm:text-sm font-medium bg-white/40 px-2 sm:px-3 py-1 rounded-full">
+                Pregunta {currentIndex + 1} de {totalQuestions}
               </span>
+              <div className="flex space-x-1 sm:space-x-2">
+                {Array.from({ length: totalQuestions }, (_, index) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                      index <= currentIndex ? "bg-[#286575] shadow-lg" : "bg-[#dde3e8]"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="h-1.5 sm:h-2 bg-[#dde3e8] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#286575] rounded-full transition-all duration-500 ease-in-out shadow-sm"
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
         </div>
       </div>
-
-      {/* Progreso */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        <div className="flex items-center justify-between text-white mb-4">
-          <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
-            Pregunta {currentIndex + 1} de {totalQuestions}
-          </span>
-          <div className="flex space-x-1 sm:space-x-2">
-            {Array.from({ length: totalQuestions }, (_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
-                  index <= currentIndex ? "bg-[#286575] shadow-lg" : "bg-[#dde3e8]"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="bg-[#dde3e8] rounded-full h-2 sm:h-3 overflow-hidden">
-          <div
-            className="h-full bg-[#286575] rounded-full transition-all duration-500 ease-in-out shadow-sm"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-
       {/* Banners anti-cheat / timer */}
       {showWarning && !invalidated && (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-2">
@@ -347,13 +391,21 @@ export default function TestInterface({
           </Alert>
         </div>
       )}
+      <div className="h-6 sm:h-8" aria-hidden />
 
       {/* Tarjeta de pregunta */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 relative ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
+            {/* Timer circular */}
+            <CircularTimer timeLeft={timeLeft} total={QUESTION_TIME} invalidated={invalidated} />
+            {/* (opcional) separador visual para que no choque con el contenido */}
+            <div className="h-6" />
             {/* Escenario */}
             <div className="mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
+                {currentQuestion?.title}
+              </h2>
               <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
                   {currentQuestion?.scenario}
@@ -363,11 +415,8 @@ export default function TestInterface({
 
             {/* Título e instrucciones */}
             <div className="mb-6 sm:mb-8">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
-                {currentQuestion?.title}
-              </h2>
               <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 bg-blue-50 px-3 sm:px-4 py-2 rounded-full inline-block">
-                Selecciona sólo una respuesta
+                Selección única
               </p>
 
               {/* Opciones */}

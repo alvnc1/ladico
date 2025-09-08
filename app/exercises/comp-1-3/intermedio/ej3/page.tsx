@@ -32,9 +32,9 @@ export default function LadicoDeletedListRecoveryExercise() {
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
-      {/* Header Ladico */}
+      {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-3">
           <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
             <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4">
               <Link href="/dashboard">
@@ -45,35 +45,37 @@ export default function LadicoDeletedListRecoveryExercise() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
-                | 1.3 Gestión de Datos, Información y Contenidos Digitales - Nivel Intermedio
+                | 1.3 Gestión de Datos, Información y Contenidos Digitales -
+                Nivel Intermedio
               </span>
+
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Progreso Ladico */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        <div className="flex items-center justify-between text-white mb-4">
-          <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
-            Pregunta {currentIndex + 1} de {totalQuestions}
-          </span>
-          <div className="flex space-x-1 sm:space-x-2">
-            {Array.from({ length: totalQuestions }, (_, index) => (
+          {/* Progreso */}
+          <div className="mt-1">
+            <div className="flex items-center justify-between text-[#286575] mb-2">
+              <span className="text-xs sm:text-sm font-medium bg-white/40 px-2 sm:px-3 py-1 rounded-full">
+                Pregunta {currentIndex + 1} de {totalQuestions}
+              </span>
+              <div className="flex space-x-1 sm:space-x-2">
+                {Array.from({ length: totalQuestions }, (_, index) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                      index <= currentIndex ? "bg-[#286575] shadow-lg" : "bg-[#dde3e8]"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="h-1.5 sm:h-2 bg-[#dde3e8] rounded-full overflow-hidden">
               <div
-                key={index}
-                className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
-                  index <= currentIndex ? "bg-[#286575] shadow-lg" : "bg-[#dde3e8]"
-                }`}
+                className="h-full bg-[#286575] rounded-full transition-all duration-500 ease-in-out shadow-sm"
+                style={{ width: `${progress}%` }}
               />
-            ))}
+            </div>
           </div>
-        </div>
-        <div className="bg-[#dde3e8] rounded-full h-2 sm:h-3 overflow-hidden">
-          <div
-            className="h-full bg-[#286575] rounded-full transition-all duration-500 ease-in-out shadow-sm"
-            style={{ width: `${progress}%` }}
-          />
         </div>
       </div>
 
@@ -542,19 +544,6 @@ function DesktopRecoveryExercise() {
             Finalizar
           </Button>
         </div>
-
-        {result !== "idle" && (
-          <div
-            className={clsx(
-              "mt-3",
-              result === "ok" ? "text-green-700" : "text-red-700"
-            )}
-          >
-            {result === "ok"
-              ? "¡Correcto! Puntaje registrado y finalizado."
-              : "Respuesta/acción incorrecta. Se registrará 0 y se finalizará."}
-          </div>
-        )}
       </div>
     </div>
   );
