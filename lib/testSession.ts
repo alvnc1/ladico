@@ -279,3 +279,60 @@ export async function clearSeenQuestions(sessionId: string) {
     updatedAt: new Date().toISOString(),
   })
 }
+
+/* ========== NUEVO: reset de "preguntas vistas" del profesor en TODAS las sesiones determinísticas (por país) ========== */
+
+/**
+ * Limpia el historial de preguntas vistas del PROFESOR para TODAS las sesiones
+ * determinísticas (una por país) de una competencia/nivel.
+ * - Deja los campos de “vistas” en vacío si existen (seenQuestionIds/seen/seenIds/teacherSeen/...).
+ * - No navega, sólo actualiza Firestore.
+ */
+export async function clearTeacherSeenQuestionsAllCountries(
+  userId: string,
+  competence: string,
+  level: LevelName
+): Promise<void> {
+  const db = getDb()
+  if (!db || !userId || !competence) return
+
+  // Algunas instalaciones guardaron level como "Básico"/"Intermedio"/"Avanzado" (con acento)
+  // y otras lo guardaron slug "basico"/"intermedio"/"avanzado".
+  // Cubrimos ambos sin romper nada, haciendo 2 consultas.
+  const candidates: Array<LevelName | string> = [level, toSlug(level)]
+
+  for (const lvl of candidates) {
+    try {
+      const qy = query(
+        collection(db, "testSessions"),
+        where("userId", "==", userId),
+        where("competence", "==", competence),
+        where("level", "==", lvl as any),
+        where("sessionMode", "==", "teacher_preview")
+      )
+      const snap = await getDocs(qy)
+      if (snap.empty) continue
+
+      const updates = snap.docs.map(async (d) => {
+        try {
+          await updateDoc(doc(db, "testSessions", d.id), {
+            // cubrimos varios nombres posibles sin eliminar otros campos
+            seenQuestionIds: [],
+            seen: [],
+            seenIds: [],
+            teacherSeen: [],
+            seenByCountry: {},
+            teacherSeenByCountry: {},
+            lastSeenResetAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          } as any)
+        } catch (e) {
+          console.warn("No se pudo limpiar historial en testSession", d.id, e)
+        }
+      })
+      await Promise.all(updates)
+    } catch (e) {
+      console.warn("clearTeacherSeenQuestionsAllCountries(): error al consultar/actualizar:", e)
+    }
+  }
+}

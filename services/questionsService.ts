@@ -155,23 +155,15 @@ function getCompetenceColor(code: string): string {
 }
 
 // ==============================
-// Carga de preguntas (con filtro por país + exclusiones)
+// Carga de preguntas (estricta por país + exclusiones)
 // ==============================
 
 type LoadOpts = {
-  /** Código de país del usuario, p.ej. "CL". */
   country?: string | null
-  /** IDs de preguntas que deben excluirse (historial visto del profesor). */
   excludeIds?: string[]
-  /** Semilla opcional para barajado (si quieres orden estable o “distinto cada vez”). */
   shuffleSeed?: number
 }
 
-/**
- * Carga preguntas por competencia y nivel (tu formato "Básico 1/2", "Intermedio 1/2", "Avanzado 1/2"),
- * priorizando preguntas del país del usuario y excluyendo `excludeIds`. Si no hay suficientes,
- * amplía el pool sin país, y luego sin nivel. Si aún no alcanza, lanza error.
- */
 export async function loadQuestionsByCompetence(
   competenceId: string,
   level: string = "Básico",
@@ -179,11 +171,13 @@ export async function loadQuestionsByCompetence(
   opts: LoadOpts = {}
 ): Promise<Question[]> {
   const callId = Date.now() + Math.random()
-  const normalizedCountry = (opts.country || "").toUpperCase() || null
+
+  // Estricto: usamos el valor tal cual llega (e.g. "Chile" | "Colombia")
+  const countryValue = (opts.country ?? "").trim() || null
   const seed = typeof opts.shuffleSeed === "number" ? opts.shuffleSeed : Date.now()
 
   console.log(
-    `[Questions #${callId}] ${competenceId}/${level} x${count} country=${normalizedCountry || "-"} exclude=${opts.excludeIds?.length ?? 0}`
+    `[Questions #${callId}] ${competenceId}/${level} x${count} country=${countryValue || "-"} exclude=${opts.excludeIds?.length ?? 0}`
   )
 
   if (!db) {
@@ -199,7 +193,6 @@ export async function loadQuestionsByCompetence(
       where("level", "in", [`${level} 1`, `${level} 2`]),
     ] as const
 
-    // Helpers locales
     const filterOutExcluded = (arr: Question[]) => arr.filter((q) => !exclude.has(q.id))
     const ensureUniqueById = (arr: Question[]) => {
       const seen = new Set<string>()
@@ -213,75 +206,30 @@ export async function loadQuestionsByCompetence(
       return out
     }
 
-    // ===== 1) País del usuario (completa con global) =====
-    let pool: Question[] = []
-    if (normalizedCountry) {
-      const qByCountry = query(
-        collection(db, "questions"),
-        ...baseConstraints,
-        where("country", "==", normalizedCountry),
-        limit(Math.max(count * 8, 24))
-      )
-      const snapCountry = await getDocs(qByCountry)
-      pool = snapCountry.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Question[]
-
-      if (pool.length < count) {
-        const qGlobal = query(
-          collection(db, "questions"),
-          ...baseConstraints,
-          where("country", "==", "global"),
-          limit(Math.max(count * 8, 24))
-        )
-        const snapGlobal = await getDocs(qGlobal)
-        const globalPool = snapGlobal.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Question[]
-        pool = ensureUniqueById([...pool, ...globalPool])
-      }
-
-      const filtered = filterOutExcluded(pool)
-      if (filtered.length >= count) {
-        const picked = pickRandom(filtered, count, seed)
-        logPicked(picked, competenceId, level, exclude.size)
-        return picked
-      }
+    // ===== SOLO preguntas del país seleccionado =====
+    if (!countryValue) {
+      throw new Error("No hay país seleccionado para filtrar preguntas.")
     }
 
-    // ===== 2) Sin filtro de país (mismo nivel) =====
-    const qAll = query(collection(db, "questions"), ...baseConstraints, limit(Math.max(count * 10, 30)))
-    const querySnapshot = await getDocs(qAll)
-    const loadedQuestions: Question[] = querySnapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...(docSnap.data() as any),
-    }))
-
-    const filteredAll = filterOutExcluded(ensureUniqueById(loadedQuestions))
-    if (filteredAll.length >= count) {
-      const selectedQuestions = pickRandom(filteredAll, count, seed)
-      logPicked(selectedQuestions, competenceId, level, exclude.size)
-      return selectedQuestions
-    }
-
-    // ===== 3) Fallback: por competencia SIN nivel =====
-    const fallbackQuery = query(
+    const qByCountry = query(
       collection(db, "questions"),
-      where("competence", "==", competenceId),
-      limit(Math.max(count * 12, 36))
+      ...baseConstraints,
+      where("country", "==", countryValue),
+      limit(Math.max(count * 8, 24))
     )
-    const fallbackSnapshot = await getDocs(fallbackQuery)
-    const fallbackQuestions: Question[] = fallbackSnapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...(docSnap.data() as any),
-    }))
+    const snapCountry = await getDocs(qByCountry)
+    const pool = snapCountry.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Question[]
 
-    const filteredFallback = filterOutExcluded(ensureUniqueById(fallbackQuestions))
-    if (filteredFallback.length >= count) {
-      const picked = pickRandom(filteredFallback, count, seed)
-      logPicked(picked, competenceId, level, exclude.size)
-      return picked
+    const filtered = filterOutExcluded(ensureUniqueById(pool))
+    if (filtered.length < count) {
+      const msg = `No hay suficientes preguntas para ${competenceId}/${level} en ${countryValue}. Req: ${count}, disp: ${filtered.length}.`
+      console.warn(msg)
+      throw new Error(msg)
     }
 
-    const msg = `No hay suficientes preguntas NUEVAS para la competencia ${competenceId}. Req: ${count}, disp: ${filteredFallback.length}.`
-    console.warn(msg)
-    throw new Error(msg)
+    const picked = pickRandom(filtered, count, seed)
+    logPicked(picked, competenceId, level, exclude.size)
+    return picked
   } catch (error) {
     console.error("Error al cargar preguntas:", error)
     throw error
@@ -304,7 +252,6 @@ export async function updateQuestionStats(questionId: string, wasCorrect: boolea
       console.error(`La pregunta con ID ${questionId} no existe`)
       return
     }
-    // Aquí podrías incrementar contadores si los tuvieras…
     console.log(`Estadísticas actualizadas para pregunta ${questionId}: ${wasCorrect ? "correcta" : "incorrecta"}`)
   } catch (error) {
     console.error("Error al actualizar estadísticas de la pregunta:", error)
@@ -315,7 +262,6 @@ export async function updateQuestionStats(questionId: string, wasCorrect: boolea
 // Helpers
 // ==============================
 
-/** Fisher–Yates con semilla (mulberry32-like) para variar orden entre intentos */
 function pickRandom<T>(arr: T[], k: number, seed?: number): T[] {
   const a = [...arr]
   const rnd = seeded(seed ?? Date.now())
@@ -327,7 +273,6 @@ function pickRandom<T>(arr: T[], k: number, seed?: number): T[] {
 }
 
 function seeded(s: number) {
-  // mulberry32
   let t = s >>> 0
   return function () {
     t += 0x6D2B79F5

@@ -8,6 +8,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/toolti
 import { useMemo, useState } from "react"
 import { firstExerciseRoute, type LevelSlug } from "@/lib/firstExerciseRoute"
 import { useAuth } from "@/contexts/AuthContext"
+import { clearTeacherSeenQuestionsAllCountries } from "@/lib/testSession" // ⬅️ NUEVO
 
 interface CompetenceCardProps {
   competence: Competence
@@ -31,7 +32,7 @@ export default function CompetenceCard({
   startOrContinueUrl,
 }: CompetenceCardProps) {
   const router = useRouter()
-  const { userData } = useAuth()
+  const { user, userData } = useAuth() // ⬅️ ahora también necesitamos user
   const isTeacher = userData?.role === "profesor"
 
   const [locallyStarted, setLocallyStarted] = useState(false)
@@ -121,26 +122,36 @@ export default function CompetenceCard({
     router.push(`/test/${competence.id}?level=${slug}&retry=1`)
   }
 
-  // ⬇️ Reiniciar niveles SIN navegar: limpia progreso y avisa al Dashboard
-  const handleResetTeacherLevels = () => {
+  // Reiniciar niveles SIN navegar: limpia progreso + borra historial de preguntas vistas del profe (todas las de país)
+  const handleResetTeacherLevels = async () => {
     if (currentAreaLevel !== "Avanzado") return
     try {
       if (typeof window !== "undefined") {
         const compId = competence.id
-        // Flag para que el dashboard pinte estado inicial (Nivel 1)
+
+        // 1) Progreso local (ring/estado)
         localStorage.setItem(`ladico:resetLevels:${compId}`, "1")
-        // Limpiar progreso local de los 3 niveles
         ;(["basico", "intermedio", "avanzado"] as const).forEach((lvl) => {
           localStorage.removeItem(`ladico:${compId}:${lvl}:progress`)
           localStorage.removeItem(`level:${compId}:${lvl}:completed`)
           localStorage.removeItem(`ladico:completed:${compId}:${lvl}`)
         })
-        // Notificar al dashboard
+
+        // 2) Historial de preguntas vistas en sesiones determinísticas del PROFESOR (todas por país)
+        if (user?.uid) {
+          // limpiamos Básico (donde se usa el filtro/recuerdo de preguntas vistas)
+          await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Básico")
+          // por seguridad, también limpiamos Intermedio/Avanzado si existiera este tracking en tu backend
+          await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Intermedio")
+          await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Avanzado")
+        }
+
+        // 3) Notificar al dashboard para re-render inmediato (sin navegar)
         localStorage.setItem("ladico:progress:version", String(Date.now()))
         window.dispatchEvent(new Event("ladico:refresh"))
       }
-    } catch {
-      /* no-op */
+    } catch (e) {
+      console.warn("No se pudo reiniciar niveles:", e)
     }
   }
 
