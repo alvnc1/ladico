@@ -2,7 +2,11 @@
 
 import React, { useState, forwardRef, useImperativeHandle } from "react"
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter"
+import xml from "react-syntax-highlighter/dist/esm/languages/hljs/xml"
 import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs"
+
+// Registrar lenguaje para el build Light
+SyntaxHighlighter.registerLanguage("xml", xml)
 
 type Answer = {
   hidroClass: string
@@ -34,24 +38,24 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
     const normalizeClass = (value: string) =>
       value.trim().toLowerCase().replace(/^class\s*=?\s*/, "").replace(/['"]/g, "").trim()
 
-    /** calcula 0|1 y deja feedback en pantalla */
+    /** calcula 0|1 */
     const computePoint = (): 0 | 1 => {
       const okHidro = normalizeClass(answers.hidroClass) === "celeste"
       const okSolar = answers.solarHeading === "h3"
       const okPlanta = normalizeClass(answers.plantaClass) === "verde"
-      const point: 0 | 1 = okHidro && okSolar && okPlanta ? 1 : 0
-      return point
+      return okHidro && okSolar && okPlanta ? 1 : 0
     }
 
     /** llamado desde afuera por la page */
     const finish = () => {
       const point = computePoint()
+      setFeedback(point ? "✅ ¡Perfecto! Todas las respuestas son correctas." : "❌ Algunas respuestas no son correctas. Revisa y vuelve a intentar.")
       onFinish?.(point)
     }
 
     useImperativeHandle(ref, () => ({ finish }))
 
-    const rowStyle = "grid grid-cols-1 sm:grid-cols-[500px,20rem] items-center gap-2"
+    const rowStyle = "grid grid-cols-1 sm:grid-cols-[minmax(240px,1fr),20rem] items-center gap-2"
     const selectStyle =
       "px-2 py-1 rounded-md border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#286575] w-full sm:w-80 font-inherit"
 
@@ -85,9 +89,9 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
 </html>`
 
     return (
-      <div className="rounded-2xl border bg-white p-6">
+      <div className="space-y-6">{/* sin borde/fondo: hereda de la tarjeta padre */}
         {/* Vista previa + código */}
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b bg-gray-50">
               <span className="text-sm font-medium text-gray-700">Vista previa</span>
@@ -126,7 +130,9 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
         </div>
 
         {/* Preguntas */}
-        <div className="space-y-4 text-sm text-gray-700">
+        <div className="space-y-4 text-sm text-gray-700" role="group" aria-labelledby="preguntas-html">
+          <span id="preguntas-html" className="sr-only">Preguntas del ejercicio HTML</span>
+
           {/* 1) HIDRO */}
           <div className={rowStyle}>
             <label className="text-sm text-gray-800">
@@ -138,9 +144,7 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
               onChange={(e) => setAnswers({ ...answers, hidroClass: e.target.value })}
               className={selectStyle}
             >
-              <option value="" disabled>
-                Selecciona…
-              </option>
+              <option value="" disabled>Selecciona…</option>
               {/* Correctas compatibles con el normalizador */}
               <option value='class="celeste"'>class="celeste"</option>
               <option value="celeste">celeste</option>
@@ -161,9 +165,7 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
               onChange={(e) => setAnswers({ ...answers, solarHeading: e.target.value })}
               className={selectStyle}
             >
-              <option value="" disabled>
-                Selecciona…
-              </option>
+              <option value="" disabled>Selecciona…</option>
               <option value="h1">h1</option>
               <option value="h2">h2</option>
               <option value="h3">h3</option> {/* ✅ */}
@@ -184,9 +186,7 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
               onChange={(e) => setAnswers({ ...answers, plantaClass: e.target.value })}
               className={selectStyle}
             >
-              <option value="" disabled>
-                Selecciona…
-              </option>
+              <option value="" disabled>Selecciona…</option>
               {/* Correctas */}
               <option value='class="verde"'>class="verde"</option>
               <option value="verde">verde</option>
