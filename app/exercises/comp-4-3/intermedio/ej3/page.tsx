@@ -38,7 +38,7 @@ type SlotId = number | null
 
 export default function Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth() // ⬅️ ahora también userData para rol
 
   // ====== Sesión Firestore ======
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -150,7 +150,7 @@ export default function Page() {
     e.preventDefault()
   }
 
-  // Quitar un item del slot con “×” (sin borde)
+  // Quitar un item del slot con “×”
   function removeFromSlot(slotIndex: number) {
     let newPool = [...pool]
     let newSlots = [...slots] as SlotId[]
@@ -175,6 +175,9 @@ export default function Page() {
 
   // ====== Finalizar ======
   const handleFinish = async () => {
+    const isTeacher = userData?.role === "profesor"
+
+    // Guarda el punto local (para UI de resultados)
     setPoint(COMPETENCE, LEVEL, 3, point)
     const prog = getProgress(COMPETENCE, LEVEL)
     const totalPts = levelPoints(prog)
@@ -184,6 +187,12 @@ export default function Page() {
     const q2 = getPoint(prog, 2)
     const q3 = getPoint(prog, 3)
 
+    // Para profesor: forzar “aprobado” y 100% para que el dashboard muestre COMPLETADO y deje avanzar
+    const finalTotalPts = isTeacher ? 3 : totalPts
+    const finalPassed = isTeacher ? true : passed
+    const finalScore = isTeacher ? 100 : score
+
+    // Asegurar sesión y registrar respuesta de la P3
     let sid = sessionId;
     try {
       if (!sid && user) {
@@ -208,18 +217,35 @@ export default function Page() {
           }
         }
       }
+
+      if (sid) {
+        // Registrar la respuesta de la pregunta 3
+        try {
+          await markAnswered(sid, 2, point === 1)
+        } catch (e) {
+          console.warn("No se pudo registrar P3 con markAnswered:", e)
+        }
+
+        // Consolidar sesión en Firestore (para profesor quedará endTime=null, pero score/passed actualizados)
+        try {
+          await finalizeSession(sid, { correctCount: finalTotalPts, total: 3, passMin: 2 })
+        } catch (e) {
+          console.warn("No se pudo finalizar la sesión en P3:", e)
+        }
+      }
     } catch (e) {
-      console.warn("No se pudo (re)asegurar la sesión al guardar P3:", e);
+      console.warn("No se pudo (re)asegurar/finalizar la sesión al guardar P3:", e);
     }
 
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(sessionKeyFor(user.uid))
-    }
+    // Limpia referencia local a la sesión por-usuario (evita arrastrar estado a un nuevo intento)
+    try {
+      if (user) localStorage.removeItem(sessionKeyFor(user.uid))
+    } catch {}
 
     const qs = new URLSearchParams({
-      score: String(score),
-      passed: String(passed),
-      correct: String(totalPts),
+      score: String(finalScore),
+      passed: String(finalPassed),
+      correct: String(finalTotalPts),
       total: "3",
       competence: COMPETENCE,
       level: LEVEL,
@@ -227,6 +253,9 @@ export default function Page() {
       q2: String(q2),
       q3: String(q3),
     })
+    // Incluye sid para que la página de resultados pueda reconsolidar si hace falta
+    if (sid) qs.set("sid", sid)
+
     router.push(`/test/comp-4-3-intermedio/results?${qs.toString()}`)
   }
 
@@ -306,7 +335,7 @@ export default function Page() {
 
             {/* Layout DnD — dos recuadros iguales */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Pool (recuadro 1): SIN color de fondo */}
+              {/* Pool */}
               <section
                 className="bg-white border border-gray-300 rounded-2xl p-4"
                 onDragOver={allowDrop}
@@ -334,7 +363,7 @@ export default function Page() {
                 </div>
               </section>
 
-              {/* Orden final (derecha): el chip ocupa el slot; sin recuadro doble; borde AZUL al estar en el slot */}
+              {/* Orden final */}
               <section className="bg-white border border-gray-200 rounded-2xl p-4">
                 <h3 className="font-semibold text-gray-900 mb-3">Orden de mayor a menor prioridad</h3>
                 <div className="space-y-3">
@@ -355,30 +384,28 @@ export default function Page() {
                         aria-label={`Caja destino ${i + 1}`}
                       >
                         {isFilled ? (
-  <div
-    draggable
-    onDragStart={() => onDragStart("slot", i)}
-    onDragEnd={onDragEnd}
-    className="cursor-grab active:cursor-grabbing"
-  >
-    {/* Mismo tamaño y tipografía que a la izquierda: p-3, border (no border-2) */}
-    <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3">
-      <button
-        onClick={() => removeFromSlot(i)}
-        className="leading-none text-gray-500 hover:text-gray-700"
-        aria-label="Quitar"
-        type="button"
-        title="Quitar"
-      >
-        ×
-      </button>
-      <span>{techById(slot!).text}</span>
-    </div>
-  </div>
-) : (
-  <span className="text-sm text-gray-400">Suelta aquí</span>
-)}
-
+                          <div
+                            draggable
+                            onDragStart={() => onDragStart("slot", i)}
+                            onDragEnd={onDragEnd}
+                            className="cursor-grab active:cursor-grabbing"
+                          >
+                            <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3">
+                              <button
+                                onClick={() => removeFromSlot(i)}
+                                className="leading-none text-gray-500 hover:text-gray-700"
+                                aria-label="Quitar"
+                                type="button"
+                                title="Quitar"
+                              >
+                                ×
+                              </button>
+                              <span>{techById(slot!).text}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">Suelta aquí</span>
+                        )}
                       </div>
                     )
                   })}

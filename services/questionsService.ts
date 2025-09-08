@@ -1,4 +1,6 @@
 // services/questionsService.ts
+"use client"
+
 import { db } from "@/lib/firebase"
 import type { Question, Competence } from "@/types"
 import { collection, query, where, getDocs, updateDoc, doc, getDoc, limit } from "firebase/firestore"
@@ -7,12 +9,12 @@ import { collection, query, where, getDocs, updateDoc, doc, getDoc, limit } from
 // Caché de competencias
 // ==============================
 let competencesCache: Competence[] | null = null
-let cacheTimestamp: number = 0
+let cacheTimestamp = 0
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
 
 export async function loadCompetences(): Promise<Competence[]> {
   const now = Date.now()
-  if (competencesCache && (now - cacheTimestamp) < CACHE_DURATION) {
+  if (competencesCache && now - cacheTimestamp < CACHE_DURATION) {
     console.log(`📋 Usando caché de competencias (${competencesCache.length} items)`)
     return competencesCache
   }
@@ -64,9 +66,7 @@ export async function loadCompetences(): Promise<Competence[]> {
       }
     })
 
-    const competences = Array.from(competenceMap.values())
-      .sort((a, b) => a.code.localeCompare(b.code))
-
+    const competences = Array.from(competenceMap.values()).sort((a, b) => a.code.localeCompare(b.code))
     competencesCache = competences
     cacheTimestamp = now
 
@@ -155,21 +155,22 @@ function getCompetenceColor(code: string): string {
 }
 
 // ==============================
-// Carga de preguntas (con filtro por país)
+// Carga de preguntas (con filtro por país + exclusiones)
 // ==============================
 
 type LoadOpts = {
-  /** Código de país del usuario, p.ej. "CL". Si se pasa, se filtra primero por ese país y se rellena con "global". */
+  /** Código de país del usuario, p.ej. "CL". */
   country?: string | null
+  /** IDs de preguntas que deben excluirse (historial visto del profesor). */
+  excludeIds?: string[]
+  /** Semilla opcional para barajado (si quieres orden estable o “distinto cada vez”). */
+  shuffleSeed?: number
 }
 
 /**
  * Carga preguntas por competencia y nivel (tu formato "Básico 1/2", "Intermedio 1/2", "Avanzado 1/2"),
- * priorizando preguntas del país del usuario. Si no hay suficientes, rellena con "global".
- * Si aún no alcanza, cae a tu fallback original.
- *
- * ⚠️ Nota Firestore: combinamos `level in [...]` con `country == ...` en consultas separadas
- * para evitar el límite de un único operador `in`/`array-contains-any` por query.
+ * priorizando preguntas del país del usuario y excluyendo `excludeIds`. Si no hay suficientes,
+ * amplía el pool sin país, y luego sin nivel. Si aún no alcanza, lanza error.
  */
 export async function loadQuestionsByCompetence(
   competenceId: string,
@@ -178,12 +179,19 @@ export async function loadQuestionsByCompetence(
   opts: LoadOpts = {}
 ): Promise<Question[]> {
   const callId = Date.now() + Math.random()
-  console.log(`[Questions call #${callId}] loadQuestionsByCompetence: ${competenceId}::${level}::${count} country=${opts.country || "-"}`)
+  const normalizedCountry = (opts.country || "").toUpperCase() || null
+  const seed = typeof opts.shuffleSeed === "number" ? opts.shuffleSeed : Date.now()
+
+  console.log(
+    `[Questions #${callId}] ${competenceId}/${level} x${count} country=${normalizedCountry || "-"} exclude=${opts.excludeIds?.length ?? 0}`
+  )
 
   if (!db) {
     console.error("Firestore no está inicializado")
     return []
   }
+
+  const exclude = new Set<string>(opts.excludeIds ?? [])
 
   try {
     const baseConstraints = [
@@ -191,77 +199,89 @@ export async function loadQuestionsByCompetence(
       where("level", "in", [`${level} 1`, `${level} 2`]),
     ] as const
 
-    // ========== 1) Primer intento: solo país del usuario ==========
+    // Helpers locales
+    const filterOutExcluded = (arr: Question[]) => arr.filter((q) => !exclude.has(q.id))
+    const ensureUniqueById = (arr: Question[]) => {
+      const seen = new Set<string>()
+      const out: Question[] = []
+      for (const q of arr) {
+        if (!seen.has(q.id)) {
+          seen.add(q.id)
+          out.push(q)
+        }
+      }
+      return out
+    }
+
+    // ===== 1) País del usuario (completa con global) =====
     let pool: Question[] = []
-    if (opts.country) {
+    if (normalizedCountry) {
       const qByCountry = query(
         collection(db, "questions"),
         ...baseConstraints,
-        where("country", "==", opts.country),
-        limit(count * 4) // traemos un pool más grande para muestrear
+        where("country", "==", normalizedCountry),
+        limit(Math.max(count * 8, 24))
       )
       const snapCountry = await getDocs(qByCountry)
-      pool = snapCountry.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as Question[]
+      pool = snapCountry.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Question[]
 
-      // ========== 2) Relleno con "global" si no alcanzó ==========
-      const NEED_GLOBAL = pool.length < count
-      if (NEED_GLOBAL) {
+      if (pool.length < count) {
         const qGlobal = query(
           collection(db, "questions"),
           ...baseConstraints,
           where("country", "==", "global"),
-          limit(count * 4)
+          limit(Math.max(count * 8, 24))
         )
         const snapGlobal = await getDocs(qGlobal)
-        const globalPool = snapGlobal.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as Question[]
-
-        // merge sin duplicados
-        const seen = new Set(pool.map(x => x.id))
-        for (const it of globalPool) if (!seen.has(it.id)) pool.push(it)
+        const globalPool = snapGlobal.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Question[]
+        pool = ensureUniqueById([...pool, ...globalPool])
       }
 
-      if (pool.length >= count) {
-        const picked = pickRandom(pool, count)
-        logPicked(picked, competenceId, level)
+      const filtered = filterOutExcluded(pool)
+      if (filtered.length >= count) {
+        const picked = pickRandom(filtered, count, seed)
+        logPicked(picked, competenceId, level, exclude.size)
         return picked
       }
     }
 
-    // ========== 3) Fallback: sin filtro de país (tu lógica original) ==========
-    const qAll = query(
-      collection(db, "questions"),
-      ...baseConstraints,
-      limit(count * 2)
-    )
+    // ===== 2) Sin filtro de país (mismo nivel) =====
+    const qAll = query(collection(db, "questions"), ...baseConstraints, limit(Math.max(count * 10, 30)))
     const querySnapshot = await getDocs(qAll)
-    const loadedQuestions: Question[] = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...(doc.data() as any),
+    const loadedQuestions: Question[] = querySnapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...(docSnap.data() as any),
     }))
 
-    if (loadedQuestions.length >= count) {
-      const selectedQuestions = pickRandom(loadedQuestions, count)
-      logPicked(selectedQuestions, competenceId, level)
+    const filteredAll = filterOutExcluded(ensureUniqueById(loadedQuestions))
+    if (filteredAll.length >= count) {
+      const selectedQuestions = pickRandom(filteredAll, count, seed)
+      logPicked(selectedQuestions, competenceId, level, exclude.size)
       return selectedQuestions
     }
 
-    // ========== 4) Ultra-fallback: por competencia sin nivel ==========
+    // ===== 3) Fallback: por competencia SIN nivel =====
     const fallbackQuery = query(
       collection(db, "questions"),
       where("competence", "==", competenceId),
-      limit(count)
+      limit(Math.max(count * 12, 36))
     )
     const fallbackSnapshot = await getDocs(fallbackQuery)
-    const fallbackQuestions: Question[] = fallbackSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...(doc.data() as any),
+    const fallbackQuestions: Question[] = fallbackSnapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...(docSnap.data() as any),
     }))
 
-    if (fallbackQuestions.length >= count) {
-      return pickRandom(fallbackQuestions, count)
+    const filteredFallback = filterOutExcluded(ensureUniqueById(fallbackQuestions))
+    if (filteredFallback.length >= count) {
+      const picked = pickRandom(filteredFallback, count, seed)
+      logPicked(picked, competenceId, level, exclude.size)
+      return picked
     }
 
-    throw new Error(`No hay suficientes preguntas para la competencia ${competenceId}. Se requieren al menos ${count} preguntas.`)
+    const msg = `No hay suficientes preguntas NUEVAS para la competencia ${competenceId}. Req: ${count}, disp: ${filteredFallback.length}.`
+    console.warn(msg)
+    throw new Error(msg)
   } catch (error) {
     console.error("Error al cargar preguntas:", error)
     throw error
@@ -279,21 +299,12 @@ export async function updateQuestionStats(questionId: string, wasCorrect: boolea
   }
   try {
     const questionRef = doc(db, "questions", questionId)
-
-    // Verificación de existencia (puedes omitirla si ya confías en el id)
     const questionSnap = await getDoc(questionRef)
     if (!questionSnap.exists()) {
       console.error(`La pregunta con ID ${questionId} no existe`)
       return
     }
-
-    // Aquí puedes incrementar contadores si los tuvieras (correct/attempts).
-    // Ejemplo:
-    // await updateDoc(questionRef, {
-    //   attempts: increment(1),
-    //   correct: wasCorrect ? increment(1) : increment(0),
-    // })
-
+    // Aquí podrías incrementar contadores si los tuvieras…
     console.log(`Estadísticas actualizadas para pregunta ${questionId}: ${wasCorrect ? "correcta" : "incorrecta"}`)
   } catch (error) {
     console.error("Error al actualizar estadísticas de la pregunta:", error)
@@ -304,17 +315,32 @@ export async function updateQuestionStats(questionId: string, wasCorrect: boolea
 // Helpers
 // ==============================
 
-function pickRandom<T>(arr: T[], k: number): T[] {
+/** Fisher–Yates con semilla (mulberry32-like) para variar orden entre intentos */
+function pickRandom<T>(arr: T[], k: number, seed?: number): T[] {
   const a = [...arr]
+  const rnd = seeded(seed ?? Date.now())
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = Math.floor(rnd() * (i + 1))
     ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a.slice(0, k)
 }
 
-function logPicked(selectedQuestions: Question[], competenceId: string, level: string) {
-  console.log(`✅ ${selectedQuestions.length} preguntas seleccionadas para ${competenceId}/${level}:`)
+function seeded(s: number) {
+  // mulberry32
+  let t = s >>> 0
+  return function () {
+    t += 0x6D2B79F5
+    let r = Math.imul(t ^ (t >>> 15), 1 | t)
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function logPicked(selectedQuestions: Question[], competenceId: string, level: string, excluded: number = 0) {
+  console.log(
+    `✅ ${selectedQuestions.length} preguntas seleccionadas para ${competenceId}/${level} (excluidas: ${excluded}):`
+  )
   selectedQuestions.forEach((q, i) => {
     const correctDisplay = Array.isArray((q as any).correctAnswerIndex)
       ? (q as any).correctAnswerIndex.map((idx: number) => idx + 1).join(", ")

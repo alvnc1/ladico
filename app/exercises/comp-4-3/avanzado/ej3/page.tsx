@@ -43,7 +43,8 @@ function loadPersisted(): Persisted {
 
 export default function AdvancedEj3Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth()                     // ⬅️ necesitamos el rol
+  const isTeacher = userData?.role === "profesor"          // ⬅️ flag profesor
   const [sessionId, setSessionId] = useState<string | null>(null)
 
   // Para evitar dobles creaciones en StrictMode/carreras
@@ -141,20 +142,25 @@ export default function AdvancedEj3Page() {
       }
     }
 
-    // 5) Consolidar progreso local y **finalizar sesión**
+    // 5) Consolidar progreso local
     const prog = getProgress(COMPETENCE, LEVEL)
-    const totalPts = levelPoints(prog) // 0..3
-    const passed = isLevelPassed(prog) // >=2
-    const score = Math.round((totalPts / 3) * 100)
+    let totalPts = levelPoints(prog) // 0..3
+    let passed = isLevelPassed(prog) // >=2
 
+    // ⬅️ Forzar aprobación si es PROFESOR
+    if (isTeacher) {
+      totalPts = 3
+      passed = true
+    }
+
+    const score = Math.round((totalPts / 3) * 100)
     const q1 = getPoint(prog, 1)
     const q2 = getPoint(prog, 2)
     const q3 = getPoint(prog, 3)
 
-    // --- NUEVO: marcar explícitamente “nivel completado” para que el dashboard lo muestre al volver ---
+    // Flags para que el dashboard muestre completado
     try {
       if (typeof window !== "undefined") {
-        // Flags redundantes y una “version key” para que el dashboard invalide cualquier memo local
         const flag1 = `level:${COMPETENCE}:${LEVEL}:completed`
         const flag2 = `ladico:completed:${COMPETENCE}:${LEVEL}`
         if (passed) {
@@ -164,7 +170,6 @@ export default function AdvancedEj3Page() {
           localStorage.removeItem(flag1)
           localStorage.removeItem(flag2)
         }
-        // “bump” que el Dashboard puede observar para refrescar su estado sin recargar
         localStorage.setItem("ladico:progress:version", String(Date.now()))
       }
     } catch {
@@ -173,9 +178,7 @@ export default function AdvancedEj3Page() {
 
     if (sid) {
       try {
-        // Esto permite que el dashboard marque el nivel como completado
         await finalizeSession(sid, { correctCount: totalPts, total: 3, passMin: 2 })
-        // Limpia la sesión local (por-usuario) para forzar refresco en el dashboard
         if (typeof window !== "undefined" && user) {
           localStorage.removeItem(SESSION_KEY + ":" + user.uid)
         }
@@ -194,17 +197,13 @@ export default function AdvancedEj3Page() {
       q1: String(q1),
       q2: String(q2),
       q3: String(q3),
-      // extras útiles para debug/resultados
       sub3: String(sub),
       sid: sid || "",
-      // También pasamos una clave de refresco para que, si el usuario vuelve,
-      // el dashboard pueda invalidar caches basadas en query
       refresh: String(Date.now()),
     })
 
-    // 6) Ruta correcta para resultados en Avanzado
     router.push(`/test/comp-4-3-advanced/results?${qs.toString()}`)
-  }, [router, sessionId, user?.uid])
+  }, [router, sessionId, user?.uid, isTeacher])
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -289,11 +288,6 @@ export default function AdvancedEj3Page() {
                 Finalizar
               </Button>
             </div>
-
-            {/* Debug opcional:
-            <pre className="text-xs text-gray-500">
-              {JSON.stringify(loadPersisted(), null, 2)}
-            </pre> */}
           </CardContent>
         </Card>
       </div>

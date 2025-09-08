@@ -29,6 +29,8 @@ export default function Dashboard() {
   const { competences, loading: loadingCompetences } = useCompetences()
   const router = useRouter()
 
+  const isTeacher = userData?.role === "profesor"
+
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("Todas")
 
@@ -42,6 +44,9 @@ export default function Dashboard() {
   }
 
   const filteredCompetences = competences.filter((competence) => {
+    // guard por si algún item viene vacío
+    if (!competence) return false
+
     const q = searchTerm.trim().toLowerCase()
     const areaName = getAreaName(competence.code).toLowerCase()
 
@@ -54,11 +59,11 @@ export default function Dashboard() {
     const hasQuestions = (counts[competence.id] || 0) >= 3
 
     if (filterType === "Iniciadas" && userData) {
-      const userProg = userData.completedCompetences.includes(competence.id) ? 100 : progress[competence.id] || 0
+      const userProg = userData.completedCompetences.includes(competence.id) ? 100 : (progress[competence.id] || 0)
       return matchesSearch && userProg > 0 && userProg < 100
     }
     if (filterType === "Pendientes" && userData) {
-      const userProg = userData.completedCompetences.includes(competence.id) ? 100 : progress[competence.id] || 0
+      const userProg = userData.completedCompetences.includes(competence.id) ? 100 : (progress[competence.id] || 0)
       return matchesSearch && userProg === 0 && hasQuestions
     }
 
@@ -66,11 +71,11 @@ export default function Dashboard() {
   })
 
   const groupedCompetences = {
-    "Búsqueda y gestión de información": filteredCompetences.filter((c) => c.code.startsWith("1.")),
-    "Comunicación y colaboración": filteredCompetences.filter((c) => c.code.startsWith("2.")),
-    "Creación de contenidos digitales": filteredCompetences.filter((c) => c.code.startsWith("3.")),
-    Seguridad: filteredCompetences.filter((c) => c.code.startsWith("4.")),
-    "Resolución de problemas": filteredCompetences.filter((c) => c.code.startsWith("5.")),
+    "Búsqueda y gestión de información": filteredCompetences.filter((c) => c?.code?.startsWith("1.")),
+    "Comunicación y colaboración": filteredCompetences.filter((c) => c?.code?.startsWith("2.")),
+    "Creación de contenidos digitales": filteredCompetences.filter((c) => c?.code?.startsWith("3.")),
+    Seguridad: filteredCompetences.filter((c) => c?.code?.startsWith("4.")),
+    "Resolución de problemas": filteredCompetences.filter((c) => c?.code?.startsWith("5.")),
   }
 
   const allFilteredCompetences = Object.values(groupedCompetences).flat()
@@ -91,19 +96,15 @@ export default function Dashboard() {
 
   if (!user || !userData) return null
 
-  // 🔗 Calcula la URL para empezar o continuar (sin tocar el anillo ni la lógica del básico)
+  // 🔗 URL para empezar/continuar según progreso real (igual para alumno y profesor)
   const startOrContinueUrlFor = (competenceId: string, level: "Básico" | "Intermedio" | "Avanzado") => {
     const st = perCompetenceLevel[competenceId]?.[level]
-
-    // slug del nivel
     const slug: LevelSlug = level === "Básico" ? "basico" : (level.toLowerCase() as LevelSlug)
 
-    // si no hay progreso o ya está completado → ir al ej1 (comportamiento original)
     if (!st || st.completed || (!st.inProgress && st.answered === 0)) {
       return firstExerciseRoute(competenceId, slug)
     }
 
-    // hay progreso: responde 0..3 → ej1/ej2/ej3
     const nextIndex = Math.min(st.answered, 2) // 0→ej1, 1→ej2, 2→ej3
     const compSlug = competenceId.replace(".", "-")
     return `/exercises/comp-${compSlug}/${slug}/ej${nextIndex + 1}`
@@ -183,7 +184,9 @@ export default function Dashboard() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 lg:gap-6">
-                      {competences.map((competence) => {
+                      {competences.map((competence, idx) => {
+                        if (!competence) return null // guard
+
                         // Nivel de referencia según el área
                         const areaLevel = currentAreaLevel(competence.dimension)
 
@@ -203,7 +206,8 @@ export default function Dashboard() {
                           }
                         }
 
-                        const status =
+                        // Estado base
+                        const baseStatus =
                           perCompetenceLevel[competence.id]?.[displayLevel] || ({
                             completed: false,
                             inProgress: false,
@@ -212,17 +216,23 @@ export default function Dashboard() {
                             progressPct: 0,
                           } as const)
 
+                        // ✅ PROFESOR: si respondió las 3 preguntas del nivel, mostramos anillo completo
+                        const status =
+                          isTeacher && baseStatus.answered >= baseStatus.total
+                            ? { ...baseStatus, completed: true, inProgress: false, progressPct: 100 }
+                            : baseStatus
+
                         const area = areaStats[competence.dimension]?.[displayLevel]
                         const isAreaCompleted = !!area && area.completedCount === area.totalCount
                         const nextId = nextCompetenceToAttempt(competence.dimension, displayLevel)
                         const isNextCandidate = nextId === competence.id
 
-                        // 🔗 NUEVO: URL para continuar donde quedó (o empezar en ej1)
+                        // 🔗 URL final (alumno y profesor según progreso real)
                         const startOrContinueUrl = startOrContinueUrlFor(competence.id, displayLevel)
 
                         return (
                           <CompetenceCard
-                            key={competence.id}
+                            key={competence.id || `comp-${idx}`}
                             competence={competence}
                             questionCount={counts[competence.id] || 0}
                             currentAreaLevel={displayLevel}
@@ -230,8 +240,6 @@ export default function Dashboard() {
                             areaCompletedAtLevel={isAreaCompleted}
                             isNextCandidate={isNextCandidate}
                             isPreviousCompetenceCompleted={isPreviousCompetenceCompleted}
-                            // prop opcional que el componente usará para hacer router.push(...)
-                            // sin alterar tu visualización ni el cálculo del anillo
                             startOrContinueUrl={startOrContinueUrl}
                           />
                         )

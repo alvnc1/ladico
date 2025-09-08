@@ -7,17 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useMemo, useState } from "react"
 import { firstExerciseRoute, type LevelSlug } from "@/lib/firstExerciseRoute"
-
-const getDimensionName = (dimension: string): string => {
-  const dimensionNames: Record<string, string> = {
-    "Búsqueda y gestión de información": "Búsqueda y Gestión de Información",
-    "Comunicación y colaboración": "Comunicación y Colaboración",
-    "Creación de contenidos digitales": "Creación de Contenidos Digitales",
-    "Seguridad": "Seguridad",
-    "Resolución de problemas": "Resolución de Problemas",
-  }
-  return dimensionNames[dimension] || dimension
-}
+import { useAuth } from "@/contexts/AuthContext"
 
 interface CompetenceCardProps {
   competence: Competence
@@ -27,7 +17,6 @@ interface CompetenceCardProps {
   areaCompletedAtLevel: boolean
   isNextCandidate: boolean
   isPreviousCompetenceCompleted: (competenceId: string, level: "Básico" | "Intermedio" | "Avanzado") => boolean
-  /** URL opcional para continuar exactamente donde quedó SOLO si hay sesión en progreso. */
   startOrContinueUrl?: string
 }
 
@@ -36,49 +25,31 @@ export default function CompetenceCard({
   questionCount = 0,
   currentAreaLevel,
   levelStatus,
-  areaCompletedAtLevel, // no se usa para bloquear
+  areaCompletedAtLevel,
   isNextCandidate,
-  isPreviousCompetenceCompleted, // no se usa para bloquear
+  isPreviousCompetenceCompleted,
   startOrContinueUrl,
 }: CompetenceCardProps) {
   const router = useRouter()
-  const [showFullDescription, setShowFullDescription] = useState(false)
+  const { userData } = useAuth()
+  const isTeacher = userData?.role === "profesor"
+
   const [locallyStarted, setLocallyStarted] = useState(false)
 
   const hasEnoughQuestions = questionCount >= 3
 
   const getCompetenceSpecificColor = () => {
     const competenceColors: Record<string, string> = {
-      "1.1": "#F3D37B",
-      "1.2": "#F3D37B",
-      "1.3": "#F3D37B",
-      "2.1": "#A8D4F1",
-      "2.2": "#A8D4F1",
-      "2.3": "#A8D4F1",
-      "2.4": "#A8D4F1",
-      "2.5": "#A8D4F1",
-      "2.6": "#A8D4F1",
-      "3.1": "#F5A78D",
-      "3.2": "#F5A78D",
-      "3.3": "#F5A78D",
-      "3.4": "#F5A78D",
-      "4.1": "#A5D0A0",
-      "4.2": "#A5D0A0",
-      "4.3": "#A5D0A0",
-      "4.4": "#A5D0A0",
-      "5.1": "#F1A5A0",
-      "5.2": "#F1A5A0",
-      "5.3": "#F1A5A0",
-      "5.4": "#F1A5A0",
+      "1.1": "#F3D37B", "1.2": "#F3D37B", "1.3": "#F3D37B",
+      "2.1": "#A8D4F1", "2.2": "#A8D4F1", "2.3": "#A8D4F1", "2.4": "#A8D4F1", "2.5": "#A8D4F1", "2.6": "#A8D4F1",
+      "3.1": "#F5A78D", "3.2": "#F5A78D", "3.3": "#F5A78D", "3.4": "#F5A78D",
+      "4.1": "#A5D0A0", "4.2": "#A5D0A0", "4.3": "#A5D0A0", "4.4": "#A5D0A0",
+      "5.1": "#F1A5A0", "5.2": "#F1A5A0", "5.3": "#F1A5A0", "5.4": "#F1A5A0",
     }
     return competenceColors[competence.id] || "#D1D5DB"
   }
 
   const ringColor = getCompetenceSpecificColor()
-
-  const isLongDescription = competence.description.length > 80
-  const displayDescription =
-    showFullDescription || !isLongDescription ? competence.description : `${competence.description.substring(0, 80)}...`
 
   const levelNumber = useMemo(() => {
     return currentAreaLevel === "Básico" ? 1 : currentAreaLevel === "Intermedio" ? 2 : 3
@@ -87,13 +58,20 @@ export default function CompetenceCard({
   const circumference = useMemo(() => 2 * Math.PI * 18, [])
 
   const effectiveProgressPct = useMemo(() => {
+    // 🔸 Profesor en Avanzado completado → anillo siempre 100%
+    if (isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed) {
+      return 100
+    }
     if (locallyStarted && !levelStatus.inProgress && !levelStatus.completed) {
       return 15
     }
     return levelStatus.progressPct
-  }, [levelStatus.progressPct, levelStatus.inProgress, levelStatus.completed, locallyStarted])
+  }, [isTeacher, currentAreaLevel, levelStatus.progressPct, levelStatus.inProgress, levelStatus.completed, locallyStarted])
 
-  const dashOffset = useMemo(() => circumference * (1 - effectiveProgressPct / 100), [circumference, effectiveProgressPct])
+  const dashOffset = useMemo(
+    () => circumference * (1 - effectiveProgressPct / 100),
+    [circumference, effectiveProgressPct]
+  )
 
   const showDash = levelStatus.inProgress || levelStatus.completed || locallyStarted
 
@@ -104,11 +82,13 @@ export default function CompetenceCard({
     return `Nivel ${levelNumber}`
   }, [levelStatus.inProgress, levelStatus.completed, locallyStarted, levelNumber])
 
-  // ===== Desbloqueo temporal entre competencias =====
-  const isLastLevel = levelNumber === 3
-  const prevOk = true // no exigimos competencia previa del área
+  // Helpers
+  const levelToSlug = (lvl: "Básico" | "Intermedio" | "Avanzado"): LevelSlug =>
+    lvl === "Básico" ? "basico" : lvl === "Intermedio" ? "intermedio" : "avanzado"
 
-  const canStartCurrent = hasEnoughQuestions && !levelStatus.completed && prevOk
+  // ===== Reglas de botones =====
+  const isLastLevel = levelNumber === 3
+  const canStartCurrent = hasEnoughQuestions && !levelStatus.completed
   const canAdvanceToNextLevel = levelStatus.completed && !isLastLevel
   const canStartOrContinue = levelStatus.inProgress || canStartCurrent || canAdvanceToNextLevel
 
@@ -119,52 +99,49 @@ export default function CompetenceCard({
     return "Bloqueado"
   })()
 
+  // En niveles 1/2 (Básico/Intermedio), mostrar “Volver a intentar” solo si se puede avanzar
+  const showRetryButton = isTeacher && canAdvanceToNextLevel
+
   const handleStartOrContinue = () => {
     if (!canStartOrContinue) return
-
-    const targetLevelNumber = canAdvanceToNextLevel ? levelNumber + 1 : levelNumber
-    const levelMap: Record<number, "Básico" | "Intermedio" | "Avanzado"> = { 1: "Básico", 2: "Intermedio", 3: "Avanzado" }
-    const targetLevelName = levelMap[targetLevelNumber]
-
-    const dimensionName = getDimensionName(competence.dimension)
-    const competenceNumber = competence.code.split(".")[1]
-    const areaNumber = competence.code.split(".")[0]
-    const totalInArea = areaNumber === "1" ? 3 : areaNumber === "2" ? 6 : 4
-    const currentPosition = Number.parseInt(competenceNumber)
-
-    const intro = canAdvanceToNextLevel ? `🚀 AVANZAR AL NIVEL ${targetLevelNumber}` : `🎯 EVALUACIÓN: "${competence.name}"`
-
-    const confirmed = confirm(
-      `${intro}\n\n` +
-        `📍 Área: ${dimensionName}\n` +
-        `📊 Posición: ${currentPosition}/${totalInArea} competencias del área\n` +
-        `🎯 Nivel a realizar: ${targetLevelName}\n` +
-        `📝 Preguntas: 3\n` +
-        `⏱️ Tiempo estimado: 5-10 minutos\n\n` +
-        `¿Deseas continuar?`
-    )
-
-    if (!confirmed) return
     setLocallyStarted(true)
 
-    // 🔑 Solo usamos startOrContinueUrl si REALMENTE hay una sesión en progreso.
-    if (levelStatus.inProgress && startOrContinueUrl) {
-      router.push(startOrContinueUrl)
+    const targetLevelNumber = canAdvanceToNextLevel ? levelNumber + 1 : levelNumber
+    const levelMap: Record<number, "Básico" | "Intermedio" | "Avanzado"> = {
+      1: "Básico",
+      2: "Intermedio",
+      3: "Avanzado",
+    }
+    const targetLevelName = levelMap[targetLevelNumber]
+
+    const url = firstExerciseRoute(competence.id, levelToSlug(targetLevelName))
+    router.push(url)
+  }
+
+  // Intermedio/Avanzado → ej1; Básico mantiene /test?...retry=1
+  const handleRetryTeacher = () => {
+    const compSlug = competence.id.replace(".", "-")
+    if (currentAreaLevel === "Intermedio") {
+      router.push(`/exercises/comp-${compSlug}/intermedio/ej1?retry=1`)
       return
     }
+    if (currentAreaLevel === "Avanzado") {
+      router.push(`/exercises/comp-${compSlug}/avanzado/ej1?retry=1`)
+      return
+    }
+    const slug = levelToSlug(currentAreaLevel)
+    router.push(`/test/${competence.id}?level=${slug}&retry=1`)
+  }
 
-    // En cualquier otro caso, iniciar en el ej1 del nivel objetivo.
-    const toSlug = (lvl: "Básico" | "Intermedio" | "Avanzado"): LevelSlug =>
-      lvl === "Básico" ? "basico" : (lvl.toLowerCase() as LevelSlug)
-
-    const url = firstExerciseRoute(competence.id, toSlug(targetLevelName))
-    router.push(url)
+  const handleResetTeacherLevels = () => {
+    if (currentAreaLevel !== "Avanzado") return
+    router.push(`/test/${competence.id}?level=avanzado&resetAll=1`)
   }
 
   return (
     <div className="relative bg-white rounded-2xl hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group border border-gray-200 h-[300px] max-h-[300px] flex flex-col">
       <div className="overflow-hidden rounded-2xl bg-white h-full flex flex-col">
-        <div className="h-6 rounded-t-2xl" style={{ backgroundColor: getCompetenceSpecificColor() }} />
+        <div className="h-6 rounded-t-2xl" style={{ backgroundColor: ringColor }} />
 
         <div className="p-5 flex-1 flex flex-col overflow-hidden text-center">
           <div className="overflow-y-auto flex-1 pr-1">
@@ -184,11 +161,7 @@ export default function CompetenceCard({
                   <circle cx="20" cy="20" r="18" fill="none" stroke="#e5e7eb" strokeWidth="4" />
                   {showDash && (
                     <circle
-                      cx="20"
-                      cy="20"
-                      r="18"
-                      fill="none"
-                      strokeWidth="4"
+                      cx="20" cy="20" r="18" fill="none" strokeWidth="4"
                       stroke={ringColor}
                       strokeDasharray={circumference}
                       strokeDashoffset={dashOffset}
@@ -204,40 +177,82 @@ export default function CompetenceCard({
             </div>
           </div>
 
-          <Button
-            onClick={handleStartOrContinue}
-            className={`w-full rounded-full py-3 text-sm font-semibold transition-all duration-200 border mt-3
-            ${
-              canStartOrContinue
-                ? "bg-[#286675] hover:bg-[#1e4a56] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] border-transparent font-bold"
-                : "bg-gray-100 text-gray-400 border-gray-200"
-            }`}
-            disabled={!canStartOrContinue}
-          >
-            {canStartOrContinue ? (
-              btnLabel
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                {levelStatus.completed ? (
-                  <>
-                    <svg className="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-xs text-green-700 font-medium">Completado</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="h-4 w-4 text-red-500" />
-                    <span className="text-xs text-red-700">Bloqueado</span>
-                  </>
-                )}
-              </span>
-            )}
-          </Button>
+          {/* Botonera */}
+          {isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed ? (
+            // SOLO cuando Avanzado está COMPLETADO
+            <div className="mt-3 flex gap-2">
+              <Button
+                onClick={handleRetryTeacher}
+                variant="outline"
+                className="w-full rounded-full py-3 text-sm font-semibold border-2 border-[#94b2ba] text-[#286675] hover:bg-[#f1f6f8]"
+              >
+                Volver a intentar
+              </Button>
+              <Button
+                onClick={handleResetTeacherLevels}
+                className="w-full rounded-full py-3 text-sm font-semibold bg-[#286675] hover:bg-[#1e4a56] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] border-transparent font-bold"
+              >
+                Reiniciar niveles
+              </Button>
+            </div>
+          ) : showRetryButton ? (
+            <div className="mt-3 flex gap-2">
+              <Button
+                onClick={handleRetryTeacher}
+                variant="outline"
+                className="w-full rounded-full py-3 text-sm font-semibold border-2 border-[#94b2ba] text-[#286675] hover:bg-[#f1f6f8]"
+              >
+                Volver a intentar
+              </Button>
+              <Button
+                onClick={handleStartOrContinue}
+                className={`w-full rounded-full py-3 text-sm font-semibold transition-all duration-200 border
+                ${
+                  canStartOrContinue
+                    ? "bg-[#286675] hover:bg-[#1e4a56] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] border-transparent font-bold"
+                    : "bg-gray-100 text-gray-400 border-gray-200"
+                }`}
+                disabled={!canStartOrContinue}
+              >
+                {btnLabel}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={handleStartOrContinue}
+              className={`w-full rounded-full py-3 text-sm font-semibold transition-all duration-200 border mt-3
+              ${
+                canStartOrContinue
+                  ? "bg-[#286675] hover:bg-[#1e4a56] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] border-transparent font-bold"
+                  : "bg-gray-100 text-gray-400 border-gray-200"
+              }`}
+              disabled={!canStartOrContinue}
+            >
+              {canStartOrContinue ? (
+                btnLabel
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  {levelStatus.completed ? (
+                    <>
+                      <svg className="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-xs text-green-700 font-medium">Completado</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-4 w-4 text-red-500" />
+                      <span className="text-xs text-red-700">Bloqueado</span>
+                    </>
+                  )}
+                </span>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>
