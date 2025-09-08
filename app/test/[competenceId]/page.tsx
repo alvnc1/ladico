@@ -199,6 +199,12 @@ export default function TestPage() {
 
       await completeSession(completedSession, correctAnswers)
 
+      // 🔔 PING AL DASHBOARD: forzar recomputo de hooks/anillo
+      try {
+        localStorage.setItem("ladico:progress:version", String(Date.now()))
+        window.dispatchEvent(new Event("ladico:refresh"))
+      } catch {}
+
       // Profesor: NO modificar progreso/puntos
       if (!isTeacher) {
         try {
@@ -311,7 +317,6 @@ export default function TestPage() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-gray-50 sm:bg-transparent">
       <TestInterface

@@ -88,7 +88,7 @@ export default function Dashboard() {
     "Búsqueda y gestión de información": filteredCompetences.filter((c) => c?.code?.startsWith("1.")),
     "Comunicación y colaboración": filteredCompetences.filter((c) => c?.code?.startsWith("2.")),
     "Creación de contenidos digitales": filteredCompetences.filter((c) => c?.code?.startsWith("3.")),
-    "Seguridad": filteredCompetences.filter((c) => c?.code?.startsWith("4.")),
+    Seguridad: filteredCompetences.filter((c) => c?.code?.startsWith("4.")),
     "Resolución de problemas": filteredCompetences.filter((c) => c?.code?.startsWith("5.")),
   }
 
@@ -197,11 +197,31 @@ export default function Dashboard() {
                       if (!competence) return null
 
                       // ⬇️ Si la tarjeta fue “reiniciada”, mostrar estado inicial (Nivel 1, 0%)
+                      const resetKey = `ladico:resetLevels:${competence.id}`
                       const resetFlag =
                         typeof window !== "undefined" &&
-                        localStorage.getItem(`ladico:resetLevels:${competence.id}`) === "1"
+                        localStorage.getItem(resetKey) === "1"
 
+                      // 🔧 Auto-unlock: si ya hay progreso real (desde Firestore), quitamos el flag
                       if (resetFlag) {
+                        const compLevels = perCompetenceLevel[competence.id]
+                        const hasActivity =
+                          compLevels &&
+                          (["Básico", "Intermedio", "Avanzado"] as const).some((L) => {
+                            const st = compLevels[L]
+                            return st && (st.completed || st.inProgress || (st.answered ?? 0) > 0)
+                          })
+                        if (hasActivity && typeof window !== "undefined") {
+                          localStorage.removeItem(resetKey)
+                        }
+                      }
+
+                      // Si el flag sigue activo, mostramos tarjeta en estado inicial
+                      if (
+                        resetFlag &&
+                        typeof window !== "undefined" &&
+                        localStorage.getItem(resetKey) === "1"
+                      ) {
                         return (
                           <CompetenceCard
                             key={`reset-${competence.id}-${idx}`}

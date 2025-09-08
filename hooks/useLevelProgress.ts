@@ -43,10 +43,12 @@ export interface UseLevelProgressResult {
 }
 
 export function useLevelProgress(): UseLevelProgressResult {
-  const { user } = useAuth()
+  const { user, userData } = useAuth() // <-- agregar userData para saber si es profesor
   const { competences, loading: loadingCompetences } = useCompetences()
   const [loading, setLoading] = useState(true)
   const [perCompetenceLevel, setPerCompetenceLevel] = useState<CompetenceLevelMap>({})
+
+  const isTeacher = userData?.role === "profesor" // <-- flag profesor
 
   useEffect(() => {
     // Evita SSR y espera competences
@@ -104,7 +106,7 @@ export function useLevelProgress(): UseLevelProgressResult {
             if (sessions.length > 1) {
               console.warn(`⚠️ Sesiones duplicadas para ${cid}/${levelNorm}: ${sessions.length}`)
             }
-            const consolidatedStatus = consolidateSessionGroup(sessions)
+            const consolidatedStatus = consolidateSessionGroup(sessions, isTeacher) // <-- pasar isTeacher
             map[cid][levelNorm] = consolidatedStatus
           })
 
@@ -139,7 +141,7 @@ export function useLevelProgress(): UseLevelProgressResult {
     return () => {
       if (unsubscribe) unsubscribe()
     }
-  }, [user?.uid, competences, loadingCompetences])
+  }, [user?.uid, competences, loadingCompetences, isTeacher]) // <-- dependemos de isTeacher
 
   // Mapa de dimensión por competencia
   const dimensionByCompetence = useMemo(() => {
@@ -234,7 +236,10 @@ function normalizeLevel(raw: string): LevelName | null {
 }
 
 // Consolida un grupo de sesiones (misma competencia+nivel) a un único LevelStatus
-function consolidateSessionGroup(sessions: Array<{ doc: any; data: any }>): LevelStatus {
+function consolidateSessionGroup(
+  sessions: Array<{ doc: any; data: any }>,
+  isTeacher: boolean // <-- agregar parámetro profesor
+): LevelStatus {
   const initStatus = (): LevelStatus => ({
     completed: false,
     inProgress: false,
@@ -243,11 +248,11 @@ function consolidateSessionGroup(sessions: Array<{ doc: any; data: any }>): Leve
     progressPct: 0,
   })
   if (sessions.length === 0) return initStatus()
-  if (sessions.length === 1) return processSessionData(sessions[0].data)
+  if (sessions.length === 1) return processSessionData(sessions[0].data, isTeacher) // <-- pasar flag
 
   const processedSessions = sessions.map((s) => ({
     ...s,
-    processed: processSessionData(s.data),
+    processed: processSessionData(s.data, isTeacher), // <-- pasar flag
   }))
 
   const completedSessions = processedSessions.filter((s) => s.processed.completed)
@@ -288,19 +293,41 @@ function consolidateSessionGroup(sessions: Array<{ doc: any; data: any }>): Leve
 }
 
 // Traduce una sesión individual a LevelStatus (mantiene tu semántica)
-function processSessionData(data: any): LevelStatus {
+// Agregado: si es profesor, marca completado=100% cuando haya endTime o todas respondidas
+function processSessionData(data: any, isTeacher: boolean): LevelStatus {
   const answers: Array<number | null> = Array.isArray(data?.answers) ? data.answers : []
   const answered = answers.filter((a) => a !== null && a !== undefined).length
   const total = Math.max(3, answers.length || 3)
 
-  // Si ya traes un score numérico lo usamos; si no, aproximamos por % de respondidas
   const score: number =
     typeof data?.score === "number" ? data.score : Math.round((answered / total) * 100)
 
   const hasEndTime = typeof data?.endTime !== "undefined" && data?.endTime !== null
-  // Aprobado si `passed` true o score >= 66 (compatibilidad con tu básico)
   const passed: boolean = data?.passed === true || score >= 66
 
+  // ---- CASO PROFESOR (agregado, sin tocar lo demás) ----
+  if (isTeacher) {
+    const completedTeacher = hasEndTime || answered >= total || passed
+    if (completedTeacher) {
+      return {
+        completed: true,
+        inProgress: false,
+        answered: total,
+        total,
+        progressPct: 100,
+      }
+    }
+    // si aún no terminó, refleja progreso por respondidas
+    return {
+      completed: false,
+      inProgress: answered > 0,
+      answered,
+      total,
+      progressPct: Math.round((answered / total) * 100),
+    }
+  }
+
+  // ---- Lógica existente para alumno ----
   const completed = hasEndTime && (score === 100 || passed)
   const inProgress = !hasEndTime && answered > 0
 
@@ -310,7 +337,6 @@ function processSessionData(data: any): LevelStatus {
       inProgress: false,
       answered,
       total,
-      // si es 100 → 100; si no, como máximo 99 para distinguir de completado perfecto
       progressPct:
         score === 100 ? 100 : Math.min(99, Math.max(score, Math.round((answered / total) * 100))),
     }
