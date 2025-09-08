@@ -18,7 +18,8 @@ function TestResultsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const params = useParams()
-  const { user } = useAuth()
+  const { user, userData } = useAuth()
+  const isTeacher = userData?.role === "profesor"
  
   const competenceId = params?.competenceId as string | undefined
 
@@ -222,17 +223,46 @@ function TestResultsContent() {
   }
 
   const handleRetakeTest = () => {
+    // El profesor siempre puede reintentar
+    if (isTeacher) {
+      router.back()
+      return
+    }
     if (!isAlreadyCompleted) {
       router.back()
     }
   }
 
+
   const handleContinueEvaluation = () => {
-    const currentCompetenceId = firstCompetenceInArea || (params.competenceId as string)
-    const nextLevel = levelParam.startsWith("b") ? "intermedio" : levelParam.startsWith("i") ? "avanzado" : null
-    if (nextLevel) router.push(`/test/${currentCompetenceId}?level=${nextLevel}`)
-    else router.push("/dashboard")
-  }
+    // competencia actual o la primera del área si corresponde
+    const compId = (firstCompetenceInArea || (params.competenceId as string) || "").trim();
+    if (!compId) {
+      router.push("/dashboard");
+      return;
+    }
+
+    // "1.3" -> "comp-1-3"
+    const compSlug = `comp-${compId.replace(/\./g, "-")}`;
+
+    // nivel siguiente (básico → intermedio → avanzado)
+    const nextLevel =
+      levelParam.startsWith("b") ? "intermedio" :
+      levelParam.startsWith("i") ? "avanzado" :
+      null;
+
+    // tomar ej actual desde la URL (?ej=), si no hay empieza en 0 y sumamos 1
+    const currentEj = Number.parseInt(searchParams.get("ej") || "0", 10);
+    const nextEj = (isNaN(currentEj) ? 0 : currentEj) + 1;
+
+    if (nextLevel) {
+      router.push(`/exercises/${compSlug}/${nextLevel}/ej${nextEj}`);
+    } else {
+      // si ya no hay siguiente nivel, vuelve al dashboard
+      router.push("/dashboard");
+    }
+  };
+
 
   const handleContinueToNextCompetence = () => {
     if (nextCompetenceInfo) {
@@ -370,44 +400,68 @@ function TestResultsContent() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-4">
-              {areaCompleted && (
-                <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
-                  Ir al Dashboard
-                </Button>
-              )}
-
-              {!areaCompleted && nextCompetenceInfo && passed ? (
-                <Button
-                  onClick={handleContinueToNextCompetence}
-                  className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                >
-                  Continuar con {nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...
-                </Button>
-              ) : !areaCompleted && !nextCompetenceInfo && passed ? (
-                <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                  Ir al Dashboard
-                </Button>
-              ) : !areaCompleted && !passed ? (
-                <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                  Ir al Dashboard
-                </Button>
-              ) : (
-                <Button onClick={handleContinueEvaluation} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                  Continuar al siguiente nivel
-                </Button>
-              )}
-
-              {!passed && !isAlreadyCompleted && (
+            {/* --- Rama PROFESOR --- */}
+            {isTeacher ? (
+              <>
                 <Button
                   onClick={handleRetakeTest}
                   variant="outline"
                   className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
                 >
                   <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  Intentar de nuevo
+                  Volver a intentar
                 </Button>
-              )}
-            </div>
+                <Button
+                  onClick={handleContinueEvaluation}
+                  className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                >
+                  Continuar al siguiente nivel
+                </Button>
+              </>
+            ) : (
+              /* --- Rama NORMAL (tu lógica original) --- */
+              <>
+                {areaCompleted && (
+                  <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
+                    Ir al Dashboard
+                  </Button>
+                )}
+
+                {!areaCompleted && nextCompetenceInfo && passed ? (
+                  <Button
+                    onClick={handleContinueToNextCompetence}
+                    className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                  >
+                    Continuar con {nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...
+                  </Button>
+                ) : !areaCompleted && !nextCompetenceInfo && passed ? (
+                  <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
+                    Ir al Dashboard
+                  </Button>
+                ) : !areaCompleted && !passed ? (
+                  <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
+                    Ir al Dashboard
+                  </Button>
+                ) : (
+                  <Button onClick={handleContinueEvaluation} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
+                    Continuar al siguiente nivel
+                  </Button>
+                )}
+
+                {!passed && !isAlreadyCompleted && (
+                  <Button
+                    onClick={handleRetakeTest}
+                    variant="outline"
+                    className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Intentar de nuevo
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+
           </CardContent>
         </Card>
       </div>

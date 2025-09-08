@@ -31,6 +31,30 @@ export function firstExerciseRoute(competenceId: string, level: LevelSlug): stri
     },
 
     // --------------------------
+    // Área 3: Creación de contenidos
+    // --------------------------
+    "3.1": {
+      basico: "/test/3.1?level=básico", // 
+      intermedio: "/exercises/comp-3-1/intermedio/ej1", // 
+      avanzado: "/exercises/comp-3-1/avanzado/ej1",   
+    },
+    "3.2":{
+      basico: "/test/3.2?level=básico", // 
+      intermedio: "/exercises/comp-3-2/intermedio/ej1", // 
+      avanzado: "/exercises/comp-3-2/avanzado/ej1",   
+    },
+    "3.3": {
+      basico: "/test/3.3?level=básico", // 
+      intermedio: "/exercises/comp-3-3/intermedio/ej1", // 
+      avanzado: "/exercises/comp-3-3/avanzado/ej1",   
+    },
+    "3.4": {
+      basico: "/test/3.4?level=básico", // 
+      intermedio: "/exercises/comp-3-4/intermedio/ej1", // 
+      avanzado: "/exercises/comp-3-4/avanzado/ej1",   
+    },
+
+    // --------------------------
     // Área 4: Seguridad
     // --------------------------
     "4.1": {

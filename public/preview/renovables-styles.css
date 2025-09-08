@@ -1,0 +1,26 @@
+body { margin: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#1e1e1e; color:#e2e8f0; }
+h1,h2,h3 { margin:16px 0 8px; }
+p { margin: 0 0 14px; line-height: 1.5; }
+
+.titulo   { font-size: 2rem; font-weight: 800; color: #e2e8f0; }
+.resumen  { font-style: italic; color: #cbd5e1; }
+.fuente   { font-size: .875rem; text-align: right; color: #94a3b8; }
+
+.amarillo     { color: #fbbf24; }
+.azul   { color: #60a5fa; font-style: italic; }
+.celeste     { color: #67e8f9; font-style: italic; font-weight: 700; }
+.verde  { color: #86efac; font-style: italic; }
+
+
+
+.subrayado { text-decoration: underline; } 
+
+
+#fuente a {
+    color: #569cd6;       
+    text-decoration: none; 
+}
+
+#fuente a:hover {
+    text-decoration: underline;
+}
