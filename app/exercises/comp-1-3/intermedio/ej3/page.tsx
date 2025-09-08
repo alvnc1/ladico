@@ -5,23 +5,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  ChevronRight,
-  Search,
-  Trash2,
-  Settings,
-  Folder,
-  FileText,
-  Mail,
-} from "lucide-react";
+import { Trash2, Settings, Folder, FileText, Mail } from "lucide-react";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { ensureSession, markAnswered } from "@/lib/testSession";
-import { setPoint } from "@/lib/levelProgress";
+import {
+  getProgress,
+  setPoint,
+  levelPoints,
+  isLevelPassed,
+  getPoint,
+} from "@/lib/levelProgress";
 
 // Clave de sesión por-usuario (igual que en ej1/ej2)
 const SESSION_PREFIX = "session:1.3:Intermedio";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
-
 
 /* ================= Pantalla principal (P3) ================= */
 
@@ -48,7 +46,6 @@ export default function LadicoDeletedListRecoveryExercise() {
                 | 1.3 Gestión de Datos, Información y Contenidos Digitales -
                 Nivel Intermedio
               </span>
-
             </div>
           </div>
 
@@ -116,11 +113,10 @@ function clsx(...xs: Array<string | false | undefined>) {
 const normalize = (s: string) =>
   s
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // quita tildes de forma segura
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/\s+/g, " ")            // colapsa espacios múltiples
+    .replace(/\s+/g, " ")
     .trim();
-
 
 type WindowKind = "recycle" | "note" | "list" | "folder" | "mail" | null;
 
@@ -135,7 +131,7 @@ type DesktopIconItem = {
 };
 
 /* =========================================================================
-   Ejercicio P3 con puntaje y Finalizar → dashboard
+   Ejercicio P3 con puntaje y Finalizar → Results
    ========================================================================= */
 
 function DesktopRecoveryExercise() {
@@ -209,11 +205,9 @@ function DesktopRecoveryExercise() {
   const [result, setResult] = useState<"idle" | "ok" | "err">("idle");
 
   // ----- Drag (posición absoluta con “snap a grid”) -----
-  const [drag, setDrag] = useState<{ id: string | null; offsetX: number; offsetY: number }>({
-    id: null,
-    offsetX: 0,
-    offsetY: 0,
-  });
+  const [drag, setDrag] = useState<{ id: string | null; offsetX: number; offsetY: number }>(
+    { id: null, offsetX: 0, offsetY: 0 }
+  );
 
   const onMouseDownIcon = (e: React.MouseEvent, id: string) => {
     const el = e.currentTarget as HTMLButtonElement;
@@ -251,8 +245,7 @@ function DesktopRecoveryExercise() {
   };
 
   // ----- Validación del ejercicio -----
-  // ⚠️ Respuesta correcta = "papel higiénico"
-  const ANSWER = "papel higiénico";
+  const ANSWER = "papel higiénico"; // se acepta también sin tilde / con espacios extra
   const passConditions = () => {
     const restored = icons.some((x) => x.id === "lista"); // archivo restaurado al escritorio
     const correctWord = normalize(input) === normalize(ANSWER);
@@ -286,14 +279,14 @@ function DesktopRecoveryExercise() {
     for (let r = row; r <= maxRows; r++) {
       for (let c = r === row ? col : 0; c <= maxCols; c++) {
         const x = GRID.marginX + c * GRID.w;
-        const y = GRID.marginY + c * 0 + r * GRID.h;
+        const y = GRID.marginY + r * GRID.h; // FIX: y correcto
         if (!taken.has(`${x},${y}`)) return { x, y };
       }
     }
     return { x: desired.x, y: desired.y };
   }
 
-  // ====== FINALIZAR: guarda 1/0 y va a dashboard ======
+  // ====== FINALIZAR: guarda 1/0 y va a results ======
   const handleFinalize = async () => {
     const ok = passConditions();
     setResult(ok ? "ok" : "err");
@@ -302,14 +295,21 @@ function DesktopRecoveryExercise() {
 
     // 1) progreso local
     setPoint(COMPETENCE, LEVEL, QUESTION_IDX_ONE, point);
+    const prog = getProgress(COMPETENCE, LEVEL);
+    const totalPts = levelPoints(prog);
+    const passed = isLevelPassed(prog);
+    const score = Math.round((totalPts / 3) * 100);
+    const q1 = getPoint(prog, 1);
+    const q2 = getPoint(prog, 2);
+    const q3 = getPoint(prog, 3);
 
     // 2) Firestore (sesión POR-USUARIO; crea si falta)
     let sid = sessionId;
-
     try {
       if (!sid && user) {
         const LS_KEY = sessionKeyFor(user.uid);
-        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+        const cached =
+          typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
         if (cached) {
           sid = cached;
         } else if (!ensuringRef.current) {
@@ -341,8 +341,20 @@ function DesktopRecoveryExercise() {
       console.warn("No se pudo marcar P3 respondida:", e);
     }
 
-    // 3) Ir al dashboard
-    router.push("/dashboard");
+    // 3) Navegar a RESULTS de 1.3 (pasando sid para que finalizeSession corra allí)
+    const qs = new URLSearchParams({
+      score: String(score),
+      passed: String(passed),
+      correct: String(totalPts),
+      total: "3",
+      competence: "1.3",
+      level: "intermedio",
+      q1: String(q1),
+      q2: String(q2),
+      q3: String(q3),
+      sid: sid ?? "", // <-- IMPORTANTE
+    });
+    router.push(`/test/comp-1-3-intermedio/results?${qs.toString()}`);
   };
 
   return (
@@ -389,7 +401,10 @@ function DesktopRecoveryExercise() {
                     className="relative cursor-grab active:cursor-grabbing"
                     draggable
                     onDragStart={(e) => {
-                      e.dataTransfer.setData(DRAG_MIME, JSON.stringify({ id: "lista", title: "lista_compras.txt" }));
+                      e.dataTransfer.setData(
+                        DRAG_MIME,
+                        JSON.stringify({ id: "lista", title: "lista_compras.txt" })
+                      );
                       e.dataTransfer.effectAllowed = "copyMove";
                     }}
                     title="lista_compras.txt"
@@ -528,7 +543,7 @@ function DesktopRecoveryExercise() {
                 setInput(e.target.value);
                 setResult("idle");
               }}
-              placeholder="una palabra"
+              placeholder="escribe el producto importante"
               className={clsx(
                 "ml-2 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 text-sm w-60",
                 result === "ok" && "border-green-300 ring-green-200",

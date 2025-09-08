@@ -1,18 +1,104 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from "next/link"
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Download, FileSpreadsheet, BarChart3, Table, Info } from 'lucide-react'
+import { Download, FileSpreadsheet, BarChart3, Table } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { compareNumbers, compareText } from '@/utils/answer-validators'
+
+/* === Progreso/sesión (igual lógica que Intermedio) === */
+import { useAuth } from "@/contexts/AuthContext"
+import { ensureSession, markAnswered } from "@/lib/testSession"
+import { setPoint } from "@/lib/levelProgress"
+
+/* ======= Puntaje/sesión ======= */
+const COMPETENCE = "1.3" as const
+const LEVEL = "avanzado" as const
+const SESSION_PREFIX = "session:1.3:Avanzado"
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
 export default function EjercicioComp13Avanzado1() {
   const { toast } = useToast()
   const router = useRouter()
+
+  const { user } = useAuth()
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const ensuringRef = useRef(false)
+
+  // 1) Cargar sesión cacheada por-usuario
+  useEffect(() => {
+    if (!user || typeof window === "undefined") return
+    const sid = localStorage.getItem(sessionKeyFor(user.uid))
+    if (sid) setSessionId(sid)
+  }, [user?.uid])
+
+  // 2) Asegurar/crear sesión por-usuario si no hay cache
+  useEffect(() => {
+    if (!user) {
+      setSessionId(null)
+      return
+    }
+    const LS_KEY = sessionKeyFor(user.uid)
+    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
+    if (cached) {
+      if (!sessionId) setSessionId(cached)
+      return
+    }
+    if (ensuringRef.current) return
+    ensuringRef.current = true
+    ;(async () => {
+      try {
+        const { id } = await ensureSession({
+          userId: user.uid,
+          competence: COMPETENCE,
+          level: "Avanzado",
+          totalQuestions: 3,
+        })
+        setSessionId(id)
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
+      } catch (e) {
+        console.error("No se pudo asegurar la sesión de test (Avanzado-P1):", e)
+      } finally {
+        ensuringRef.current = false
+      }
+    })()
+  }, [user?.uid, sessionId])
+
+  // helper: asegura y devuelve sid
+  const ensureSid = async (): Promise<string | null> => {
+    let sid = sessionId
+    try {
+      if (!sid && user) {
+        const LS_KEY = sessionKeyFor(user.uid)
+        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
+        if (cached) {
+          sid = cached
+        } else if (!ensuringRef.current) {
+          ensuringRef.current = true
+          try {
+            const { id } = await ensureSession({
+              userId: user.uid,
+              competence: COMPETENCE,
+              level: "Avanzado",
+              totalQuestions: 3,
+            })
+            sid = id
+            setSessionId(id)
+            if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
+          } finally {
+            ensuringRef.current = false
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("No se pudo (re)asegurar la sesión:", e)
+    }
+    return sid ?? null
+  }
 
   // Paso actual (0..2)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -26,7 +112,7 @@ export default function EjercicioComp13Avanzado1() {
         const json = await res.json()
         if (json?.url) setDatasetUrl1(json.url)
       } catch {
-        // ignore
+        /* no-op */
       }
     })()
   }, [])
@@ -50,45 +136,95 @@ export default function EjercicioComp13Avanzado1() {
   const totalOk1 = [vMediaH, vMedianaM, vModaH, vDesvM].filter((v) => v === true).length
 
   // Paso 2 (tabla dinámica)
-  const [c1, setC1] = useState('') // unidades totales en Santiago => 17
-  const [c2, setC2] = useState('') // precio promedio en Valparaíso => 410
-  const [c3, setC3] = useState('') // tienda con mayor total => Concepción
+  const [c1, setC1] = useState('') // 17
+  const [c2, setC2] = useState('') // 410
+  const [c3, setC3] = useState('') // Concepción
   const v1 = c1 ? compareNumbers(c1, 17).ok : null
   const v2 = c2 ? compareNumbers(c2, 410).ok : null
   const v3 = c3 ? compareText(c3, 'Concepción').ok : null
   const totalOk2 = [v1, v2, v3].filter((v) => v === true).length
 
   // Paso 3 (gráfico dinámico — placeholders)
-  const [g1, setG1] = useState('') // país con mayor producción total
-  const [g2, setG2] = useState('') // robusta en Colombia (t)
-  const [g3, setG3] = useState('') // diferencia en Honduras (t)
+  const [g1, setG1] = useState('') // país
+  const [g2, setG2] = useState('') // robusta Colombia
+  const [g3, setG3] = useState('') // diferencia Honduras
   const EXPECTED3 = { paisMayor: 'Brasil', robustaColombia: 0, diferenciaHonduras: 0 }
   const vg1 = g1 ? compareText(g1, EXPECTED3.paisMayor).ok : null
   const vg2 = g2 ? compareNumbers(g2, EXPECTED3.robustaColombia).ok : null
   const vg3 = g3 ? compareNumbers(g3, EXPECTED3.diferenciaHonduras).ok : null
   const totalOk3 = [vg1, vg2, vg3].filter((v) => v === true).length
 
+  // Reglas de aprobación por paso (punto = 1/0)
+  const MIN_OK_STEP1 = 2   // Avanzado: 2 de 4 estadísticos
+  const MIN_OK_STEP2 = 3   // todas las 3 (ajústalo si quieres)
+  const MIN_OK_STEP3 = 3   // todas las 3 (ajústalo si quieres)
+
+  const q1Passed = totalOk1 >= MIN_OK_STEP1
+  const q2Passed = totalOk2 >= MIN_OK_STEP2
+  const q3Passed = totalOk3 >= MIN_OK_STEP3
+
   // Progreso (mismo estilo que TestInterface)
   const totalQuestions = 3
   const progress = ((currentIndex + 1) / totalQuestions) * 100
 
-  // Finalizar
-  const handleFinish = () => {
+  // ====== Persistencia por paso (igual que intermedio) ======
+  const persistStepPoint = async (zeroIdx: 0 | 1 | 2, passed: boolean) => {
+    const point: 0 | 1 = passed ? 1 : 0
+    // Local (1-based)
+    setPoint(COMPETENCE, LEVEL, zeroIdx + 1, point)
+    // Firestore (sesión)
+    try {
+      const sid = await ensureSid()
+      if (sid) await markAnswered(sid, zeroIdx, point === 1)
+    } catch (e) {
+      console.warn(`No se pudo marcar P${zeroIdx + 1} respondida:`, e)
+    }
+  }
+
+  // Navegación entre pasos guardando puntaje del paso actual
+  const goNext = async () => {
+    if (currentIndex === 0) {
+      await persistStepPoint(0, q1Passed)
+      setCurrentIndex(1)
+      return
+    }
+    if (currentIndex === 1) {
+      await persistStepPoint(1, q2Passed)
+      setCurrentIndex(2)
+      return
+    }
+  }
+
+  // Finalizar (guarda P3 y navega a resultados con sid y q1..q3)
+  const handleFinish = async () => {
+    // Verifica que no haya campos vacíos
     const answered = [mediaH, medianaM, modaH, desvM, c1, c2, c3, g1, g2, g3].every((x) => x !== '')
     if (!answered) {
       toast({ title: 'Respuestas incompletas', description: 'Completa todas las casillas antes de finalizar.' })
       return
     }
+
+    // Guarda P3
+    await persistStepPoint(2, q3Passed)
+
+    // Score general (como ya lo hacías)
     const correctas = totalOk1 + totalOk2 + totalOk3
-    const total = 10
+    const total = 3
     const score = Math.round((correctas / total) * 100)
     const passed = correctas >= (total * 0.7)
+
+    // A la URL también mandamos q1/q2/q3 y sid
+    const sid = await ensureSid()
     const params = new URLSearchParams({
-      score: score.toString(),
-      correct: correctas.toString(),
-      total: total.toString(),
-      passed: passed.toString(),
-      competence: '1.3-avanzado'
+      score: String(score),
+      correct: String(correctas),
+      total: String(total),
+      passed: String(passed),
+      competence: '1.3-avanzado',
+      q1: q1Passed ? "1" : "0",
+      q2: q2Passed ? "1" : "0",
+      q3: q3Passed ? "1" : "0",
+      sid: sid ?? "",
     })
     router.push(`/test/comp-1-3-advanced/results?${params.toString()}`)
   }
@@ -108,10 +244,8 @@ export default function EjercicioComp13Avanzado1() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
-                | 1.3 Gestión de Datos, Información y Contenidos Digitales -
-                Nivel Avanzado
+                | 1.3 Gestión de Datos, Información y Contenidos Digitales - Nivel Avanzado
               </span>
-
             </div>
           </div>
 
@@ -142,22 +276,19 @@ export default function EjercicioComp13Avanzado1() {
         </div>
       </div>
 
-      {/* Card central con mismo ring/estética */}
+      {/* Card central */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
-            {/* Contenido por paso */}
+            {/* Paso 1 */}
             {currentIndex === 0 && (
               <>
-                {/* Header del ejercicio */}
                 <div className="mb-8">
                   <div className="flex items-center gap-4 mb-6">
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">Análisis Estadístico en Excel</h2>
                     </div>
                   </div>
-
-                  {/* Instrucciones*/}
                   <div className="mb-6 sm:mb-8">
                     <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                       <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
@@ -166,8 +297,6 @@ export default function EjercicioComp13Avanzado1() {
                       </p>
                     </div>
                   </div>
-
-                  {/* Botón de descarga */}
                   <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -191,7 +320,6 @@ export default function EjercicioComp13Avanzado1() {
                   </div>
                 </div>
 
-                {/* Casillas de respuesta */}
                 <div className="space-y-6">
                   <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                     <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -209,17 +337,15 @@ export default function EjercicioComp13Avanzado1() {
               </>
             )}
 
+            {/* Paso 2 */}
             {currentIndex === 1 && (
               <>
-                {/* Header paso 2 */}
                 <div className="mb-8">
                   <div className="flex items-center gap-4 mb-6">
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">Tabla Dinámica en Excel</h2>
                     </div>
                   </div>
-
-                  {/* Instrucciones (mismo diseño que Escenario) */}
                   <div className="mb-6 sm:mb-8">
                     <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                       <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
@@ -228,7 +354,6 @@ export default function EjercicioComp13Avanzado1() {
                       </p>
                     </div>
                   </div>
-                  {/* Botón de descarga */}
                   <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -250,7 +375,6 @@ export default function EjercicioComp13Avanzado1() {
                   </div>
                 </div>
 
-                {/* Casillas respuestas paso 2 */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Table className="w-5 h-5 text-blue-600" />
@@ -265,17 +389,15 @@ export default function EjercicioComp13Avanzado1() {
               </>
             )}
 
+            {/* Paso 3 */}
             {currentIndex === 2 && (
               <>
-                {/* Header paso 3 */}
                 <div className="mb-8">
                   <div className="flex items-center gap-4 mb-6">
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">Gráfico Dinámico en Excel</h2>
                     </div>
                   </div>
-
-                  {/* Instrucciones (mismo diseño que Escenario) */}
                   <div className="mb-6 sm:mb-8">
                     <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                       <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
@@ -284,8 +406,6 @@ export default function EjercicioComp13Avanzado1() {
                       </p>
                     </div>
                   </div>
-
-                  {/* Botón de descarga */}
                   <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -307,7 +427,6 @@ export default function EjercicioComp13Avanzado1() {
                   </div>
                 </div>
 
-                {/* Casillas respuestas paso 3 */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-purple-600" />
@@ -322,12 +441,12 @@ export default function EjercicioComp13Avanzado1() {
               </>
             )}
 
-            {/* Navegación con los mismos estilos que TestInterface */}
+            {/* Navegación */}
             <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0 mt-6">
               <div className="flex space-x-3 w-full sm:w-auto">
                 {currentIndex > 0 && (
                   <Button
-                    onClick={() => setCurrentIndex((i) => i - 1)}
+                    onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
                     variant="outline"
                     className="flex-1 sm:flex-none px-6 sm:px-8 py-3 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl font-medium transition-all text-sm sm:text-base"
                   >
@@ -335,9 +454,10 @@ export default function EjercicioComp13Avanzado1() {
                   </Button>
                 )}
               </div>
+
               {currentIndex < 2 ? (
                 <Button
-                  onClick={() => setCurrentIndex((i) => i + 1)}
+                  onClick={goNext}
                   className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl sm:rounded-2xl font-medium text-white sm:text-lg shadow-lg hover:bg-[#3a7d89] transition-all"
                 >
                   Siguiente
