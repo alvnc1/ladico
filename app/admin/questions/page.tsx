@@ -11,6 +11,29 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { Trash } from "lucide-react" // Icono de eliminar
 
+// --- helpers de ordenamiento ---
+function parseCompetence(c?: string | number): number[] {
+  if (c === undefined || c === null) return []
+  const s = String(c).trim()
+  // Soporta formatos "3.4", "3-4", "3_4", "3.04", etc.
+  return s.split(/[.\-_]/).map((x) => {
+    const n = Number(x)
+    return Number.isFinite(n) ? n : 0
+  })
+}
+
+function compareCompetence(a?: string | number, b?: string | number): number {
+  const A = parseCompetence(a)
+  const B = parseCompetence(b)
+  const len = Math.max(A.length, B.length)
+  for (let i = 0; i < len; i++) {
+    const ai = A[i] ?? 0
+    const bi = B[i] ?? 0
+    if (ai !== bi) return ai - bi
+  }
+  return 0
+}
+
 export default function QuestionsAdminPage() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
@@ -28,11 +51,21 @@ export default function QuestionsAdminPage() {
     try {
       if (!db) return
       const querySnapshot = await getDocs(collection(db, "questions"))
-      const loadedQuestions: Question[] = []
-      querySnapshot.forEach((doc) => {
-        loadedQuestions.push({ id: doc.id, ...doc.data() } as Question)
+      const loaded: Question[] = []
+      querySnapshot.forEach((d) => {
+        loaded.push({ id: d.id, ...d.data() } as Question)
       })
-      setQuestions(loadedQuestions)
+
+      // 🔽 Ordenar por competence (numérico), luego level y title
+      loaded.sort((q1, q2) => {
+        const byComp = compareCompetence(q1.competence as any, q2.competence as any)
+        if (byComp !== 0) return byComp
+        const byLevel = String(q1.level ?? "").localeCompare(String(q2.level ?? ""), "es", { sensitivity: "base" })
+        if (byLevel !== 0) return byLevel
+        return String(q1.title ?? "").localeCompare(String(q2.title ?? ""), "es", { sensitivity: "base" })
+      })
+
+      setQuestions(loaded)
     } catch (error) {
       console.error("Error loading questions:", error)
     } finally {
@@ -40,14 +73,12 @@ export default function QuestionsAdminPage() {
     }
   }
 
-  // --- NUEVO: Eliminar una pregunta ---
+  // --- Eliminar una pregunta ---
   const handleDeleteQuestion = async (questionId: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar esta pregunta? Esta acción no se puede deshacer.")) return
-
     try {
       await deleteDoc(doc(db, "questions", questionId))
       setQuestions((prev) => prev.filter((q) => q.id !== questionId))
-      // Si la pregunta eliminada era la seleccionada, limpiar preview
       if (selectedQuestion?.id === questionId) setSelectedQuestion(null)
     } catch (error) {
       console.error("Error eliminando la pregunta:", error)
@@ -108,12 +139,11 @@ export default function QuestionsAdminPage() {
                         <Badge variant="outline" className="text-xs">
                           {question.competence}
                         </Badge>
-                        {/* Botón eliminar */}
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={(e) => {
-                            e.stopPropagation() // Evita seleccionar la pregunta
+                            e.stopPropagation()
                             handleDeleteQuestion(question.id)
                           }}
                         >
