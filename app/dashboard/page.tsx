@@ -74,7 +74,7 @@ export default function Dashboard() {
     "Búsqueda y gestión de información": filteredCompetences.filter((c) => c?.code?.startsWith("1.")),
     "Comunicación y colaboración": filteredCompetences.filter((c) => c?.code?.startsWith("2.")),
     "Creación de contenidos digitales": filteredCompetences.filter((c) => c?.code?.startsWith("3.")),
-    Seguridad: filteredCompetences.filter((c) => c?.code?.startsWith("4.")),
+    "Seguridad": filteredCompetences.filter((c) => c?.code?.startsWith("4.")),
     "Resolución de problemas": filteredCompetences.filter((c) => c?.code?.startsWith("5.")),
   }
 
