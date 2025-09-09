@@ -64,16 +64,13 @@ function ResultsIntermedioContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <>
       {/* === Sidebar igual que en /dashboard === */}
       <Sidebar />
-
       {/* === Contenido === */}
-      <main className="flex-1 lg:ml-64 px-4 lg:px-8 py-4 lg:py-8">
-        <div className="max-w-3xl mx-auto">
-          <Card className="w-full rounded-2xl border-0 shadow-xl overflow-hidden">
-            {/* HEADER */}
-            <CardHeader className="bg-white">
+        <div className="min-h-screen bg-[#f3fbfb] lg:pl-72 flex items-center justify-center p-3 sm:p-4">
+          <Card className="w-full max-w-2xl shadow-2xl rounded-2xl sm:rounded-3xl border-0 overflow-hidden">
+            <CardHeader className="text-center bg-gradient-to-b from-white to-gray-50 pb-6 sm:pb-8 px-4 sm:px-6">
               <div className="flex flex-col items-center text-center">
                 <div className="mb-4">
                   {isTeacher ? (
@@ -112,32 +109,34 @@ function ResultsIntermedioContent() {
             </CardHeader>
 
             {/* BODY */}
-            <CardContent className="bg-[#f7fbfb]">
+            <CardContent className="space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
               {/* KPIs - Solo visibles para estudiantes */}
               {!isTeacher && (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-6">
-                    <div className="bg-white rounded-xl p-5 border shadow-sm text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-gray-900">{total}</div>
-                      <div className="text-gray-600 text-sm mt-1">Preguntas</div>
+                  <div className="grid grid-cols-3 gap-3 sm:gap-6 text-center">
+                    <div className="p-3 sm:p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
+                      <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{total}</div>
+                      <div className="text-xs sm:text-sm text-gray-600 font-medium">Preguntas</div>
                     </div>
-                    <div className="bg-green-50 rounded-xl p-5 border border-green-200 shadow-sm text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-green-600">{correct}</div>
-                      <div className="text-gray-600 text-sm mt-1">Correctas</div>
+                    <div className="p-3 sm:p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl shadow-sm border border-green-200">
+                      <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-1 sm:mb-2">{correct}</div>
+                      <div className="text-xs sm:text-sm text-gray-600 font-medium">Correctas</div>
                     </div>
-                    <div className="bg-red-50 rounded-xl p-5 border border-red-200 shadow-sm text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-red-600">{total - correct}</div>
-                      <div className="text-gray-600 text-sm mt-1">Incorrectas</div>
+                    <div className="p-3 sm:p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl sm:rounded-2xl shadow-sm border border-red-200">
+                      <div className="text-2xl sm:text-3xl font-bold text-red-600 mb-1 sm:mb-2">{total - correct}</div>
+                      <div className="text-xs sm:text-sm text-gray-600 font-medium">Incorrectas</div>
                     </div>
                   </div>
 
                   {/* Porcentaje - Solo visible para estudiantes */}
-                  <div className="mt-6 bg-white rounded-2xl p-8 border shadow-sm text-center">
-                    <div className="text-4xl sm:text-5xl font-bold text-[#3a5d61]">{score}%</div>
-                    <div className="text-gray-600 mt-1">Puntuación obtenida</div>
+                  <div className="text-center p-6 sm:p-8 via-blue-50 to-gray-400 rounded-2xl sm:rounded-3xl border border-gray-300 shadow-lg">
+                    <div className="text-4xl sm:text-5xl font-bold bg-[#5d8b6a] bg-clip-text text-transparent mb-2 sm:mb-3">
+                      {score}%
+                    </div>
+                    <div className="text-gray-600 text-base sm:text-lg font-medium">Puntuación obtenida</div>
                     {passed && (
-                      <div className="inline-flex items-center gap-2 mt-3 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
-                        <CheckCircle className="w-4 h-4" />
+                      <div className="mt-3 sm:mt-4 inline-flex items-center px-3 sm:px-4 py-2 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-medium shadow-sm">
+                        <Trophy className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                         +10 Ladico ganados
                       </div>
                     )}
@@ -146,63 +145,64 @@ function ResultsIntermedioContent() {
               )}
 
               {/* Detalle de preguntas (visible para todos) */}
-              <div className="mt-8">
-                <h3 className="font-semibold text-gray-900 mb-3">Detalle de preguntas evaluadas:</h3>
+              {!isTeacher && (
+                <div className="mt-8">
+                  <h3 className="font-semibold text-gray-900 mb-3">Detalle de preguntas evaluadas:</h3>
 
-                <div
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
-                    q1 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 text-gray-800">
-                    {q1 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XIcon className="w-5 h-5 text-red-700" />}
-                    <span>Pregunta 1: Crear formulario con campos correctos (tipo y título)</span>
+                  <div
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
+                      q1 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-gray-800">
+                      {q1 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XIcon className="w-5 h-5 text-red-700" />}
+                      <span>Ejercicio 1: Crear formulario con campos correctos (tipo y título)</span>
+                    </div>
+                    <span className={`font-semibold ${q1 ? "text-green-700" : "text-red-700"}`}>
+                      {q1 ? "Correcta" : "Incorrecta"}
+                    </span>
                   </div>
-                  <span className={`font-semibold ${q1 ? "text-green-700" : "text-red-700"}`}>
-                    {q1 ? "Correcta" : "Incorrecta"}
-                  </span>
-                </div>
 
-                <div
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
-                    q2 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 text-gray-800">
-                    {q2 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XIcon className="w-5 h-5 text-red-700" />}
-                    <span>Pregunta 2: Mover <b>salsa.mp3</b> a la carpeta <b>Música Latina</b></span>
+                  <div
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
+                      q2 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-gray-800">
+                      {q2 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XIcon className="w-5 h-5 text-red-700" />}
+                      <span>Ejercicio 2: Mover <b>salsa.mp3</b> a la carpeta <b>Música Latina</b></span>
+                    </div>
+                    <span className={`font-semibold ${q2 ? "text-green-700" : "text-red-700"}`}>
+                      {q2 ? "Correcta" : "Incorrecta"}
+                    </span>
                   </div>
-                  <span className={`font-semibold ${q2 ? "text-green-700" : "text-red-700"}`}>
-                    {q2 ? "Correcta" : "Incorrecta"}
-                  </span>
-                </div>
 
-                <div
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm ${
-                    q3 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 text-gray-800">
-                    {q3 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XIcon className="w-5 h-5 text-red-700" />}
-                    <span>Pregunta 3: Recuperar archivo desde Papelera y responder la palabra clave</span>
+                  <div
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm ${
+                      q3 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-gray-800">
+                      {q3 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XIcon className="w-5 h-5 text-red-700" />}
+                      <span>Ejercicio 3: Recuperar archivo desde Papelera y responder la palabra clave</span>
+                    </div>
+                    <span className={`font-semibold ${q3 ? "text-green-700" : "text-red-700"}`}>
+                      {q3 ? "Correcta" : "Incorrecta"}
+                    </span>
                   </div>
-                  <span className={`font-semibold ${q3 ? "text-green-700" : "text-red-700"}`}>
-                    {q3 ? "Correcta" : "Incorrecta"}
-                  </span>
                 </div>
-              </div>
+              )}
 
               {/* Acciones */}
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
                 {isTeacher ? (
                   <>
                     <Button
-                      onClick={handleRetry}
+                      onClick={handleBack}
                       variant="outline"
                       className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
                     >
-                      <RotateCcw className="w-4 h-4 mr-2" />
-                      Volver a intentar
+                      Volver al Dashboard
                     </Button>
                     <Button
                       onClick={handleNextLevel}
@@ -233,8 +233,7 @@ function ResultsIntermedioContent() {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+    </>
   )
 }
 
