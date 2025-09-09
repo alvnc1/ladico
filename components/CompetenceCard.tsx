@@ -6,9 +6,15 @@ import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useMemo, useState } from "react"
-import { firstExerciseRoute, type LevelSlug } from "@/lib/firstExerciseRoute"
+// Helpers para saber si existe el siguiente nivel
+import {
+  firstExerciseRoute,
+  type LevelSlug,
+  hasLevelAvailable,
+  nextLevel,
+} from "@/lib/firstExerciseRoute"
 import { useAuth } from "@/contexts/AuthContext"
-import { clearTeacherSeenQuestionsAllCountries, hardResetCompetenceSessions } from "@/lib/testSession" // ⬅️ añadido hard reset
+import { clearTeacherSeenQuestionsAllCountries, hardResetCompetenceSessions } from "@/lib/testSession" // hard reset
 
 interface CompetenceCardProps {
   competence: Competence
@@ -84,18 +90,35 @@ export default function CompetenceCard({
   const isLastLevel = levelNumber === 3
   const canStartCurrent = hasEnoughQuestions && !levelStatus.completed
   const canAdvanceToNextLevel = levelStatus.completed && !isLastLevel
-  const canStartOrContinue = levelStatus.inProgress || canStartCurrent || canAdvanceToNextLevel
+
+  // ¿Existe siguiente nivel?
+  const currentLevelSlug = levelToSlug(currentAreaLevel)
+  const nxt = nextLevel(currentLevelSlug)
+  const nextExists = nxt ? hasLevelAvailable(competence.id, nxt) : false
+  const allowNext = canAdvanceToNextLevel && nextExists
+
+  // Mostrar “Volver a intentar” + “Reiniciar nivel” cuando:
+  // - NO hay siguiente nivel
+  // - y el nivel 1 ya fue iniciado (inProgress | completed | inicio local)
+  const showRetryAndReset =
+    currentAreaLevel === "Básico" &&
+    !allowNext &&
+    (levelStatus.inProgress || levelStatus.completed || locallyStarted)
+
+  // Importante: la rama de “profe” solo aplica si HAY siguiente nivel
+  const showRetryButton = isTeacher && allowNext
+
+  const canStartOrContinue = levelStatus.inProgress || canStartCurrent || allowNext
 
   const btnLabel = (() => {
     if (levelStatus.inProgress) return "Continuar"
-    if (canAdvanceToNextLevel) return `Comenzar nivel ${levelNumber + 1}`
+    if (allowNext) return `Comenzar nivel ${levelNumber + 1}`
     if (canStartCurrent) return "Comenzar evaluación"
+    if (!allowNext && (levelStatus.inProgress || levelStatus.completed || locallyStarted)) return "Volver a intentar"
     return "Bloqueado"
   })()
 
-  const showRetryButton = isTeacher && canAdvanceToNextLevel
-
-  // ⬇️ Anti-“pegado”: si el usuario inicia/continúa, limpiamos el flag de reset de esta competencia
+  // ===== utilidades de navegación y reset =====
   const clearResetFlag = () => {
     if (typeof window === "undefined") return
     const compId = competence.id
@@ -103,7 +126,6 @@ export default function CompetenceCard({
     localStorage.removeItem(`ladico:resetLevels:${compId}:ts`)
     localStorage.setItem("ladico:progress:version", String(Date.now()))
     window.dispatchEvent(new Event("ladico:refresh"))
-    // Refresca el árbol para asegurar que los consumidores se actualicen
     setTimeout(() => {
       try { router.refresh() } catch {}
     }, 0)
@@ -113,14 +135,15 @@ export default function CompetenceCard({
     if (!canStartOrContinue) return
     setLocallyStarted(true)
     clearResetFlag()
-    const targetLevelNumber = canAdvanceToNextLevel ? levelNumber + 1 : levelNumber
+    const targetLevelNumber = allowNext ? levelNumber + 1 : levelNumber
     const levelMap: Record<number, "Básico" | "Intermedio" | "Avanzado"> = { 1: "Básico", 2: "Intermedio", 3: "Avanzado" }
     const targetLevelName = levelMap[targetLevelNumber]
     const url = firstExerciseRoute(competence.id, levelToSlug(targetLevelName))
     router.push(url)
   }
 
-  const handleRetryTeacher = () => {
+  // Reintento mismo nivel (para todos)
+  const handleRetrySameLevel = () => {
     clearResetFlag()
     const compSlug = competence.id.replace(".", "-")
     if (currentAreaLevel === "Intermedio") {
@@ -135,14 +158,14 @@ export default function CompetenceCard({
     router.push(`/test/${competence.id}?level=${slug}&retry=1`)
   }
 
-  // Reiniciar niveles SIN navegar (reset duro)
-  const handleResetTeacherLevels = async () => {
-    if (currentAreaLevel !== "Avanzado") return
+  // Reiniciar SOLO el nivel actual (para Nivel 1 sin siguientes) — hard reset como nivel 3
+  const handleResetCurrentLevel = async () => {
     try {
       if (typeof window !== "undefined") {
         const compId = competence.id
+        const slug = levelToSlug(currentAreaLevel)
 
-        // 1) Progreso local (ring/estado)
+        // 1) Local
         localStorage.setItem(`ladico:resetLevels:${compId}`, "1")
         localStorage.setItem(`ladico:resetLevels:${compId}:ts`, String(Date.now()))
         ;(["basico", "intermedio", "avanzado"] as const).forEach((lvl) => {
@@ -151,17 +174,46 @@ export default function CompetenceCard({
           localStorage.removeItem(`ladico:completed:${compId}:${lvl}`)
         })
 
-        // 2) Backend: limpiar historial y BORRAR sesiones + resultados del profe
+        // 2) Backend
         if (user?.uid) {
           await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Básico")
           await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Intermedio")
           await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Avanzado")
-
-          // ⬇️ reset duro: elimina testSessions y userResults del profe para esta competencia
           await hardResetCompetenceSessions(user.uid, compId)
         }
 
-        // 3) Notificar/Refrescar UI
+        // 3) UI
+        localStorage.setItem("ladico:progress:version", String(Date.now()))
+        window.dispatchEvent(new Event("ladico:refresh"))
+        try { router.refresh() } catch {}
+        setTimeout(() => {
+          localStorage.setItem("ladico:progress:version", String(Date.now()))
+        }, 50)
+      }
+    } catch (e) {
+      console.warn("No se pudo reiniciar el nivel:", e)
+    }
+  }
+
+  // Reinicio duro para NIVEL 3 (tu lógica original)
+  const handleResetTeacherLevels = async () => {
+    if (currentAreaLevel !== "Avanzado") return
+    try {
+      if (typeof window !== "undefined") {
+        const compId = competence.id
+        localStorage.setItem(`ladico:resetLevels:${compId}`, "1")
+        localStorage.setItem(`ladico:resetLevels:${compId}:ts`, String(Date.now()))
+        ;(["basico", "intermedio", "avanzado"] as const).forEach((lvl) => {
+          localStorage.removeItem(`ladico:${compId}:${lvl}:progress`)
+          localStorage.removeItem(`level:${compId}:${lvl}:completed`)
+          localStorage.removeItem(`ladico:completed:${compId}:${lvl}`)
+        })
+        if (user?.uid) {
+          await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Básico")
+          await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Intermedio")
+          await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Avanzado")
+          await hardResetCompetenceSessions(user.uid, compId)
+        }
         localStorage.setItem("ladico:progress:version", String(Date.now()))
         window.dispatchEvent(new Event("ladico:refresh"))
         try { router.refresh() } catch {}
@@ -214,10 +266,28 @@ export default function CompetenceCard({
           </div>
 
           {/* Botonera */}
-          {isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed ? (
+          {showRetryAndReset ? (
+            // PRIORIDAD 1: Sin siguiente nivel → mostrar Volver a intentar + Reiniciar nivel
             <div className="mt-3 flex gap-2">
               <Button
-                onClick={handleRetryTeacher}
+                onClick={handleRetrySameLevel}
+                variant="outline"
+                className="w-full rounded-full py-2.5 sm:py-3 text-xs font-semibold border-2 border-[#94b2ba] text-[#286675] hover:bg-[#f1f6f8]"
+              >
+                Volver a intentar
+              </Button>
+              <Button
+                onClick={handleResetCurrentLevel}
+                className="w-full rounded-full py-2.5 sm:py-3 text-xs font-semibold bg-[#286675] hover:bg-[#1e4a56] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] border-transparent font-bold"
+              >
+                Reiniciar nivel
+              </Button>
+            </div>
+          ) : isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed ? (
+            // PRIORIDAD 2: Rama especial Avanzado (profe)
+            <div className="mt-3 flex gap-2">
+              <Button
+                onClick={handleRetrySameLevel}
                 variant="outline"
                 className="w-full rounded-full py-2.5 sm:py-3 text-xs font-semibold border-2 border-[#94b2ba] text-[#286675] hover:bg-[#f1f6f8]"
               >
@@ -231,9 +301,10 @@ export default function CompetenceCard({
               </Button>
             </div>
           ) : showRetryButton ? (
+            // PRIORIDAD 3: Profe con siguiente nivel disponible
             <div className="mt-3 flex gap-2">
               <Button
-                onClick={handleRetryTeacher}
+                onClick={handleRetrySameLevel}
                 variant="outline"
                 className="w-full rounded-full py-2.5 sm:py-3 text-xs font-semibold border-2 border-[#94b2ba] text-[#286675] hover:bg-[#f1f6f8]"
               >

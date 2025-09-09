@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Search } from "lucide-react"
+import { Search, X } from "lucide-react"
 import Sidebar from "@/components/Sidebar"
 import CompetenceCard from "@/components/CompetenceCard"
 import { useCompetenceProgress } from "@/hooks/useCompetenceProgress"
@@ -66,6 +66,25 @@ export default function Dashboard() {
     return ""
   }
 
+   // Cargar búsqueda guardada del localStorage
+    useEffect(() => {
+      const savedSearchTerm = localStorage.getItem("ladico:searchTerm")
+      if (savedSearchTerm) {
+        setSearchTerm(savedSearchTerm) // Si existe, lo asignamos
+      }
+    }, [])
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value
+      setSearchTerm(value)
+      localStorage.setItem("ladico:searchTerm", value) // Guardar búsqueda en localStorage
+    }
+
+    const clearSearch = () => {
+      setSearchTerm("") // Resetear estado
+      localStorage.removeItem("ladico:searchTerm") // Eliminar del localStorage
+    }
+
   const filteredCompetences = competences.filter((competence) => {
     if (!competence) return false
     const q = searchTerm.trim().toLowerCase()
@@ -94,7 +113,7 @@ export default function Dashboard() {
     "Búsqueda y gestión de información": filteredCompetences.filter((c) => c?.code?.startsWith("1.")),
     "Comunicación y colaboración": filteredCompetences.filter((c) => c?.code?.startsWith("2.")),
     "Creación de contenidos digitales": filteredCompetences.filter((c) => c?.code?.startsWith("3.")),
-    Seguridad: filteredCompetences.filter((c) => c?.code?.startsWith("4.")),
+    "Seguridad": filteredCompetences.filter((c) => c?.code?.startsWith("4.")),
     "Resolución de problemas": filteredCompetences.filter((c) => c?.code?.startsWith("5.")),
   }
 
@@ -175,9 +194,17 @@ export default function Dashboard() {
                     type="text"
                     placeholder="Buscar por competencia o área…"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={handleSearchChange}
                     className="pl-10 lg:pl-12 h-10 lg:h-12 text-sm lg:text-base rounded-xl lg:rounded-2xl border-2 border-gray-200 focus:border-[#286675] transition-colors"
                   />
+                  {searchTerm && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
                 </div>
 
                 <div className="flex gap-2 lg:gap-3">

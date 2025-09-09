@@ -312,7 +312,9 @@ function TestResultsContent() {
           </CardHeader>
 
           <CardContent className="space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
-            <div className="grid grid-cols-3 gap-3 sm:gap-6 text-center">
+            {!isTeacher && (
+              <>
+              <div className="grid grid-cols-3 gap-3 sm:gap-6 text-center">
               <div className="p-3 sm:p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
                 <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{totalQuestions}</div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Preguntas</div>
@@ -341,7 +343,8 @@ function TestResultsContent() {
                 </div>
               )}
             </div>
-
+              </>
+            )}
             {/* === DETALLE DE PREGUNTAS (verde/rojo por pregunta) === */}
             <div className="mt-8">
               <h3 className="font-semibold text-gray-900 mb-3">Detalle de preguntas evaluadas:</h3>
@@ -404,12 +407,11 @@ function TestResultsContent() {
             {isTeacher ? (
               <>
                 <Button
-                  onClick={handleRetakeTest}
+                  onClick={handleReturnToDashboard}
                   variant="outline"
                   className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
                 >
-                  <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  Volver a intentar
+                  Ir al Dashboard
                 </Button>
                 <Button
                   onClick={handleContinueEvaluation}

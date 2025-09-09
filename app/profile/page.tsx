@@ -20,10 +20,14 @@ import { Input } from "@/components/ui/input"
 
 type TabKey = "profile" | "auth" | "delete"
 
-const countries = [
+{/* const countries = [
   "Argentina","Bolivia","Brasil","Chile","Colombia","Costa Rica","Cuba",
   "Ecuador","El Salvador","Guatemala","Honduras","México","Nicaragua",
   "Panamá","Paraguay","Perú","República Dominicana","Uruguay","Venezuela",
+]
+*/}
+const countries = [
+  "Argentina","Chile","Colombia","Perú","Uruguay"
 ]
 
 const genders = ["Femenino", "Masculino", "No binario", "Prefiero no decir"]
