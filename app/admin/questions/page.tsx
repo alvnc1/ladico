@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Trash } from "lucide-react" // Icono de eliminar
+import { Trash } from "lucide-react"
 
 // --- helpers de ordenamiento ---
 function parseCompetence(c?: string | number): number[] {
@@ -36,8 +36,11 @@ function compareCompetence(a?: string | number, b?: string | number): number {
 
 export default function QuestionsAdminPage() {
   const [questions, setQuestions] = useState<Question[]>([])
+  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
+  const [filterCountry, setFilterCountry] = useState<string>("")
+  const [filterCompetence, setFilterCompetence] = useState<string>("")
   const router = useRouter()
   const loadQuestionsRan = useRef(false)
 
@@ -46,6 +49,38 @@ export default function QuestionsAdminPage() {
     loadQuestionsRan.current = true
     loadQuestions()
   }, [])
+
+  // Aplicar filtros cuando cambian las selecciones
+  useEffect(() => {
+    if (questions.length === 0) return
+    
+    let filtered = questions
+    
+    // Aplicar filtro por país
+    if (filterCountry) {
+      filtered = filtered.filter(q => 
+        q.country === filterCountry
+      )
+    }
+    
+    // Aplicar filtro por competencia
+    if (filterCompetence) {
+      filtered = filtered.filter(q => 
+        String(q.competence) === filterCompetence
+      )
+    }
+    
+    // Ordenar resultados filtrados
+    filtered.sort((q1, q2) => {
+      const byComp = compareCompetence(q1.competence as any, q2.competence as any)
+      if (byComp !== 0) return byComp
+      const byLevel = String(q1.level ?? "").localeCompare(String(q2.level ?? ""), "es", { sensitivity: "base" })
+      if (byLevel !== 0) return byLevel
+      return String(q1.title ?? "").localeCompare(String(q2.title ?? ""), "es", { sensitivity: "base" })
+    })
+    
+    setFilteredQuestions(filtered)
+  }, [filterCountry, filterCompetence, questions])
 
   const loadQuestions = async () => {
     try {
@@ -56,7 +91,7 @@ export default function QuestionsAdminPage() {
         loaded.push({ id: d.id, ...d.data() } as Question)
       })
 
-      // 🔽 Ordenar por competence (numérico), luego level y title
+      // Ordenar por competencia (numérico), luego level y title
       loaded.sort((q1, q2) => {
         const byComp = compareCompetence(q1.competence as any, q2.competence as any)
         if (byComp !== 0) return byComp
@@ -66,6 +101,7 @@ export default function QuestionsAdminPage() {
       })
 
       setQuestions(loaded)
+      setFilteredQuestions(loaded)
     } catch (error) {
       console.error("Error loading questions:", error)
     } finally {
@@ -73,7 +109,6 @@ export default function QuestionsAdminPage() {
     }
   }
 
-  // --- Eliminar una pregunta ---
   const handleDeleteQuestion = async (questionId: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar esta pregunta? Esta acción no se puede deshacer.")) return
     try {
@@ -94,6 +129,10 @@ export default function QuestionsAdminPage() {
     )
   }
 
+  // Obtener todas las opciones únicas para los filtros de País y Competencia
+  const countries = Array.from(new Set(questions.map(q => q.country).filter(Boolean))) as string[]
+  const competencies = Array.from(new Set(questions.map(q => q.competence).filter(Boolean))) as string[]
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -107,21 +146,64 @@ export default function QuestionsAdminPage() {
           </Button>
         </div>
 
+        <div className="mb-8 flex gap-4">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="countryFilter" className="font-semibold">Filtrar por País</label>
+            <select
+              id="countryFilter"
+              value={filterCountry}
+              onChange={(e) => setFilterCountry(e.target.value)}
+              className="px-4 py-2 rounded-xl border border-gray-300 text-sm"
+            >
+              <option value="">Todos los países</option>
+              {countries.map((country, idx) => (
+                <option key={idx} value={country}>{country}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="competenceFilter" className="font-semibold">Filtrar por Competencia</label>
+            <select
+              id="competenceFilter"
+              value={filterCompetence}
+              onChange={(e) => setFilterCompetence(e.target.value)}
+              className="px-4 py-2 rounded-xl border border-gray-300  text-sm"
+            >
+              <option value="">Todas las competencias</option>
+              {competencies.map((competence, idx) => (
+                <option key={idx} value={competence}>{competence}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">Preguntas Disponibles ({questions.length})</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Preguntas Disponibles ({filteredQuestions.length})</h2>
 
-            {questions.length === 0 ? (
+            {filteredQuestions.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
-                  <p className="text-gray-500">No hay preguntas en el banco de datos.</p>
-                  <Button className="mt-4 Ladico-button-primary" onClick={() => router.push("/admin")}>
-                    Agregar Primera Pregunta
+                  <p className="text-gray-500">
+                    {questions.length === 0 
+                      ? "No hay preguntas en el banco de datos." 
+                      : "No hay preguntas que coincidan con los filtros seleccionados."}
+                  </p>
+                  <Button className="mt-4 text-white bg-[#286675] hover:bg-[#3a7d89] rounded-xl" 
+                    onClick={() => {
+                      if (questions.length === 0) {
+                        router.push("/admin")
+                      } else {
+                        setFilterCountry("")
+                        setFilterCompetence("")
+                      }
+                    }}>
+                    {questions.length === 0 ? "Agregar Primera Pregunta" : "Limpiar Filtros"}
                   </Button>
                 </CardContent>
               </Card>
             ) : (
-              questions.map((question) => (
+              filteredQuestions.map((question) => (
                 <Card
                   key={question.id}
                   className={`cursor-pointer transition-all rounded-xl hover:shadow-lg relative ${
