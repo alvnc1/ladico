@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { firstExerciseRoute, type LevelSlug } from "@/lib/firstExerciseRoute"
 
+const RESET_TTL_MS = 10 * 60 * 1000 // ⏳ 10 minutos
+
 export default function Dashboard() {
   const { user, userData, loading } = useAuth()
   const { progress, loading: loadingProgress } = useCompetenceProgress()
@@ -33,23 +35,27 @@ export default function Dashboard() {
 
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("Todas")
-  const [refreshKey, setRefreshKey] = useState(0) // ⬅️ para forzar re-render al reiniciar niveles
+  const [refreshKey, setRefreshKey] = useState(0) // ⬅️ re-render en reset
 
-  // 🔔 Escuchar el “ping” que manda la tarjeta al reiniciar niveles
+  // 🔔 Re-render cuando llega el ping desde la tarjeta o storage
   useEffect(() => {
-    const bump = () => setRefreshKey((k) => k + 1)
-    window.addEventListener("ladico:refresh", bump)
-    // por si el evento viene de otro tab
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "ladico:progress:version") bump()
-      if (e.key?.startsWith("ladico:resetLevels:")) bump()
+    const bump = () => {
+      setRefreshKey((k) => k + 1)
+      router.refresh() // ⬅️ NUEVO: fuerza refresco del árbol/loader
     }
-    window.addEventListener("storage", onStorage)
-    return () => {
-      window.removeEventListener("ladico:refresh", bump)
-      window.removeEventListener("storage", onStorage)
+    if (typeof window !== "undefined") {
+      window.addEventListener("ladico:refresh", bump)
+      const onStorage = (e: StorageEvent) => {
+        if (e.key === "ladico:progress:version") bump()
+        if (e.key?.startsWith("ladico:resetLevels:")) bump()
+      }
+      window.addEventListener("storage", onStorage)
+      return () => {
+        window.removeEventListener("ladico:refresh", bump)
+        window.removeEventListener("storage", onStorage)
+      }
     }
-  }, [])
+  }, [router])
 
   const getAreaName = (code: string) => {
     if (code?.startsWith("1.")) return "Búsqueda y gestión de información"
@@ -107,6 +113,21 @@ export default function Dashboard() {
   }
 
   if (!user || !userData) return null
+
+  // Helper: lectura del flag + TTL
+  const isResetActive = (compId: string) => {
+    if (typeof window === "undefined") return false
+    const flag = localStorage.getItem(`ladico:resetLevels:${compId}`) === "1"
+    if (!flag) return false
+    const ts = Number(localStorage.getItem(`ladico:resetLevels:${compId}:ts`) || 0)
+    if (ts && Date.now() - ts > RESET_TTL_MS) {
+      // TTL vencida → limpiar para evitar “pegado”
+      localStorage.removeItem(`ladico:resetLevels:${compId}`)
+      localStorage.removeItem(`ladico:resetLevels:${compId}:ts`)
+      return false
+    }
+    return true
+  }
 
   // URL para empezar/continuar según progreso real
   const startOrContinueUrlFor = (competenceId: string, level: "Básico" | "Intermedio" | "Avanzado") => {
@@ -196,14 +217,11 @@ export default function Dashboard() {
                     {list.map((competence, idx) => {
                       if (!competence) return null
 
-                      // ⬇️ Si la tarjeta fue “reiniciada”, mostrar estado inicial (Nivel 1, 0%)
-                      const resetKey = `ladico:resetLevels:${competence.id}`
-                      const resetFlag =
-                        typeof window !== "undefined" &&
-                        localStorage.getItem(resetKey) === "1"
+                      // ⬇️ Estado "reiniciado" con TTL anti-pegado
+                      const resetActive = typeof window !== "undefined" && isResetActive(competence.id)
 
-                      // 🔧 Auto-unlock: si ya hay progreso real (desde Firestore), quitamos el flag
-                      if (resetFlag) {
+                      // 🔧 Auto-unlock: si ya hay actividad real (desde perCompetenceLevel), limpiar el flag
+                      if (resetActive) {
                         const compLevels = perCompetenceLevel[competence.id]
                         const hasActivity =
                           compLevels &&
@@ -212,19 +230,24 @@ export default function Dashboard() {
                             return st && (st.completed || st.inProgress || (st.answered ?? 0) > 0)
                           })
                         if (hasActivity && typeof window !== "undefined") {
-                          localStorage.removeItem(resetKey)
-                        }
+                              const compId = competence.id
+                              localStorage.removeItem(`ladico:resetLevels:${compId}`)
+                              localStorage.removeItem(`ladico:resetLevels:${compId}:ts`)
+                              // ⬇️ Forzar re-render inmediato en este tab
+                              localStorage.setItem("ladico:progress:version", String(Date.now()))
+                              try { window.dispatchEvent(new Event("ladico:refresh")) } catch {}
+                            }
+
                       }
 
-                      // Si el flag sigue activo, mostramos tarjeta en estado inicial
                       if (
-                        resetFlag &&
+                        resetActive &&
                         typeof window !== "undefined" &&
-                        localStorage.getItem(resetKey) === "1"
+                        localStorage.getItem(`ladico:resetLevels:${competence.id}`) === "1"
                       ) {
                         return (
                           <CompetenceCard
-                            key={`reset-${competence.id}-${idx}`}
+                            key={`reset-${competence.id}-${idx}-${refreshKey}`} // ⬅️ añade refreshKey a la key
                             competence={competence}
                             questionCount={counts[competence.id] || 0}
                             currentAreaLevel="Básico"
@@ -283,7 +306,7 @@ export default function Dashboard() {
 
                       return (
                         <CompetenceCard
-                          key={competence.id || `comp-${idx}`}
+                          key={`${competence.id || `comp-${idx}`}-${refreshKey}`} // ⬅️ añade refreshKey a la key
                           competence={competence}
                           questionCount={counts[competence.id] || 0}
                           currentAreaLevel={displayLevel}

@@ -8,7 +8,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/toolti
 import { useMemo, useState } from "react"
 import { firstExerciseRoute, type LevelSlug } from "@/lib/firstExerciseRoute"
 import { useAuth } from "@/contexts/AuthContext"
-import { clearTeacherSeenQuestionsAllCountries } from "@/lib/testSession" // ⬅️ NUEVO
+import { clearTeacherSeenQuestionsAllCountries, hardResetCompetenceSessions } from "@/lib/testSession" // ⬅️ añadido hard reset
 
 interface CompetenceCardProps {
   competence: Competence
@@ -32,7 +32,7 @@ export default function CompetenceCard({
   startOrContinueUrl,
 }: CompetenceCardProps) {
   const router = useRouter()
-  const { user, userData } = useAuth() // ⬅️ ahora también necesitamos user
+  const { user, userData } = useAuth()
   const isTeacher = userData?.role === "profesor"
 
   const [locallyStarted, setLocallyStarted] = useState(false)
@@ -59,7 +59,6 @@ export default function CompetenceCard({
   const circumference = useMemo(() => 2 * Math.PI * 18, [])
 
   const effectiveProgressPct = useMemo(() => {
-    // Profesor en Avanzado completado → anillo 100%
     if (isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed) return 100
     if (locallyStarted && !levelStatus.inProgress && !levelStatus.completed) return 15
     return levelStatus.progressPct
@@ -94,12 +93,26 @@ export default function CompetenceCard({
     return "Bloqueado"
   })()
 
-  // En Básico/Intermedio, “Volver a intentar” solo si se puede avanzar
   const showRetryButton = isTeacher && canAdvanceToNextLevel
+
+  // ⬇️ Anti-“pegado”: si el usuario inicia/continúa, limpiamos el flag de reset de esta competencia
+  const clearResetFlag = () => {
+    if (typeof window === "undefined") return
+    const compId = competence.id
+    localStorage.removeItem(`ladico:resetLevels:${compId}`)
+    localStorage.removeItem(`ladico:resetLevels:${compId}:ts`)
+    localStorage.setItem("ladico:progress:version", String(Date.now()))
+    window.dispatchEvent(new Event("ladico:refresh"))
+    // Refresca el árbol para asegurar que los consumidores se actualicen
+    setTimeout(() => {
+      try { router.refresh() } catch {}
+    }, 0)
+  }
 
   const handleStartOrContinue = () => {
     if (!canStartOrContinue) return
     setLocallyStarted(true)
+    clearResetFlag()
     const targetLevelNumber = canAdvanceToNextLevel ? levelNumber + 1 : levelNumber
     const levelMap: Record<number, "Básico" | "Intermedio" | "Avanzado"> = { 1: "Básico", 2: "Intermedio", 3: "Avanzado" }
     const targetLevelName = levelMap[targetLevelNumber]
@@ -107,8 +120,8 @@ export default function CompetenceCard({
     router.push(url)
   }
 
-  // Intermedio/Avanzado → ej1; Básico mantiene /test?...retry=1
   const handleRetryTeacher = () => {
+    clearResetFlag()
     const compSlug = competence.id.replace(".", "-")
     if (currentAreaLevel === "Intermedio") {
       router.push(`/exercises/comp-${compSlug}/intermedio/ej1?retry=1`)
@@ -122,7 +135,7 @@ export default function CompetenceCard({
     router.push(`/test/${competence.id}?level=${slug}&retry=1`)
   }
 
-  // Reiniciar niveles SIN navegar: limpia progreso + borra historial de preguntas vistas del profe (todas las de país)
+  // Reiniciar niveles SIN navegar (reset duro)
   const handleResetTeacherLevels = async () => {
     if (currentAreaLevel !== "Avanzado") return
     try {
@@ -131,24 +144,30 @@ export default function CompetenceCard({
 
         // 1) Progreso local (ring/estado)
         localStorage.setItem(`ladico:resetLevels:${compId}`, "1")
+        localStorage.setItem(`ladico:resetLevels:${compId}:ts`, String(Date.now()))
         ;(["basico", "intermedio", "avanzado"] as const).forEach((lvl) => {
           localStorage.removeItem(`ladico:${compId}:${lvl}:progress`)
           localStorage.removeItem(`level:${compId}:${lvl}:completed`)
           localStorage.removeItem(`ladico:completed:${compId}:${lvl}`)
         })
 
-        // 2) Historial de preguntas vistas en sesiones determinísticas del PROFESOR (todas por país)
+        // 2) Backend: limpiar historial y BORRAR sesiones + resultados del profe
         if (user?.uid) {
-          // limpiamos Básico (donde se usa el filtro/recuerdo de preguntas vistas)
           await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Básico")
-          // por seguridad, también limpiamos Intermedio/Avanzado si existiera este tracking en tu backend
           await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Intermedio")
           await clearTeacherSeenQuestionsAllCountries(user.uid, compId, "Avanzado")
+
+          // ⬇️ reset duro: elimina testSessions y userResults del profe para esta competencia
+          await hardResetCompetenceSessions(user.uid, compId)
         }
 
-        // 3) Notificar al dashboard para re-render inmediato (sin navegar)
+        // 3) Notificar/Refrescar UI
         localStorage.setItem("ladico:progress:version", String(Date.now()))
         window.dispatchEvent(new Event("ladico:refresh"))
+        try { router.refresh() } catch {}
+        setTimeout(() => {
+          localStorage.setItem("ladico:progress:version", String(Date.now()))
+        }, 50)
       }
     } catch (e) {
       console.warn("No se pudo reiniciar niveles:", e)
@@ -236,7 +255,7 @@ export default function CompetenceCard({
           ) : (
             <Button
               onClick={handleStartOrContinue}
-              className={`w-full rounded-full py-3 text-sm font-semibold transition-all duration-200 border mt-3
+              className={`w-full rounded-full py-3 text-sm font-semibold transition-all duración-200 border mt-3
               ${
                 canStartOrContinue
                   ? "bg-[#286675] hover:bg-[#1e4a56] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] border-transparent font-bold"

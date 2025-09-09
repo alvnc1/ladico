@@ -1,7 +1,7 @@
 // hooks/useLevelProgress.ts
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { collection, query, where, onSnapshot, type Unsubscribe } from "firebase/firestore"
 import { getDb } from "@/lib/safeDb"
 import { useAuth } from "@/contexts/AuthContext"
@@ -10,6 +10,7 @@ import { useCompetences } from "./useCompetences"
 
 type LevelName = "Básico" | "Intermedio" | "Avanzado"
 const LEVELS: LevelName[] = ["Básico", "Intermedio", "Avanzado"]
+const RESET_TTL_MS = 10 * 60 * 1000 // 10 minutos
 
 export interface LevelStatus {
   completed: boolean
@@ -43,17 +44,33 @@ export interface UseLevelProgressResult {
 }
 
 export function useLevelProgress(): UseLevelProgressResult {
-  const { user, userData } = useAuth() // <-- agregar userData para saber si es profesor
+  const { user, userData } = useAuth()
   const { competences, loading: loadingCompetences } = useCompetences()
+
   const [loading, setLoading] = useState(true)
-  const [perCompetenceLevel, setPerCompetenceLevel] = useState<CompetenceLevelMap>({})
 
-  const isTeacher = userData?.role === "profesor" // <-- flag profesor
+  // 🔹 Mapa derivado DIRECTO de Firestore (sin overlay local)
+  const [rawMap, setRawMap] = useState<CompetenceLevelMap>({})
 
+  // 🔹 Versión interna que se incrementa cuando llega un ping o cambia localStorage
+  const [bumpVersion, setBumpVersion] = useState(0)
+
+  const isTeacher = userData?.role === "profesor"
+
+  // Helper local
+  const initStatus = (): LevelStatus => ({
+    completed: false,
+    inProgress: false,
+    answered: 0,
+    total: 3,
+    progressPct: 0,
+  })
+
+  // === Listener Firestore: construye rawMap ===
   useEffect(() => {
-    // Evita SSR y espera competences
     if (!user?.uid || loadingCompetences) {
-      setLoading(false)
+      // Si no hay user o competences no están listas, inicializa vacío pero no bloquea UI
+      if (!loadingCompetences) setLoading(false)
       return
     }
 
@@ -66,18 +83,10 @@ export function useLevelProgress(): UseLevelProgressResult {
       unsubscribe = onSnapshot(
         q,
         (snapshot) => {
-          const initStatus = (): LevelStatus => ({
-            completed: false,
-            inProgress: false,
-            answered: 0,
-            total: 3, // default consistente con tu lógica
-            progressPct: 0,
-          })
-
           // Inicializa el mapa por cada competencia y nivel
-          const map: CompetenceLevelMap = {} as CompetenceLevelMap
+          const baseMap: CompetenceLevelMap = {} as CompetenceLevelMap
           for (const c of competences) {
-            map[c.id] = {
+            baseMap[c.id] = {
               "Básico": initStatus(),
               "Intermedio": initStatus(),
               "Avanzado": initStatus(),
@@ -89,7 +98,7 @@ export function useLevelProgress(): UseLevelProgressResult {
           snapshot.forEach((docSnap) => {
             const data: any = docSnap.data()
             const cid: string | undefined = data?.competence
-            if (!cid || !map[cid]) return
+            if (!cid || !baseMap[cid]) return
 
             const lvlRaw: string = data?.level || "Básico"
             const levelNorm = normalizeLevel(lvlRaw)
@@ -100,26 +109,26 @@ export function useLevelProgress(): UseLevelProgressResult {
             sessionGroups[key].push({ doc: docSnap, data })
           })
 
-          // Consolidar por grupo (manejo de duplicados + estrategia de selección)
+          // Consolida por grupo
           Object.entries(sessionGroups).forEach(([key, sessions]) => {
             const [cid, levelNorm] = key.split(":") as [string, LevelName]
             if (sessions.length > 1) {
               console.warn(`⚠️ Sesiones duplicadas para ${cid}/${levelNorm}: ${sessions.length}`)
             }
-            const consolidatedStatus = consolidateSessionGroup(sessions, isTeacher) // <-- pasar isTeacher
-            map[cid][levelNorm] = consolidatedStatus
+            const consolidatedStatus = consolidateSessionGroup(sessions, isTeacher)
+            baseMap[cid][levelNorm] = consolidatedStatus
           })
 
-          setPerCompetenceLevel(map)
+          setRawMap(baseMap)
           setLoading(false)
 
           // Logs útiles
           const totalSessions = snapshot.size
-          const completedLevels = Object.values(map).reduce(
+          const completedLevels = Object.values(baseMap).reduce(
             (acc, comp) => acc + Object.values(comp).filter((level) => level.completed).length,
             0
           )
-          const inProgressLevels = Object.values(map).reduce(
+          const inProgressLevels = Object.values(baseMap).reduce(
             (acc, comp) => acc + Object.values(comp).filter((level) => level.inProgress).length,
             0
           )
@@ -133,7 +142,6 @@ export function useLevelProgress(): UseLevelProgressResult {
         }
       )
     } catch (e) {
-      // getDb lanza si Firestore no está inicializado
       console.error("useLevelProgress → getDb() falló:", e)
       setLoading(false)
     }
@@ -141,7 +149,76 @@ export function useLevelProgress(): UseLevelProgressResult {
     return () => {
       if (unsubscribe) unsubscribe()
     }
-  }, [user?.uid, competences, loadingCompetences, isTeacher]) // <-- dependemos de isTeacher
+  }, [user?.uid, competences, loadingCompetences, isTeacher])
+
+  // === Escuchar ping/reset local para recomputar overlay (sin tocar Firestore) ===
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const bump = () => setBumpVersion((v) => v + 1)
+
+    const onPing = () => bump()
+    window.addEventListener("ladico:refresh", onPing)
+
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key) return
+      if (e.key === "ladico:progress:version") bump()
+      if (e.key.startsWith("ladico:resetLevels:")) bump()
+    }
+    window.addEventListener("storage", onStorage)
+
+    // Al montar, si ya hay una versión previa registrada, forzamos un bump
+    try {
+      const v = Number(localStorage.getItem("ladico:progress:version") || "0")
+      if (v) bump()
+    } catch {}
+
+    return () => {
+      window.removeEventListener("ladico:refresh", onPing)
+      window.removeEventListener("storage", onStorage)
+    }
+  }, [])
+
+  // === Overlay de reset con TTL aplicado a rawMap ===
+  const perCompetenceLevel: CompetenceLevelMap = useMemo(() => {
+    // Clonar superficialmente
+    const out: CompetenceLevelMap = {} as CompetenceLevelMap
+    for (const c of competences) {
+      const byLevel = rawMap[c.id] || {
+        "Básico": initStatus(),
+        "Intermedio": initStatus(),
+        "Avanzado": initStatus(),
+      }
+      out[c.id] = { ...byLevel }
+    }
+
+    if (typeof window !== "undefined") {
+      for (const c of competences) {
+        const compId = c.id
+        const flag = localStorage.getItem(`ladico:resetLevels:${compId}`) === "1"
+        if (!flag) continue
+
+        // TTL
+        const ts = Number(localStorage.getItem(`ladico:resetLevels:${compId}:ts`) || 0)
+        const expired = ts && Date.now() - ts > RESET_TTL_MS
+        if (expired) {
+          localStorage.removeItem(`ladico:resetLevels:${compId}`)
+          localStorage.removeItem(`ladico:resetLevels:${compId}:ts`)
+          continue
+        }
+
+        // Overlay: fuerza estado inicial para TODOS los niveles de esa competencia
+        out[compId] = {
+          "Básico": initStatus(),
+          "Intermedio": initStatus(),
+          "Avanzado": initStatus(),
+        }
+      }
+    }
+
+    return out
+    // bumpVersion en deps → recomputa cuando hay ping/reset
+  }, [competences, rawMap, bumpVersion])
 
   // Mapa de dimensión por competencia
   const dimensionByCompetence = useMemo(() => {
@@ -238,7 +315,7 @@ function normalizeLevel(raw: string): LevelName | null {
 // Consolida un grupo de sesiones (misma competencia+nivel) a un único LevelStatus
 function consolidateSessionGroup(
   sessions: Array<{ doc: any; data: any }>,
-  isTeacher: boolean // <-- agregar parámetro profesor
+  isTeacher: boolean
 ): LevelStatus {
   const initStatus = (): LevelStatus => ({
     completed: false,
@@ -248,11 +325,11 @@ function consolidateSessionGroup(
     progressPct: 0,
   })
   if (sessions.length === 0) return initStatus()
-  if (sessions.length === 1) return processSessionData(sessions[0].data, isTeacher) // <-- pasar flag
+  if (sessions.length === 1) return processSessionData(sessions[0].data, isTeacher)
 
   const processedSessions = sessions.map((s) => ({
     ...s,
-    processed: processSessionData(s.data, isTeacher), // <-- pasar flag
+    processed: processSessionData(s.data, isTeacher),
   }))
 
   const completedSessions = processedSessions.filter((s) => s.processed.completed)
@@ -292,8 +369,7 @@ function consolidateSessionGroup(
   return initStatus()
 }
 
-// Traduce una sesión individual a LevelStatus (mantiene tu semántica)
-// Agregado: si es profesor, marca completado=100% cuando haya endTime o todas respondidas
+// Traduce una sesión individual a LevelStatus
 function processSessionData(data: any, isTeacher: boolean): LevelStatus {
   const answers: Array<number | null> = Array.isArray(data?.answers) ? data.answers : []
   const answered = answers.filter((a) => a !== null && a !== undefined).length
@@ -305,7 +381,7 @@ function processSessionData(data: any, isTeacher: boolean): LevelStatus {
   const hasEndTime = typeof data?.endTime !== "undefined" && data?.endTime !== null
   const passed: boolean = data?.passed === true || score >= 66
 
-  // ---- CASO PROFESOR (agregado, sin tocar lo demás) ----
+  // Caso profesor: marcar completado con criterios flexibles
   if (isTeacher) {
     const completedTeacher = hasEndTime || answered >= total || passed
     if (completedTeacher) {
@@ -317,7 +393,6 @@ function processSessionData(data: any, isTeacher: boolean): LevelStatus {
         progressPct: 100,
       }
     }
-    // si aún no terminó, refleja progreso por respondidas
     return {
       completed: false,
       inProgress: answered > 0,
@@ -327,7 +402,7 @@ function processSessionData(data: any, isTeacher: boolean): LevelStatus {
     }
   }
 
-  // ---- Lógica existente para alumno ----
+  // Lógica para estudiante
   const completed = hasEndTime && (score === 100 || passed)
   const inProgress = !hasEndTime && answered > 0
 

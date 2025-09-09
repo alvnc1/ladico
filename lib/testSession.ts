@@ -11,6 +11,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
   type Firestore,
 } from "firebase/firestore"
 
@@ -20,36 +21,42 @@ export type SessionMode = "standard" | "teacher_preview"
 export type ActorRole = "student" | "teacher"
 
 type NewSessionInput = {
-  userId: string          // ej. "uid123"
-  competence: string      // ej. "4.3"
-  level: LevelName        // ej. "Intermedio"
-  totalQuestions?: number // default 3
+  userId: string
+  competence: string
+  level: LevelName
+  totalQuestions?: number
 }
 
 type EnsureOpts = {
   actorRole?: ActorRole
   country?: string | null
-  // Si es docente, al asegurar la sesión se reinician respuestas/score por defecto (pero no el historial)
   resetIfTeacher?: boolean
 }
 
 type TestSessionDoc = {
   userId: string
-  competence: string            // "4.3"
-  level: LevelName              // "Básico" | "Intermedio" | "Avanzado"
-  answers: Array<number | null> // 1/0/null
+  competence: string
+  level: LevelName
+  answers: Array<number | null>
   total: number
   startTime: string
   endTime: string | null
   score: number
   passed: boolean
-  // Metadatos de modo/rol
   actorRole?: ActorRole
   sessionMode?: SessionMode
   countryUsed?: string | null
   updatedAt?: string
-  // Historial de preguntas vistas (solo nos interesa para básico/docente, pero es genérico)
   seenQuestionIds?: string[]
+}
+
+/** 🔔 Notifica al dashboard (solo en cliente) */
+function pingUI() {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.setItem("ladico:progress:version", String(Date.now()))
+    window.dispatchEvent(new Event("ladico:refresh"))
+  } catch {}
 }
 
 /** Normaliza LevelName → LevelSlug */
@@ -78,26 +85,44 @@ async function findActiveSessionId(
     where("competence", "==", competence),
     where("level", "==", level),
     where("endTime", "==", null),
-    where("sessionMode", "in", ["standard", null]), // evita confundir con docente
+    where("sessionMode", "in", ["standard", null]),
     limit(1)
   )
   const snap = await getDocs(qy)
   return snap.empty ? null : snap.docs[0]!.id
 }
 
-/** 🔹 Crear (o reutilizar) sesión
- *  - Alumno: reusa activa (endTime === null) o crea nueva.
- *  - Docente: usa SIEMPRE un ID determinístico y REINICIA respuestas/score, pero **NO** borra seenQuestionIds.
- */
+/* ===== helpers de rol y nivel ===== */
+
+/** Lee el rol desde users/<uid> si no se pasó actorRole */
+async function resolveActorRole(db: Firestore, userId: string, hint?: ActorRole): Promise<ActorRole> {
+  if (hint === "teacher" || hint === "student") return hint
+  try {
+    const userRef = doc(db, "users", userId)
+    const userSnap = await getDoc(userRef)
+    const role = (userSnap.exists() ? (userSnap.data() as any)?.role : null) as string | null
+    return role === "profesor" ? "teacher" : "student"
+  } catch {
+    return "student"
+  }
+}
+
+function nextLevelOf(level: LevelName): LevelName | null {
+  if (level === "Básico") return "Intermedio"
+  if (level === "Intermedio") return "Avanzado"
+  return null
+}
+
+/** 🔹 Crear (o reutilizar) sesión */
 export async function ensureSession(
   { userId, competence, level, totalQuestions = 3 }: NewSessionInput,
   opts?: EnsureOpts
 ): Promise<{ id: string }> {
   const db = getDb()
-  const actorRole: ActorRole = opts?.actorRole ?? "student"
+  const actorRole: ActorRole = await resolveActorRole(db, userId, opts?.actorRole)
   const country = opts?.country ?? null
 
-  // 👉 Modo docente
+  // 👉 Modo docente (auto si users/<uid>.role == "profesor")
   if (actorRole === "teacher") {
     const sessionId = getTeacherSessionId(userId, competence, level, country)
     const ref = doc(db, "testSessions", sessionId)
@@ -106,8 +131,6 @@ export async function ensureSession(
     const now = new Date().toISOString()
     const answers = Array.from({ length: totalQuestions }, () => null)
 
-    // Construye payload sin tocar seenQuestionIds (se conserva si ya existe).
-    // Si NO existe, inicializamos seenQuestionIds: [].
     const payload: Partial<TestSessionDoc> = {
       userId,
       competence,
@@ -116,8 +139,8 @@ export async function ensureSession(
       total: totalQuestions,
       score: 0,
       passed: false,
-      startTime: snap.exists() ? (snap.data() as TestSessionDoc).startTime : now, // conserva primer start
-      endTime: null, // 👈 se mantiene activa para reintentos
+      startTime: snap.exists() ? (snap.data() as TestSessionDoc).startTime : now,
+      endTime: null,
       actorRole: "teacher",
       sessionMode: "teacher_preview",
       countryUsed: country,
@@ -149,13 +172,13 @@ export async function ensureSession(
     sessionMode: "standard",
     countryUsed: country ?? null,
     updatedAt: new Date().toISOString(),
-    seenQuestionIds: [], // inicializa vacío
+    seenQuestionIds: [],
   } satisfies TestSessionDoc)
 
   return { id: ref.id }
 }
 
-/** 🔹 Marcar una pregunta respondida (index 0-based). Guarda 1/0 si se pasa `correct`. */
+/** 🔹 Marcar una pregunta respondida */
 export async function markAnswered(sessionId: string, index: number, correct?: boolean): Promise<void> {
   const db = getDb()
   const ref = doc(db, "testSessions", sessionId)
@@ -165,7 +188,6 @@ export async function markAnswered(sessionId: string, index: number, correct?: b
   const data = snap.data() as Partial<TestSessionDoc> | undefined
   const total = (data?.total ?? 3) as number
 
-  // Asegura array y longitud >= total
   const prev = Array.isArray(data?.answers)
     ? [...(data!.answers as Array<number | null>)]
     : Array.from({ length: total }, () => null)
@@ -174,7 +196,6 @@ export async function markAnswered(sessionId: string, index: number, correct?: b
     for (let i = 0; i < total; i++) if (typeof prev[i] === "undefined") prev[i] = null
   }
 
-  // Ignora índices fuera de rango
   if (index < 0 || index >= total) return
 
   prev[index] = typeof correct === "boolean" ? (correct ? 1 : 0) : 1
@@ -183,12 +204,12 @@ export async function markAnswered(sessionId: string, index: number, correct?: b
     answers: prev,
     updatedAt: new Date().toISOString(),
   })
+
+  // 🔔 Ping “liviano” para ver progreso en vivo (opcional)
+  pingUI()
 }
 
-/** 🔹 Finalizar la sesión: calcula score, passed
- *  - Docente (teacher_preview): NO cierra la sesión (endTime sigue null)
- *  - Alumno: cierra la sesión (endTime timestamp)
- */
+/** 🔹 Finalizar la sesión: calcula score, passed */
 export async function finalizeSession(
   sessionId: string,
   opts: { correctCount: number; total: number; passMin: number }
@@ -204,23 +225,52 @@ export async function finalizeSession(
   const now = new Date().toISOString()
 
   if (data.sessionMode === "teacher_preview") {
-    // 👇 Modo docente: sobreescribe score/passed pero mantiene la sesión activa
+    // 👇 Docente: mantener endTime=null pero actualizar score/passed
     await updateDoc(ref, {
       score,
       passed,
       endTime: null,
       updatedAt: now,
     })
+
+    // ✅ FORZAR AVANCE AUTOMÁTICO si aprobó o respondió todo
+    if (passed || opts.correctCount >= opts.total) {
+      const nxt = nextLevelOf(data.level)
+      if (nxt) {
+        await ensureSession(
+          {
+            userId: data.userId,
+            competence: data.competence,
+            level: nxt,
+            totalQuestions: opts.total,
+          },
+          {
+            actorRole: "teacher",
+            country: data.countryUsed ?? null,
+          }
+        )
+        if (typeof window !== "undefined") {
+          const comp = data.competence
+          const slug = toSlug(nxt)
+          localStorage.setItem(`ladico:teacher:autoNext:${comp}`, slug)
+        }
+      }
+    }
+
+    // 🔔 Notificar dashboard (clave tras el reset)
+    pingUI()
     return
   }
 
-  // 👇 Flujo alumno: cerrar sesión normalmente
+  // 👇 Alumno: cerrar sesión normalmente
   await updateDoc(ref, {
     score,
     passed,
     endTime: now,
     updatedAt: now,
   })
+  // 🔔 Notificar dashboard
+  pingUI()
 }
 
 /** (Opcional) Utilidad para leer una sesión por id (debug) */
@@ -231,7 +281,7 @@ export async function getSession(sessionId: string): Promise<TestSessionDoc | nu
   return snap.exists() ? (snap.data() as TestSessionDoc) : null
 }
 
-/** 🔹 Historial de preguntas vistas (genérico, lo usamos sobre todo para docente+básico) */
+/** 🔹 Historial de preguntas vistas */
 export async function getSeenQuestions(sessionId: string): Promise<string[]> {
   const db = getDb()
   const ref = doc(db, "testSessions", sessionId)
@@ -241,7 +291,7 @@ export async function getSeenQuestions(sessionId: string): Promise<string[]> {
   return Array.isArray(data.seenQuestionIds) ? (data.seenQuestionIds as string[]) : []
 }
 
-/** 🔹 Agrega nuevas ids al historial (merge único, sin duplicar) */
+/** 🔹 Agrega ids al historial (merge único) */
 export async function appendSeenQuestions(sessionId: string, questionIds: string[]) {
   if (!questionIds || questionIds.length === 0) return
   const db = getDb()
@@ -260,7 +310,7 @@ export async function appendSeenQuestions(sessionId: string, questionIds: string
   })
 }
 
-/** 🔹 Reemplaza completamente el historial (por si cambias de país o quieres resetear) */
+/** 🔹 Reemplaza completamente el historial */
 export async function setSeenQuestions(sessionId: string, questionIds: string[]) {
   const db = getDb()
   const ref = doc(db, "testSessions", sessionId)
@@ -270,7 +320,7 @@ export async function setSeenQuestions(sessionId: string, questionIds: string[])
   })
 }
 
-/** 🔹 Limpia el historial (usar si necesitas un reset explícito del docente) */
+/** 🔹 Limpia el historial */
 export async function clearSeenQuestions(sessionId: string) {
   const db = getDb()
   const ref = doc(db, "testSessions", sessionId)
@@ -280,14 +330,7 @@ export async function clearSeenQuestions(sessionId: string) {
   })
 }
 
-/* ========== NUEVO: reset de "preguntas vistas" del profesor en TODAS las sesiones determinísticas (por país) ========== */
-
-/**
- * Limpia el historial de preguntas vistas del PROFESOR para TODAS las sesiones
- * determinísticas (una por país) de una competencia/nivel.
- * - Deja los campos de “vistas” en vacío si existen (seenQuestionIds/seen/seenIds/teacherSeen/...).
- * - No navega, sólo actualiza Firestore.
- */
+/* ========== Reset de "preguntas vistas" del profesor (todas las sesiones determinísticas por país) ========== */
 export async function clearTeacherSeenQuestionsAllCountries(
   userId: string,
   competence: string,
@@ -296,9 +339,6 @@ export async function clearTeacherSeenQuestionsAllCountries(
   const db = getDb()
   if (!db || !userId || !competence) return
 
-  // Algunas instalaciones guardaron level como "Básico"/"Intermedio"/"Avanzado" (con acento)
-  // y otras lo guardaron slug "basico"/"intermedio"/"avanzado".
-  // Cubrimos ambos sin romper nada, haciendo 2 consultas.
   const candidates: Array<LevelName | string> = [level, toSlug(level)]
 
   for (const lvl of candidates) {
@@ -316,7 +356,6 @@ export async function clearTeacherSeenQuestionsAllCountries(
       const updates = snap.docs.map(async (d) => {
         try {
           await updateDoc(doc(db, "testSessions", d.id), {
-            // cubrimos varios nombres posibles sin eliminar otros campos
             seenQuestionIds: [],
             seen: [],
             seenIds: [],
@@ -335,4 +374,56 @@ export async function clearTeacherSeenQuestionsAllCountries(
       console.warn("clearTeacherSeenQuestionsAllCountries(): error al consultar/actualizar:", e)
     }
   }
+}
+
+/* ========== RESET DURO ========== */
+
+/** Borra en lotes (<=500 por batch) todos los docs que cumplan un query. */
+async function deleteByQuery(qy: ReturnType<typeof query>) {
+  const db = getDb()
+  const snap = await getDocs(qy)
+  if (snap.empty) return
+  let batch = writeBatch(db)
+  let count = 0
+  for (const d of snap.docs) {
+    batch.delete(d.ref)
+    count++
+    if (count % 450 === 0) {
+      await batch.commit()
+      batch = writeBatch(db)
+    }
+  }
+  await batch.commit()
+}
+
+/** 🔥 Reset duro: elimina testSessions y userResults del profesor para una competencia. */
+export async function hardResetCompetenceSessions(userId: string, competenceId: string) {
+  const db = getDb()
+
+  // 1) testSessions
+  const q1 = query(
+    collection(db, "testSessions"),
+    where("userId", "==", userId),
+    where("competence", "==", competenceId)
+  )
+  await deleteByQuery(q1)
+
+  // 2) userResults
+  const q2 = query(
+    collection(db, "userResults"),
+    where("userId", "==", userId),
+    where("competence", "==", competenceId)
+  )
+  await deleteByQuery(q2)
+
+  // (Opcional) evaluationStates
+  // const q3 = query(
+  //   collection(db, "evaluationStates"),
+  //   where("userId", "==", userId),
+  //   where("competence", "==", competenceId)
+  // )
+  // await deleteByQuery(q3)
+
+  // 🔔 Tras reset duro, emite ping por si se llama fuera de la tarjeta
+  pingUI()
 }
