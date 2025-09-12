@@ -1,7 +1,7 @@
 // app/exercises/comp-4-3/intermedio/ej2/page.tsx
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
@@ -51,19 +51,38 @@ export default function Page() {
   const { user } = useAuth()
 
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const ensuringRef = useRef(false);
 
   /* ==== Sesión por-usuario (evita mezclar) ==== */
-  // Carga sesión cacheada (si existe) cuando conocemos el uid
-  useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    const sid = localStorage.getItem(sessionKeyFor(user.uid));
-    if (sid) setSessionId(sid);
-  }, [user?.uid]);
-
-  // Si no hay cache, crear/asegurar una sesión y guardarla con clave por-usuario
+  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
     useEffect(() => {
-      if (!user) return;
-      if (sessionId) return;
+      if (!user || typeof window === "undefined") return;
+      const LS_KEY = sessionKeyFor(user.uid);
+      const sid = localStorage.getItem(LS_KEY);
+      if (sid) setSessionId(sid);
+    }, [user?.uid]);
+
+  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
+    useEffect(() => {
+      if (!user) {
+        setSessionId(null);
+        return;
+      }
+  
+      const LS_KEY = sessionKeyFor(user.uid);
+      const cached =
+        typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+  
+      if (cached) {
+        // ya existe para este usuario
+        if (!sessionId) setSessionId(cached);
+        return;
+      }
+  
+      // Evita que se dispare doble en StrictMode o por renders repetidos
+      if (ensuringRef.current) return;
+      ensuringRef.current = true;
+  
       (async () => {
         try {
           const { id } = await ensureSession({
@@ -73,11 +92,11 @@ export default function Page() {
             totalQuestions: 3,
           });
           setSessionId(id);
-          if (typeof window !== "undefined") {
-            localStorage.setItem(sessionKeyFor(user.uid), id);
-          }
+          if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
         } catch (e) {
-          console.error("No se pudo asegurar la sesión de test (P2):", e);
+          console.error("No se pudo asegurar la sesión de test:", e);
+        } finally {
+          ensuringRef.current = false;
         }
       })();
     }, [user?.uid, sessionId]);

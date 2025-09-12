@@ -14,7 +14,8 @@ const STORAGE_KEY = "ladico:4.3:avanzado:ej3"
 const COMPETENCE = "4.3" as const
 const LEVEL = "avanzado" as const
 const QUESTION_INDEX = 3 // Pregunta 3 de 3 (1-based)
-const SESSION_KEY = "session:4.3:Avanzado"
+const SESSION_PREFIX = "session:4.3:Avanzado";
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
 /** Limpia el estado del SIM de P3 */
 function clearSimStorage() {
@@ -65,36 +66,44 @@ export default function AdvancedEj3Page() {
     }
   }, [user])
 
-  // 1) crea/recupera sesión Avanzado (4.3) POR USUARIO
+  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
   useEffect(() => {
-    if (!user) return
-
-    const cached = localStorage.getItem(SESSION_KEY + ":" + user.uid)
-    if (cached) {
-      setSessionId(cached)
-      return
+    if (!user) {
+      setSessionId(null);
+      return;
     }
 
-    if (ensuringRef.current) return
-    ensuringRef.current = true
+    const LS_KEY = sessionKeyFor(user.uid);
+    const cached =
+      typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
 
-    ;(async () => {
+    if (cached) {
+      // ya existe para este usuario
+      if (!sessionId) setSessionId(cached);
+      return;
+    }
+
+    // Evita que se dispare doble en StrictMode o por renders repetidos
+    if (ensuringRef.current) return;
+    ensuringRef.current = true;
+
+    (async () => {
       try {
         const { id } = await ensureSession({
           userId: user.uid,
-          competence: "4.3",
+          competence: COMPETENCE,
           level: "Avanzado",
           totalQuestions: 3,
-        })
-        setSessionId(id)
-        localStorage.setItem(SESSION_KEY + ":" + user.uid, id)
+        });
+        setSessionId(id);
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
       } catch (e) {
-        console.error("No se pudo asegurar la sesión Avanzado (P3):", e)
+        console.error("No se pudo asegurar la sesión de test:", e);
       } finally {
-        ensuringRef.current = false
+        ensuringRef.current = false;
       }
-    })()
-  }, [user?.uid])
+    })();
+  }, [user?.uid, sessionId]);
 
   // 2) Reset por SESIÓN (solo una vez por id de sesión)
   useEffect(() => {
@@ -132,7 +141,7 @@ export default function AdvancedEj3Page() {
     // 4) Marcar P3 en testSessions (índice 0-based → 2)
     const sid =
       sessionId ||
-      (typeof window !== "undefined" && user ? localStorage.getItem(SESSION_KEY + ":" + user.uid) : null)
+      (typeof window !== "undefined" && user ? localStorage.getItem(sessionKeyFor(user.uid)) : null)
 
     if (sid) {
       try {
@@ -180,7 +189,7 @@ export default function AdvancedEj3Page() {
       try {
         await finalizeSession(sid, { correctCount: totalPts, total: 3, passMin: 2 })
         if (typeof window !== "undefined" && user) {
-          localStorage.removeItem(SESSION_KEY + ":" + user.uid)
+          localStorage.removeItem(localStorage.getItem(sessionKeyFor(user.uid)) + ":" + user.uid)
         }
       } catch (e) {
         console.warn("No se pudo finalizar la sesión de test:", e)

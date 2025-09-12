@@ -297,7 +297,7 @@ function TestResultsContent() {
             </div>
 
             <CardTitle className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 bg-[#5d8b6a] bg-clip-text text-transparent px-2">
-              {areaCompleted ? "¡Nivel del área completado!" : isAlreadyCompleted ? "¡Competencia Completada!" : passed ? "¡Felicitaciones!" : "Sigue practicando"}
+              {areaCompleted ? "¡Nivel del área completado!" : isAlreadyCompleted ? "¡Competencia Completada!" : isTeacher ? "Evaluación Completada" : (passed ? "¡Felicitaciones!" : "Sigue practicando")}
             </CardTitle>
 
             <p className="text-gray-600 text-base sm:text-lg px-2">
@@ -305,9 +305,12 @@ function TestResultsContent() {
                 ? "Has completado este nivel en todas las competencias del área."
                 : isAlreadyCompleted
                   ? "Ya has completado exitosamente esta competencia anteriormente"
-                  : passed
-                    ? "Has completado exitosamente esta competencia"
-                    : "Necesitas al menos 2 respuestas correctas para avanzar"}
+                  : 
+                    isTeacher 
+                    ? "Evaluación finalizada como profesor"
+                    : (passed
+                      ? "Has completado exitosamente esta competencia"
+                      : "Necesitas al menos 2 respuestas correctas para avanzar")}
             </p>
           </CardHeader>
 

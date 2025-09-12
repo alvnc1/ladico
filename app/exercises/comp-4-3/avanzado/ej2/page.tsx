@@ -2,7 +2,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState, useEffect } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -47,7 +47,8 @@ const ANSWER_KEY: Record<GroupId, { tech: string; objective: Objective }> = {
 
 const COMPETENCE = "4.3"
 const LEVEL_LOCAL = "avanzado"        // para setPoint (1-based)
-const SESSION_LEVEL = "Avanzado"      // para Firestore / ensureSession (title-case)
+const SESSION_PREFIX = "session:4.3:Avanzado";
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;     // para Firestore / ensureSession (title-case)
 const QUESTION_NUM_LOCAL = 2          // Pregunta 2 de 3 (1-based para setPoint)
 const QUESTION_IDX_SESSION = 1        // índice 0-based para markAnswered
 
@@ -55,26 +56,54 @@ export default function AdvancedEj2Page() {
   const router = useRouter()
   const { user } = useAuth()
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const ensuringRef = useRef(false);
 
-  // Crear/recuperar sesión (igual que en P1)
+  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
   useEffect(() => {
-    if (!user) return
-    const cached = localStorage.getItem("session:4.3:Avanzado")
-    if (cached) {
-      setSessionId(cached)
-      return
+    if (!user || typeof window === "undefined") return;
+    const LS_KEY = sessionKeyFor(user.uid);
+    const sid = localStorage.getItem(LS_KEY);
+    if (sid) setSessionId(sid);
+  }, [user?.uid]);
+
+  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
+  useEffect(() => {
+    if (!user) {
+      setSessionId(null);
+      return;
     }
-    ;(async () => {
-      const { id } = await ensureSession({
-        userId: user.uid,
-        competence: "4.3",
-        level: SESSION_LEVEL,
-        totalQuestions: 3,
-      })
-      setSessionId(id)
-      localStorage.setItem("session:4.3:Avanzado", id)
-    })()
-  }, [user])
+
+    const LS_KEY = sessionKeyFor(user.uid);
+    const cached =
+      typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+
+    if (cached) {
+      // ya existe para este usuario
+      if (!sessionId) setSessionId(cached);
+      return;
+    }
+
+    // Evita que se dispare doble en StrictMode o por renders repetidos
+    if (ensuringRef.current) return;
+    ensuringRef.current = true;
+
+    (async () => {
+      try {
+        const { id } = await ensureSession({
+          userId: user.uid,
+          competence: COMPETENCE,
+          level: "Avanzado",
+          totalQuestions: 3,
+        });
+        setSessionId(id);
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+      } catch (e) {
+        console.error("No se pudo asegurar la sesión de test:", e);
+      } finally {
+        ensuringRef.current = false;
+      }
+    })();
+  }, [user?.uid, sessionId]);
 
   const [tech, setTech] = useState<Record<GroupId, string>>({
     adultos: "",
