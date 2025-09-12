@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
   Plus,
   Trash2,
   Edit,
+  Monitor,
   Grid as GridIcon,
   List as ListIcon,
 } from "lucide-react";
@@ -42,6 +43,9 @@ export default function LadicoFileExplorerExercise() {
   const [currentIndex] = useState(1);
   const progress = (2 / 3) * 100;
 
+  // ref para ejecutar el “next” del explorador desde fuera
+  const nextRef = useRef<(() => void) | null>(null);
+
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
@@ -57,10 +61,8 @@ export default function LadicoFileExplorerExercise() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
-                | 1.3 Gestión de Datos, Información y Contenidos Digitales -
-                Nivel Intermedio
+                | 1.3 Gestión de Datos, Información y Contenidos Digitales - Nivel Intermedio
               </span>
-
             </div>
           </div>
 
@@ -107,7 +109,18 @@ export default function LadicoFileExplorerExercise() {
               </div>
             </div>
 
-            <FileExplorerEmbedded />
+            {/* Explorador (registra su “next”) */}
+            <FileExplorerEmbedded registerHandleNext={(fn) => (nextRef.current = fn)} />
+
+            {/* Botón fuera del explorador, dentro de la tarjeta */}
+            <div className="mt-6 flex justify-end">
+              <Button
+                onClick={() => nextRef.current?.()}
+                className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
+              >
+                Siguiente
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -255,7 +268,13 @@ function validateExercise(root: FileItem) {
   return { ok: true, reason: "¡Correcto!" };
 }
 
-export function FileExplorerEmbedded() {
+/* =================== Explorador =================== */
+
+export function FileExplorerEmbedded({
+  registerHandleNext,
+}: {
+  registerHandleNext?: (fn: () => void) => void;
+}) {
   const [tree, setTree] = useState<FileItem>(() => deepClone(demoRoot));
   const [path, setPath] = useState<string[]>(["Computer"]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ root: true });
@@ -273,58 +292,67 @@ export function FileExplorerEmbedded() {
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
 
+  // refs para menú contextual y su tamaño (para no desbordar el panel)
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [ctxSize, setCtxSize] = useState({ w: 184, h: 160 }); // w-44 ≈ 176px
+
+  useEffect(() => {
+    if (ctxOpen && menuRef.current) {
+      setCtxSize({
+        w: menuRef.current.offsetWidth || 184,
+        h: menuRef.current.offsetHeight || 160,
+      });
+    }
+  }, [ctxOpen]);
+
   const QUESTION_IDX_ZERO_BASED = 1; // P2
   const QUESTION_IDX_ONE_BASED = 2; // para setPoint
 
   /* ==== Sesión por-usuario (evita mezclar) ==== */
-  // 🔒 Guard contra doble ejecución de efectos (StrictMode) y carreras
-    const ensuringRef = useRef(false);
-  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
-    useEffect(() => {
-      if (!user || typeof window === "undefined") return;
-      const LS_KEY = sessionKeyFor(user.uid);
-      const sid = localStorage.getItem(LS_KEY);
-      if (sid) setSessionId(sid);
-    }, [user?.uid]);
+  const ensuringRef = useRef(false);
 
-  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
-    useEffect(() => {
-      if (!user) {
-        setSessionId(null);
-        return;
+  useEffect(() => {
+    if (!user || typeof window === "undefined") return;
+    const LS_KEY = sessionKeyFor(user.uid);
+    const sid = localStorage.getItem(LS_KEY);
+    if (sid) setSessionId(sid);
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user) {
+      setSessionId(null);
+      return;
+    }
+
+    const LS_KEY = sessionKeyFor(user.uid);
+    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+
+    if (cached) {
+      if (!sessionId) setSessionId(cached);
+      return;
+    }
+
+    if (ensuringRef.current) return;
+    ensuringRef.current = true;
+
+    (async () => {
+      try {
+        const { id } = await ensureSession({
+          userId: user.uid,
+          competence: COMPETENCE,
+          level: "Intermedio",
+          totalQuestions: 3,
+        });
+        setSessionId(id);
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+      } catch (e) {
+        console.error("No se pudo asegurar la sesión de test:", e);
+      } finally {
+        ensuringRef.current = false;
       }
-  
-      const LS_KEY = sessionKeyFor(user.uid);
-      const cached =
-        typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-  
-      if (cached) {
-        // ya existe para este usuario
-        if (!sessionId) setSessionId(cached);
-        return;
-      }
-  
-      // Evita que se dispare doble en StrictMode o por renders repetidos
-      if (ensuringRef.current) return;
-      ensuringRef.current = true;
-  
-      (async () => {
-        try {
-          const { id } = await ensureSession({
-            userId: user.uid,
-            competence: COMPETENCE,
-            level: "Intermedio",
-            totalQuestions: 3,
-          });
-          setSessionId(id);
-          if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
-        } catch (e) {
-          console.error("No se pudo asegurar la sesión de test:", e);
-        } finally {
-          ensuringRef.current = false;
-        }
-      })();
-    }, [user?.uid, sessionId]);
+    })();
+  }, [user?.uid, sessionId]);
 
   const currentFolder = useMemo(() => getFolderByPath(tree, path), [tree, path]);
 
@@ -403,9 +431,22 @@ export function FileExplorerEmbedded() {
 
   const openCtx = (e: React.MouseEvent, id: string | null) => {
     e.preventDefault();
-    const rect = ref.current?.getBoundingClientRect();
-    const x = rect ? e.clientX - rect.left : e.clientX;
-    const y = rect ? e.clientY - rect.top : e.clientY;
+    const el = contentRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    let x = e.clientX - rect.left + el.scrollLeft;
+    let y = e.clientY - rect.top + el.scrollTop;
+
+    const pad = 8;
+    const minX = el.scrollLeft + pad;
+    const minY = el.scrollTop + pad;
+    const maxX = el.scrollLeft + rect.width - ctxSize.w - pad;
+    const maxY = el.scrollTop + rect.height - ctxSize.h - pad;
+
+    x = Math.max(minX, Math.min(x, maxX));
+    y = Math.max(minY, Math.min(y, maxY));
+
     setCtxPos({ x, y });
     setCtxTargetId(id);
     setCtxOpen(true);
@@ -437,7 +478,7 @@ export function FileExplorerEmbedded() {
   };
 
   /* ------------------- NEXT (validar + puntaje + navegar) ------------------- */
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     const res = validateExercise(tree);
     const point: 0 | 1 = res.ok ? 1 : 0;
 
@@ -448,12 +489,11 @@ export function FileExplorerEmbedded() {
     let sid = sessionId;
     try {
       if (!sid && user) {
-        // intenta recuperar de LS por-usuario
-        const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
+        const cached =
+          typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
         if (cached) {
           sid = cached;
         } else {
-          // crear si no existe todavía
           const { id } = await ensureSession({
             userId: user.uid,
             competence: COMPETENCE,
@@ -471,7 +511,6 @@ export function FileExplorerEmbedded() {
 
     try {
       if (sid) {
-        // Guarda en answers[1] = true/false, NO “true” fijo
         await markAnswered(sid, QUESTION_IDX_ZERO_BASED, point === 1);
       }
     } catch (e) {
@@ -480,6 +519,79 @@ export function FileExplorerEmbedded() {
 
     // 3) Avanzar
     router.push("/exercises/comp-1-3/intermedio/ej3");
+  }, [tree, sessionId, user, router]);
+
+  // expone handleNext al padre
+  useEffect(() => {
+    registerHandleNext?.(handleNext);
+  }, [registerHandleNext, handleNext]);
+
+  // ---- Árbol recursivo para el sidebar con indentación ----
+  type TreeNodeProps = {
+    node: FileItem;
+    depth: number;
+    pathPrefix: string[];
+  };
+
+  const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, pathPrefix }) => {
+    const isDir = isFolder(node);
+    const isOpen = !!expanded[node.id];
+
+    return (
+      <div>
+        <div
+          className={`flex items-center py-1 px-1 rounded cursor-pointer ${
+            dragOverId === node.id ? "bg-blue-100" : "hover:bg-gray-200"
+          }`}
+          style={{ paddingLeft: depth * 12 }}
+          role="button"
+          onClick={() => {
+            if (isDir) setPath(pathPrefix);
+            setSelectedId(node.id);
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            openCtx(e, node.id);
+          }}
+          {...(isDir ? sidebarDropHandlers(node.id) : {})}
+        >
+          {isDir ? (
+            <button
+              className="w-5 h-5 mr-1 shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleExpand(node.id);
+              }}
+              aria-label="Expandir"
+              title="Expandir"
+            >
+              <ChevronRight
+                className={`w-4 h-4 transition-transform ${isOpen ? "rotate-90" : "rotate-0"}`}
+              />
+            </button>
+          ) : (
+            <span className="w-5 h-5 mr-1" />
+          )}
+
+          {depth === 0 ? (
+            <Monitor className="w-4 h-4 mr-2 shrink-0" />
+          ) : isDir ? (
+            <Folder className="w-4 h-4 mr-2 shrink-0" />
+          ) : (
+            <File className="w-4 h-4 mr-2 shrink-0" />
+          )}
+
+          {/* nombre completo, sin truncate */}
+          <span className="text-sm break-words whitespace-normal">{node.name}</span>
+        </div>
+
+        {isDir &&
+          isOpen &&
+          (node.children || []).map((child) => (
+            <TreeNode key={child.id} node={child} depth={depth + 1} pathPrefix={[...pathPrefix, child.name]} />
+          ))}
+      </div>
+    );
   };
 
   return (
@@ -487,60 +599,7 @@ export function FileExplorerEmbedded() {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <aside className="w-56 border-r bg-gray-50 p-2 overflow-auto">
-          <div className="font-semibold text-sm px-1 mb-1">Computer</div>
-          <div>
-            {/* Nodo raíz */}
-            <div
-              className={`flex items-center py-1 px-1 rounded cursor-pointer ${
-                dragOverId === "root" ? "bg-blue-100" : "hover:bg-gray-200"
-              }`}
-              role="button"
-              onClick={() => {
-                setPath(["Computer"]);
-                setSelectedId("root");
-              }}
-              {...sidebarDropHandlers("root")}
-            >
-              <button
-                className="w-5 h-5 mr-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleExpand("root");
-                }}
-                aria-label="Expandir"
-                title="Expandir"
-              >
-                <ChevronRight
-                  className={`w-4 h-4 transition-transform ${expanded["root"] ? "rotate-90" : "rotate-0"}`}
-                />
-              </button>
-              <Folder className="w-4 h-4 mr-2" />
-              <span className="text-sm truncate">Computer</span>
-            </div>
-
-            {/* Hijos de raíz */}
-            {expanded["root"] && (
-              <div className="ml-6">
-                {(tree.children || []).map((c) => (
-                  <div
-                    key={c.id}
-                    className={`flex items-center py-1 px-1 rounded cursor-pointer ${
-                      dragOverId === c.id ? "bg-blue-100" : "hover:bg-gray-200"
-                    }`}
-                    role="button"
-                    onClick={() => {
-                      if (isFolder(c)) setPath(["Computer", c.name]);
-                      setSelectedId(c.id);
-                    }}
-                    {...(isFolder(c) ? sidebarDropHandlers(c.id) : {})}
-                  >
-                    {isFolder(c) ? <Folder className="w-4 h-4 mr-2" /> : <File className="w-4 h-4 mr-2" />}
-                    <span className="text-sm truncate">{c.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <TreeNode node={tree} depth={0} pathPrefix={["Computer"]} />
         </aside>
 
         {/* Main */}
@@ -579,9 +638,7 @@ export function FileExplorerEmbedded() {
                   return (
                     <div key={i} className="flex items-center">
                       <button
-                        className={`px-1 rounded ${
-                          dragOverId === folderId ? "bg-blue-100" : "hover:underline"
-                        }`}
+                        className={`px-1 rounded ${dragOverId === folderId ? "bg-blue-100" : "hover:underline"}`}
                         onClick={() => setPath(crumbPath)}
                         onDragOver={(e) => {
                           e.preventDefault();
@@ -620,9 +677,13 @@ export function FileExplorerEmbedded() {
 
           {/* Contenido (drop en carpeta actual) */}
           <div
-            className={`relative flex-1 overflow-auto bg-white ${
-              dragOverId === currentFolder.id ? "ring-2 ring-blue-200" : ""
-            }`}
+            ref={contentRef}
+            className={`relative flex-1 overflow-auto bg-white ${dragOverId === currentFolder.id ? "ring-2 ring-blue-200" : ""}`}
+            onContextMenu={(e) => {
+              const t = e.target as HTMLElement;
+              if (t.closest("[data-item-context]")) return;
+              openCtx(e, null);
+            }}
             onClick={() => {
               setSelectedId(null);
               setCtxOpen(false);
@@ -631,14 +692,9 @@ export function FileExplorerEmbedded() {
             onDragEnter={() => setDragOverId(currentFolder.id)}
             onDragLeave={() => setDragOverId((cur) => (cur === currentFolder.id ? null : cur))}
             onDrop={(e) => onDropInto(e, currentFolder.id)}
-            onContextMenu={(e) => {
-              const target = e.target as HTMLElement;
-              if (target.closest("[data-item-context]")) return;
-              openCtx(e, null);
-            }}
           >
             {view === "grid" ? (
-              <div className="p-4 grid grid-cols-6 gap-4">
+              <div className="p-4 grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-6">
                 {children.map((item) => (
                   <div
                     key={item.id}
@@ -686,7 +742,7 @@ export function FileExplorerEmbedded() {
                       />
                     ) : (
                       <div
-                        className="mt-2 text-xs text-center truncate"
+                        className="mt-2 text-xs text-center break-words whitespace-normal"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedId(item.id);
@@ -753,7 +809,7 @@ export function FileExplorerEmbedded() {
                               />
                             ) : (
                               <button
-                                className="truncate max-w-[420px] text-left"
+                                className="text-left break-words whitespace-normal w-full"
                                 onClick={() => setSelectedId(item.id)}
                               >
                                 {item.name}
@@ -772,7 +828,8 @@ export function FileExplorerEmbedded() {
             {/* Menú contextual */}
             {ctxOpen && (
               <div
-                className="absolute z-50 bg-white border shadow-lg rounded py-1 text-sm"
+                ref={menuRef}
+                className="absolute z-50 bg-white border shadow-lg rounded py-1 text-sm w-44"
                 style={{ left: ctxPos.x, top: ctxPos.y }}
                 data-ctx-menu
               >
@@ -821,16 +878,6 @@ export function FileExplorerEmbedded() {
                 )}
               </div>
             )}
-          </div>
-
-          {/* Footer / acciones */}
-          <div className="px-3 py-3 border-t bg-white flex items-center justify-end">
-            <Button
-              onClick={handleNext}
-              className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
-            >
-              Siguiente
-            </Button>
           </div>
         </section>
       </div>

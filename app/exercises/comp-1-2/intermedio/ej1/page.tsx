@@ -32,10 +32,10 @@ type Site = {
 };
 
 const CATEGORIES: { value: Category; label: string }[] = [
-  { value: "enciclopedico", label: "sitio enciclopédico" },
-  { value: "institucional", label: "sitio institucional" },
-  { value: "periodistico", label: "sitio periodístico" },
-  { value: "satirico", label: "sitio satírico" },
+  { value: "enciclopedico", label: "Enciclopédico" },
+  { value: "institucional", label: "Institucional" },
+  { value: "periodistico", label: "Periodístico" },
+  { value: "satirico", label: "Satírico" },
 ];
 
 const SITES: Site[] = [
@@ -72,6 +72,7 @@ export default function LadicoSitesClassificationQ() {
 
   const router = useRouter();
   const { user } = useAuth();
+  const [done, setDone] = useState(false);
 
   // ---- sesión/puntaje (1.2 Intermedio) ----
   const COMPETENCE = "1.2";
@@ -83,14 +84,15 @@ export default function LadicoSitesClassificationQ() {
   const ensuringRef = useRef(false); // evita dobles llamados en StrictMode
 
 
-  // 1) Cargar sesión cacheada por-usuario
+  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
   useEffect(() => {
     if (!user || typeof window === "undefined") return;
-    const sid = localStorage.getItem(sessionKeyFor(user.uid));
+    const LS_KEY = sessionKeyFor(user.uid);
+    const sid = localStorage.getItem(LS_KEY);
     if (sid) setSessionId(sid);
   }, [user?.uid]);
 
-  // 2) Asegurar/crear sesión por-usuario si no hay cache
+  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
   useEffect(() => {
     if (!user) {
       setSessionId(null);
@@ -98,13 +100,16 @@ export default function LadicoSitesClassificationQ() {
     }
 
     const LS_KEY = sessionKeyFor(user.uid);
-    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+    const cached =
+      typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
 
     if (cached) {
+      // ya existe para este usuario
       if (!sessionId) setSessionId(cached);
       return;
     }
 
+    // Evita que se dispare doble en StrictMode o por renders repetidos
     if (ensuringRef.current) return;
     ensuringRef.current = true;
 
@@ -119,7 +124,7 @@ export default function LadicoSitesClassificationQ() {
         setSessionId(id);
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test (P3):", e);
+        console.error("No se pudo asegurar la sesión de test:", e);
       } finally {
         ensuringRef.current = false;
       }
@@ -150,40 +155,43 @@ export default function LadicoSitesClassificationQ() {
     setPoint(COMPETENCE, LEVEL, Q_IDX_ONE, point);
 
     // Firestore
-    let sid = sessionId;
     try {
-      if (!sid && user) {
-        // intenta recuperar de LS por-usuario
-        const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
-        if (cached) {
-          sid = cached;
-        } else {
-          // crear si no existe todavía
-          const { id } = await ensureSession({
+      const LS_KEY = user ? sessionKeyFor(user.uid) : null;
+
+      // Usa la sesión existente (estado o LS); NO vuelvas a crear si ya hay una
+      let sid =
+        sessionId ||
+        (LS_KEY && typeof window !== "undefined"
+          ? localStorage.getItem(LS_KEY)
+          : null);
+
+      // Si aún no hay sesión (primer uso en este usuario), créala una sola vez
+      if (!sid && user && !ensuringRef.current) {
+        ensuringRef.current = true;
+        try {
+          const created = await ensureSession({
             userId: user.uid,
             competence: COMPETENCE,
             level: "Intermedio",
             totalQuestions: 3,
           });
-          sid = id;
-          setSessionId(id);
-          if (typeof window !== "undefined") localStorage.setItem(sessionKeyFor(user.uid), id);
+          sid = created.id;
+          setSessionId(created.id);
+          if (typeof window !== "undefined")
+            localStorage.setItem(LS_KEY!, created.id);
+        } finally {
+          ensuringRef.current = false;
         }
       }
-    } catch (e) {
-      console.error("No se pudo (re)asegurar la sesión al guardar P2:", e);
-    }
 
-    try {
       if (sid) {
-        // Guarda en answers[1] = true/false, NO “true” fijo
-        await markAnswered(sid, Q_IDX_ZERO, point === 1);
+        await markAnswered(sid, 0, point === 1); // índice 0 = P1
       }
     } catch (e) {
-      console.warn("No se pudo marcar P2 respondida:", e);
+      console.warn("No se pudo marcar P1 respondida:", e);
     }
 
-    // En tu flujo actual regresan al dashboard al validar:
+    setDone(true);
     router.push("/exercises/comp-1-2/intermedio/ej2");
   };
 
@@ -267,15 +275,11 @@ export default function LadicoSitesClassificationQ() {
                 const rowValidated = validated && sel !== "";
                 const ok = rowValidated && sel === s.correct;
                 const border = rowValidated
-                ? ok
-                    ? "border-emerald-300 bg-emerald-50"
-                    : "border-rose-300 bg-rose-50"
-                : "border-gray-200";
 
                 return (
                 <div
                     key={s.id}
-                    className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-xl border ${border}`}
+                    className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-xl border border-gray-200`}
                 >
                     <div className="flex-1 text-sm sm:text-base text-gray-800">
                     <span className="font-medium">{s.name}</span>{" "}
@@ -305,16 +309,6 @@ export default function LadicoSitesClassificationQ() {
                         ))}
                         </SelectContent>
                     </Select>
-
-                    {rowValidated && !ok && (
-                        <p className="mt-1 text-xs text-rose-600">
-                        Respuesta incorrecta. Era:{" "}
-                        {CATEGORIES.find((c) => c.value === s.correct)?.label}.
-                        </p>
-                    )}
-                    {rowValidated && ok && (
-                        <p className="mt-1 text-xs text-emerald-700">¡Correcto!</p>
-                    )}
                     </div>
                 </div>
                 );

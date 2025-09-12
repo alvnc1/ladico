@@ -18,7 +18,7 @@ const ROUTE_MAP: Record<string, Partial<Record<LevelSlug, string>>> = {
   },
   "1.2": {
     basico: "/test/1.2?level=basico",
-    intermedio: "/exercises/comp-1-1/intermedio/ej1",
+    intermedio: "/exercises/comp-1-2/intermedio/ej1",
     avanzado: "/exercises/comp-1-2/avanzado/ej1",
   },
   "1.3": {

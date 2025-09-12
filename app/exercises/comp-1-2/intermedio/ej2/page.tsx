@@ -76,20 +76,57 @@ export default function LadicoPhotoMontageQ() {
       "john calhoun", // sin punto medio
     ];
 
+    // Responde correcto si el texto contiene "calhoun" (nombre o apellido, mayús/minús, con/sin inicial)
+    const isCorrectAnswer = (raw: string) => {
+      const norm = normalize(raw).replace(/\./g, " "); // tolera puntos en iniciales
+      return /\bcalhoun\b/.test(norm);                 // "calhoun" en cualquier posición
+    };
+    
     const handleValidate = async () => {
-      const norm = normalize(input);
+      const ok = isCorrectAnswer(input);
 
-      const ok = VALID_ANSWERS.includes(norm);
-      setValidated(ok);
-
+      // 1 punto si es correcto, 0 si no
       const point: 0 | 1 = ok ? 1 : 0;
+
+      // Guarda progreso local (UI)
       setPoint(COMPETENCE, LEVEL, Q_IDX_ONE, point);
 
-      if (sessionId && user) {
-        await markAnswered(sessionId, Q_IDX_ZERO, point === 1);
+      // 2) Firestore — usa sesión por-usuario y guarda el acierto (true/false)
+      let sid = sessionId;
+      try {
+        if (!sid && user) {
+          // intenta recuperar de LS por-usuario
+          const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
+          if (cached) {
+            sid = cached;
+          } else {
+            // crear si no existe todavía
+            const { id } = await ensureSession({
+              userId: user.uid,
+              competence: COMPETENCE,
+              level: "Intermedio",
+              totalQuestions: 3,
+            });
+            sid = id;
+            setSessionId(id);
+            if (typeof window !== "undefined") localStorage.setItem(sessionKeyFor(user.uid), id);
+          }
+        }
+      } catch (e) {
+        console.error("No se pudo (re)asegurar la sesión al guardar P2:", e);
       }
 
-      router.push("/dashboard");
+      try {
+        if (sid) {
+          // Guarda en answers[1] = true/false, NO “true” fijo
+          await markAnswered(sid, Q_IDX_ZERO, point === 1);
+        }
+      } catch (e) {
+        console.warn("No se pudo marcar P2 respondida:", e);
+      }
+
+      // 3) Avanzar
+      router.push("/exercises/comp-1-2/intermedio/ej3");
     };
 
   return (
@@ -175,27 +212,27 @@ export default function LadicoPhotoMontageQ() {
                     className="max-h-72 rounded-lg shadow"
                 />
                 </div>
-                {/* Campo de respuesta */}
-                <div>
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                {/* Respuesta + Finalizar (fuera del desktop, dentro de la tarjeta) */}
+                <div className="mt-4 px-0 sm:px-0 pt-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                     Nombre del personaje:
                     <input
                       type="text"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       placeholder=""
-                      className="ml-2 border px-3 py-1 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#286575] w-60"
+                      className="ml-2 px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 text-sm w-60"
                     />
-                  </label>
-                </div>
-                {/* Footer / acciones */}
-                <div className="px-3 py-3 bg-white flex items-center justify-end">
-                <Button
-                    onClick={handleValidate}
-                    className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
-                >
-                    Siguiente
-                </Button>
+                    </label>
+    
+                    <Button
+                      onClick={handleValidate}
+                      className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
+                  >
+                      Siguiente
+                  </Button>
+                  </div>
                 </div>
           </CardContent>
         </Card>
