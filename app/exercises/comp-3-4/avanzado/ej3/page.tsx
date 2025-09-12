@@ -144,8 +144,8 @@ export default function SandboxUnixTerminalPage() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
-                | 1.3 Gestión de Datos, Información y Contenidos Digitales -
-                Nivel Intermedio
+                | {COMPETENCE} Programación -
+                Nivel Avanzado
               </span>
 
             </div>

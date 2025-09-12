@@ -277,34 +277,54 @@ export function FileExplorerEmbedded() {
   const QUESTION_IDX_ONE_BASED = 2; // para setPoint
 
   /* ==== Sesión por-usuario (evita mezclar) ==== */
-  // Carga sesión cacheada (si existe) cuando conocemos el uid
-  useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    const sid = localStorage.getItem(sessionKeyFor(user.uid));
-    if (sid) setSessionId(sid);
-  }, [user?.uid]);
+  // 🔒 Guard contra doble ejecución de efectos (StrictMode) y carreras
+    const ensuringRef = useRef(false);
+  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
+    useEffect(() => {
+      if (!user || typeof window === "undefined") return;
+      const LS_KEY = sessionKeyFor(user.uid);
+      const sid = localStorage.getItem(LS_KEY);
+      if (sid) setSessionId(sid);
+    }, [user?.uid]);
 
-  // Si no hay cache, crear/asegurar una sesión y guardarla con clave por-usuario
-  useEffect(() => {
-    if (!user) return;
-    if (sessionId) return;
-    (async () => {
-      try {
-        const { id } = await ensureSession({
-          userId: user.uid,
-          competence: COMPETENCE,
-          level: "Intermedio",
-          totalQuestions: 3,
-        });
-        setSessionId(id);
-        if (typeof window !== "undefined") {
-          localStorage.setItem(sessionKeyFor(user.uid), id);
-        }
-      } catch (e) {
-        console.error("No se pudo asegurar la sesión de test (P2):", e);
+  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
+    useEffect(() => {
+      if (!user) {
+        setSessionId(null);
+        return;
       }
-    })();
-  }, [user?.uid, sessionId]);
+  
+      const LS_KEY = sessionKeyFor(user.uid);
+      const cached =
+        typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+  
+      if (cached) {
+        // ya existe para este usuario
+        if (!sessionId) setSessionId(cached);
+        return;
+      }
+  
+      // Evita que se dispare doble en StrictMode o por renders repetidos
+      if (ensuringRef.current) return;
+      ensuringRef.current = true;
+  
+      (async () => {
+        try {
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Intermedio",
+            totalQuestions: 3,
+          });
+          setSessionId(id);
+          if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+        } catch (e) {
+          console.error("No se pudo asegurar la sesión de test:", e);
+        } finally {
+          ensuringRef.current = false;
+        }
+      })();
+    }, [user?.uid, sessionId]);
 
   const currentFolder = useMemo(() => getFolderByPath(tree, path), [tree, path]);
 

@@ -147,10 +147,11 @@ function DesktopRecoveryExercise() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const ensuringRef = useRef(false); // evita dobles llamados en StrictMode
 
-  // 1) Cargar sesión cacheada por-usuario
+  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
   useEffect(() => {
     if (!user || typeof window === "undefined") return;
-    const sid = localStorage.getItem(sessionKeyFor(user.uid));
+    const LS_KEY = sessionKeyFor(user.uid);
+    const sid = localStorage.getItem(LS_KEY);
     if (sid) setSessionId(sid);
   }, [user?.uid]);
 
@@ -553,7 +554,7 @@ function DesktopRecoveryExercise() {
               }}
               placeholder="escribe el producto importante"
               className={clsx(
-                "ml-2 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 text-sm w-60",
+                "ml-2 px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 text-sm w-60",
                 result === "ok" && "border-green-300 ring-green-200",
                 result === "err" && "border-red-300 ring-red-200"
               )}

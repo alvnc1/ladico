@@ -5,14 +5,17 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ensureSession, markAnswered } from "@/lib/testSession"
 import { useAuth } from "@/contexts/AuthContext"
 import { setPoint } from "@/lib/levelProgress"
 
+
 const COMPETENCE = "4.3" as const
 const LEVEL = "avanzado" as const
-const SESSION_KEY = "session:4.3:Avanzado"
+/** ⚠️ CLAVE POR-USUARIO: evita pisar sesiones entre cuentas */
+const SESSION_PREFIX = "session:4.3:Avanzado";
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
 // ====== keys del panel (para limpiar cuando cambia de usuario) ======
 const ADV_KEYS = [
@@ -140,28 +143,56 @@ export default function Page() {
   }, [user])
 
   // crea/recupera sesión Avanzado (4.3)
+  /* ==== Sesión por-usuario (evita mezclar) ==== */
+    // 🔒 Guard contra doble ejecución de efectos (StrictMode) y carreras
+  const ensuringRef = useRef(false);
+  
+  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
   useEffect(() => {
-    if (!user) return
-    const cached = localStorage.getItem(SESSION_KEY)
-    if (cached) {
-      setSessionId(cached)
-      return
+    if (!user || typeof window === "undefined") return;
+    const LS_KEY = sessionKeyFor(user.uid);
+    const sid = localStorage.getItem(LS_KEY);
+    if (sid) setSessionId(sid);
+  }, [user?.uid]);
+
+  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
+  useEffect(() => {
+    if (!user) {
+      setSessionId(null);
+      return;
     }
-    ;(async () => {
+
+    const LS_KEY = sessionKeyFor(user.uid);
+    const cached =
+      typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+
+    if (cached) {
+      // ya existe para este usuario
+      if (!sessionId) setSessionId(cached);
+      return;
+    }
+
+    // Evita que se dispare doble en StrictMode o por renders repetidos
+    if (ensuringRef.current) return;
+    ensuringRef.current = true;
+
+    (async () => {
       try {
         const { id } = await ensureSession({
           userId: user.uid,
-          competence: "4.3",
+          competence: COMPETENCE,
           level: "Avanzado",
           totalQuestions: 3,
-        })
-        setSessionId(id)
-        localStorage.setItem(SESSION_KEY, id)
+        });
+        setSessionId(id);
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
       } catch (e) {
-        console.error("No se pudo asegurar la sesión (Avanzado P1):", e)
+        console.error("No se pudo asegurar la sesión de test:", e);
+      } finally {
+        ensuringRef.current = false;
       }
-    })()
-  }, [user])
+    })();
+  }, [user?.uid, sessionId]);
 
   const progressPct = 100 / 3 // Pregunta 1 de 3
 
@@ -170,17 +201,24 @@ export default function Page() {
     setIsSaving(true)
     try {
       // Asegura sesión en el click si aún no llegó la del useEffect
-      let sid = sessionId || localStorage.getItem(SESSION_KEY)
-      if (!sid) {
-        const { id } = await ensureSession({
-          userId: user.uid,
-          competence: "4.3",
-          level: "Avanzado",
-          totalQuestions: 3,
-        })
-        sid = id
-        setSessionId(id)
-        localStorage.setItem(SESSION_KEY, id)
+      let sid = sessionId;
+      if (!sid && user) {
+        // intenta recuperar de LS por-usuario
+        const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
+        if (cached) {
+          sid = cached;
+        } else {
+          // crear si no existe todavía
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Avanzado",
+            totalQuestions: 3,
+          });
+          sid = id;
+          setSessionId(id);
+          if (typeof window !== "undefined") localStorage.setItem(sessionKeyFor(user.uid), id);
+        }
       }
 
       // Leer el estado ACTUAL de cada área (el panel está en otra pestaña)
