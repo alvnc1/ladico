@@ -1,4 +1,3 @@
-// app/exercises/comp-4-3/intermedio/ej2/page.tsx
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
@@ -6,54 +5,40 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { setPoint } from "@/lib/levelProgress"
+import {
+  getProgress,
+  setPoint,
+  levelPoints,
+  isLevelPassed,
+  getPoint,
+} from "@/lib/levelProgress"
 import { useAuth } from "@/contexts/AuthContext"
-import { ensureSession, markAnswered } from "@/lib/testSession"
+import { ensureSession, markAnswered, finalizeSession } from "@/lib/testSession"
 
-const COMPETENCE = "4.3"
+const COMPETENCE = "4.4"
 const LEVEL = "intermedio"
 /** ⚠️ CLAVE POR-USUARIO: evita pisar sesiones entre cuentas */
-const SESSION_PREFIX = "session:4.3:Intermedio";
+const SESSION_PREFIX = "session:4.4:Intermedio";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
+// === Opciones (A..E) según tu contexto ===
 const OPTIONS = [
-  {
-    key: "A",
-    text: "Instalar un bloqueador de anuncios o ventanas emergentes en el navegador.",
-    correct: true,
-  },
-  {
-    key: "B",
-    text: "Configurar horarios para navegar y respetar pausas digitales.",
-    correct: true,
-  },
-  {
-    key: "C",
-    text: "Bajar el volumen de las notificaciones para que molesten menos.",
-    correct: false,
-  },
-  {
-    key: "D",
-    text: "Dejar abierta la página en segundo plano.",
-    correct: false,
-  },
-  {
-    key: "E",
-    text: "Diversificar actividades fuera de la web para reducir la dependencia.",
-    correct: true,
-  },
+  { key: "A", text: "App de compra conjunta de alimentos locales.", correct: true },
+  { key: "B", text: "App que recomienda ofertas de supermercados cercanos.", correct: false },
+  { key: "C", text: "App de alquiler de bicicletas compartidas.", correct: true },
+  { key: "D", text: "App de trueque y donaciones comunitarias.", correct: true },
+  { key: "E", text: "App que sugiere rutas de transporte público optimizadas para ahorrar tiempo.", correct: false },
 ] as const
 
 type Key = typeof OPTIONS[number]["key"]
 
 export default function Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth()
 
   const [sessionId, setSessionId] = useState<string | null>(null)
 
   /* ==== Sesión por-usuario (evita mezclar) ==== */
-  // Carga sesión cacheada (si existe) cuando conocemos el uid
   useEffect(() => {
     if (!user || typeof window === "undefined") return;
     const sid = localStorage.getItem(sessionKeyFor(user.uid));
@@ -61,26 +46,26 @@ export default function Page() {
   }, [user?.uid]);
 
   // Si no hay cache, crear/asegurar una sesión y guardarla con clave por-usuario
-    useEffect(() => {
-      if (!user) return;
-      if (sessionId) return;
-      (async () => {
-        try {
-          const { id } = await ensureSession({
-            userId: user.uid,
-            competence: COMPETENCE,
-            level: "Intermedio",
-            totalQuestions: 3,
-          });
-          setSessionId(id);
-          if (typeof window !== "undefined") {
-            localStorage.setItem(sessionKeyFor(user.uid), id);
-          }
-        } catch (e) {
-          console.error("No se pudo asegurar la sesión de test (P2):", e);
+  useEffect(() => {
+    if (!user) return;
+    if (sessionId) return;
+    (async () => {
+      try {
+        const { id } = await ensureSession({
+          userId: user.uid,
+          competence: COMPETENCE,
+          level: "Intermedio",
+          totalQuestions: 3,
+        });
+        setSessionId(id);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(sessionKeyFor(user.uid), id);
         }
-      })();
-    }, [user?.uid, sessionId]);
+      } catch (e) {
+        console.error("No se pudo asegurar la sesión de test (P3):", e);
+      }
+    })();
+  }, [user?.uid, sessionId]);
 
   const [selected, setSelected] = useState<Set<Key>>(new Set())
 
@@ -93,29 +78,43 @@ export default function Page() {
     })
   }
 
-  // Puntaje local (para resultados): 1 si A,B,E exactamente; 0 en otro caso
+  // Puntaje local (exacto): A, C y D
   const point: 0 | 1 = useMemo(() => {
     const chosen = Array.from(selected)
-    const correctSet = new Set<Key>(["A", "B", "E"])
+    const correctSet = new Set<Key>(["A", "C", "D"])
     if (chosen.length !== correctSet.size) return 0
     for (const c of chosen) if (!correctSet.has(c)) return 0
     return 1
   }, [selected])
 
-  const handleNext = async () => {
-    // Guarda el punto local (para anillo/resultados)
-    setPoint(COMPETENCE, LEVEL, 2, point)
+  // === Finalizar (P3) ===
+  const handleFinish = async () => {
+    const isTeacher = userData?.role === "profesor"
 
-    // Asegura tener sesión fresca SIEMPRE en este clic (evita carreras)
+    // Guarda el punto local para P3
+    setPoint(COMPETENCE, LEVEL, 3, point)
+
+    // Cálculo de resultado para la pantalla de resultados
+    const prog = getProgress(COMPETENCE, LEVEL)
+    const totalPts = levelPoints(prog)
+    const passed = isLevelPassed(prog)
+    const score = Math.round((totalPts / 3) * 100)
+    const q1 = getPoint(prog, 1)
+    const q2 = getPoint(prog, 2)
+    const q3 = getPoint(prog, 3)
+
+    const finalTotalPts = isTeacher ? 3 : totalPts
+    const finalPassed = isTeacher ? true : passed
+    const finalScore = isTeacher ? 100 : score
+
+    // Asegurar/usar sesión y marcar P3, luego finalizar
     let sid = sessionId
     try {
       if (!sid && user) {
-        // intenta recuperar de LS por-usuario
         const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
         if (cached) {
           sid = cached;
         } else {
-          // crear si no existe todavía
           const { id } = await ensureSession({
             userId: user.uid,
             competence: COMPETENCE,
@@ -127,23 +126,45 @@ export default function Page() {
           if (typeof window !== "undefined") localStorage.setItem(sessionKeyFor(user.uid), id);
         }
       }
-    } catch (e) {
-      console.error("No se pudo (re)asegurar la sesión al guardar P2:", e);
-    }
 
-    // Marcamos siempre como respondida para avanzar a P3
-    try {
       if (sid) {
-        await markAnswered(sid, 1, true)
+        try {
+          await markAnswered(sid, 2, point === 1) // P3 = index 2
+        } catch (e) {
+          console.warn("No se pudo registrar P3:", e)
+        }
+        try {
+          await finalizeSession(sid, { correctCount: finalTotalPts, total: 3, passMin: 2 })
+        } catch (e) {
+          console.warn("No se pudo finalizar la sesión en P3:", e)
+        }
       }
     } catch (e) {
-      console.warn("No se pudo marcar P2 respondida:", e)
+      console.warn("Error al finalizar P3:", e)
     }
 
-    router.push("/exercises/comp-4-3/intermedio/ej3")
+    // Limpia referencia local a la sesión
+    try {
+      if (user) localStorage.removeItem(sessionKeyFor(user.uid))
+    } catch {}
+
+    // Redirigir a resultados
+    const qs = new URLSearchParams({
+      score: String(finalScore),
+      passed: String(finalPassed),
+      correct: String(finalTotalPts),
+      total: "3",
+      competence: COMPETENCE,
+      level: LEVEL,
+      q1: String(q1),
+      q2: String(q2),
+      q3: String(q3),
+    })
+    if (sid) qs.set("sid", sid)
+    router.push(`/test/comp-4-4-intermedio/results?${qs.toString()}`)
   }
 
-  const progressPct = (2 / 3) * 100
+  const progressPct = 100
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -160,7 +181,7 @@ export default function Page() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-3 py-1 rounded-full">
-                | 4.3 Protección de la salud y el bienestar - Nivel Intermedio
+                | 4.4 Protección del medioambiente - Nivel Intermedio
               </span>
             </div>
           </div>
@@ -171,12 +192,12 @@ export default function Page() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-white mb-4">
           <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
-            Pregunta 2 de 3
+            Pregunta 3 de 3
           </span>
           <div className="flex space-x-2">
             <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
             <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
-            <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
+            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
           </div>
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
@@ -192,23 +213,18 @@ export default function Page() {
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Seleccionar formas sencillas de proteger el bienestar digital
+              Indicar impactos medioambientales positivos de aplicaciones y servicios digitales de uso rutinario
             </h2>
 
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Mientras navega en un sitio web, aparecen constantemente ventanas emergentes 
-                  con ofertas limitadas y mensajes de que “otros usuarios ya aprovecharon la promoción”. 
-                  Nota que estas 
-                  notificaciones generan distracción y aumentan la sensación de presión 
-                  por no perder oportunidades.
-                </p>
-                <p className="text-gray-700 leading-relaxed font-medium">
-                ¿Cuáles de las siguientes acciones son formas adecuadas de protegerse frente a este tipo de estrategias?
+                  Una persona quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. Se presentan cinco alternativas.
+                  Seleccione aquellas que representan un impacto ambiental claramente positivo y significativo.
                 </p>
               </div>
             </div>
+            {/* Lista de opciones (estructura intacta) */}
             <div className="space-y-3 sm:space-y-4">
               {OPTIONS.map((opt) => {
                 const active = selected.has(opt.key)
@@ -226,7 +242,7 @@ export default function Page() {
                         className="sr-only"
                         checked={active}
                         onChange={() => toggle(opt.key)}
-                        aria-label={`Opción`}
+                        aria-label={`Opción ${opt.key}`}
                       />
                       <div className={`w-5 h-5 rounded-md border-2 ${active ? "bg-[#286575] border-[#286575]" : "border-gray-300"}`}>
                         {active && (
@@ -249,10 +265,10 @@ export default function Page() {
 
             <div className="mt-6 flex items-center justify-end">
               <Button
-                onClick={handleNext}
+                onClick={handleFinish}
                 className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
               >
-                Siguiente
+                Finalizar
               </Button>
             </div>
           </CardContent>

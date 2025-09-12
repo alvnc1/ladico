@@ -302,16 +302,10 @@ export default function Page() {
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Arrastra la medida preventiva sobre la amenaza que ayude a reducir sus efectos.
+                  Arrastra la medida preventiva que corresponda a cada amenaza para reducir sus efectos.
                 </p>
               </div>
             </div>
-
-            {/* Tipo de pregunta */}
-            <p className="text-xs sm:text-sm text-gray-600 mb-6 bg-blue-50 px-3 py-2 rounded-full inline-block">
-              <b>Arrastra y suelta</b>
-            </p>
-
             {/* Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Pool de medidas — SIN fondo de recuadro */}
@@ -389,12 +383,6 @@ export default function Page() {
                 Siguiente
               </Button>
             </div>
-
-            {done && (
-              <div className="mt-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
-                ✅ Actividad registrada.
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

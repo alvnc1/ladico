@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect, useRef} from "react"
+import { useMemo, useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,84 +15,77 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered, finalizeSession } from "@/lib/testSession"
 
-const COMPETENCE = "4.3" as const
+const COMPETENCE = "4.4" as const
 const LEVEL = "intermedio" as const
-// Clave de sesión por-usuario (igual que en ej1/ej2)
-const SESSION_PREFIX = "session:4.3:Intermedio";
-const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
+const SESSION_PREFIX = "session:4.4:Intermedio"
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-// Tecnologías (exactamente las 5 pedidas)
+// Acciones del ejercicio
 const TECHNOLOGIES = [
-  { id: 1, text: "Juego en línea multijugador con instrucciones." },
-  { id: 2, text: "Botón físico de emergencia con llamada automática a un familiar." },
-  { id: 3, text: "Aplicación de comunicación por mensajes de voz grabados." },
-  { id: 4, text: "Red social comunitaria para eventos y avisos locales con navegación guiada." },
-  { id: 5, text: "Portal de trámites digitales con pictogramas." },
+  { id: 1, text: "Reducir la resolución de streaming de 4K a HD o SD." },
+  { id: 2, text: "Apagar el router Wi-Fi durante la noche o cuando no se utiliza." },
+  { id: 3, text: "Usar Wi-Fi en lugar de datos móviles para navegar y reproducir contenido." },
+  { id: 4, text: "Descargar videos o música para reproducirlos sin conexión." },
+  { id: 5, text: "Enviar enlaces en lugar de adjuntos pesados en correos electrónicos." },
 ] as const
 
-// Orden correcto (de arriba hacia abajo)
-const CORRECT_ORDER: ReadonlyArray<number> = [2, 3, 4, 5, 1]
+// Orden correcto
+const CORRECT_ORDER: ReadonlyArray<number> = [1, 3, 4, 2, 5]
 
 type Tech = typeof TECHNOLOGIES[number]
 type SlotId = number | null
 
 export default function Page() {
   const router = useRouter()
-  const { user, userData } = useAuth() // ⬅️ ahora también userData para rol
-
-  // ====== Sesión Firestore ======
+  const { user, userData } = useAuth()
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const ensuringRef = useRef(false); // evita dobles llamados en StrictMode
+  const ensuringRef = useRef(false)
 
-  // 1) Cargar sesión cacheada por-usuario
   useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    const sid = localStorage.getItem(sessionKeyFor(user.uid));
-    if (sid) setSessionId(sid);
-  }, [user?.uid]);
+    if (!user || typeof window === "undefined") return
+    const sid = localStorage.getItem(sessionKeyFor(user.uid))
+    if (sid) setSessionId(sid)
+  }, [user?.uid])
 
-  // 2) Asegurar/crear sesión por-usuario si no hay cache
   useEffect(() => {
     if (!user) {
-      setSessionId(null);
-      return;
+      setSessionId(null)
+      return
     }
 
-    const LS_KEY = sessionKeyFor(user.uid);
-    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+    const LS_KEY = sessionKeyFor(user.uid)
+    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
 
     if (cached) {
-      if (!sessionId) setSessionId(cached);
-      return;
+      if (!sessionId) setSessionId(cached)
+      return
     }
 
-    if (ensuringRef.current) return;
-    ensuringRef.current = true;
+    if (ensuringRef.current) return
+    ensuringRef.current = true
 
-    (async () => {
+    ;(async () => {
       try {
         const { id } = await ensureSession({
           userId: user.uid,
           competence: COMPETENCE,
           level: "Intermedio",
           totalQuestions: 3,
-        });
-        setSessionId(id);
-        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+        })
+        setSessionId(id)
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test (P3):", e);
+        console.error("No se pudo asegurar la sesión de test:", e)
       } finally {
-        ensuringRef.current = false;
+        ensuringRef.current = false
       }
-    })();
-  }, [user?.uid, sessionId]);
+    })()
+  }, [user?.uid, sessionId])
 
-  // ====== Estado Drag & Drop ======
   const [pool, setPool] = useState<number[]>(() => shuffle(TECHNOLOGIES.map(t => t.id)))
   const [slots, setSlots] = useState<SlotId[]>([null, null, null, null, null])
 
   const techById = (id: number) => TECHNOLOGIES.find(t => t.id === id) as Tech
-
   const [dragData, setDragData] = useState<{ from: "pool" | "slot"; index: number } | null>(null)
 
   function onDragStart(from: "pool" | "slot", index: number) {
@@ -101,37 +94,27 @@ export default function Page() {
   function onDragEnd() {
     setDragData(null)
   }
-
   function onDropToSlot(slotIndex: number) {
     if (!dragData) return
-
-    // Calcular nueva foto de pool/slots de forma atómica
     let newPool = [...pool]
     let newSlots = [...slots] as SlotId[]
-
     if (dragData.from === "pool") {
       const id = pool[dragData.index]
       if (id == null) return
       const target = newSlots[slotIndex]
-      // 1) quitar del pool por índice original
       newPool.splice(dragData.index, 1)
-      // 2) si había algo en el slot, devolverlo al pool
       if (target !== null) newPool.push(target)
-      // 3) colocar en slot
       newSlots[slotIndex] = id
     } else {
-      // mover entre slots (intercambio)
       const id = slots[dragData.index]
       const target = newSlots[slotIndex]
       newSlots[dragData.index] = target
       newSlots[slotIndex] = id
     }
-
     setPool(newPool)
     setSlots(newSlots)
     setDragData(null)
   }
-
   function onDropToPool() {
     if (!dragData || dragData.from !== "slot") return
     let newPool = [...pool]
@@ -145,12 +128,9 @@ export default function Page() {
     setSlots(newSlots)
     setDragData(null)
   }
-
   function allowDrop(e: React.DragEvent) {
     e.preventDefault()
   }
-
-  // Quitar un item del slot con “×”
   function removeFromSlot(slotIndex: number) {
     let newPool = [...pool]
     let newSlots = [...slots] as SlotId[]
@@ -163,7 +143,6 @@ export default function Page() {
     setSlots(newSlots)
   }
 
-  // ====== Puntaje: coincidencia exacta ======
   const point: 0 | 1 = useMemo(() => {
     const filled = slots.every(s => s !== null)
     if (!filled) return 0
@@ -173,12 +152,10 @@ export default function Page() {
     return 1
   }, [slots])
 
-  // ====== Finalizar ======
   const handleFinish = async () => {
     const isTeacher = userData?.role === "profesor"
+    setPoint(COMPETENCE, LEVEL, 1, point)
 
-    // Guarda el punto local (para UI de resultados)
-    setPoint(COMPETENCE, LEVEL, 3, point)
     const prog = getProgress(COMPETENCE, LEVEL)
     const totalPts = levelPoints(prog)
     const passed = isLevelPassed(prog)
@@ -187,57 +164,51 @@ export default function Page() {
     const q2 = getPoint(prog, 2)
     const q3 = getPoint(prog, 3)
 
-    // Para profesor: forzar “aprobado” y 100% para que el dashboard muestre COMPLETADO y deje avanzar
     const finalTotalPts = isTeacher ? 3 : totalPts
     const finalPassed = isTeacher ? true : passed
     const finalScore = isTeacher ? 100 : score
 
-    // Asegurar sesión y registrar respuesta de la P3
-    let sid = sessionId;
+    let sid = sessionId
     try {
       if (!sid && user) {
-        const LS_KEY = sessionKeyFor(user.uid);
-        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+        const LS_KEY = sessionKeyFor(user.uid)
+        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
         if (cached) {
-          sid = cached;
+          sid = cached
         } else if (!ensuringRef.current) {
-          ensuringRef.current = true;
+          ensuringRef.current = true
           try {
             const { id } = await ensureSession({
               userId: user.uid,
               competence: COMPETENCE,
               level: "Intermedio",
               totalQuestions: 3,
-            });
-            sid = id;
-            setSessionId(id);
-            if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+            })
+            sid = id
+            setSessionId(id)
+            if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
           } finally {
-            ensuringRef.current = false;
+            ensuringRef.current = false
           }
         }
       }
 
       if (sid) {
-        // Registrar la respuesta de la pregunta 3
         try {
-          await markAnswered(sid, 2, point === 1)
+          await markAnswered(sid, 0, point === 1)
         } catch (e) {
-          console.warn("No se pudo registrar P3 con markAnswered:", e)
+          console.warn("No se pudo registrar P1:", e)
         }
-
-        // Consolidar sesión en Firestore (para profesor quedará endTime=null, pero score/passed actualizados)
         try {
           await finalizeSession(sid, { correctCount: finalTotalPts, total: 3, passMin: 2 })
         } catch (e) {
-          console.warn("No se pudo finalizar la sesión en P3:", e)
+          console.warn("No se pudo finalizar la sesión en P1:", e)
         }
       }
     } catch (e) {
-      console.warn("No se pudo (re)asegurar/finalizar la sesión al guardar P3:", e);
+      console.warn("Error al finalizar P1:", e)
     }
 
-    // Limpia referencia local a la sesión por-usuario (evita arrastrar estado a un nuevo intento)
     try {
       if (user) localStorage.removeItem(sessionKeyFor(user.uid))
     } catch {}
@@ -253,13 +224,11 @@ export default function Page() {
       q2: String(q2),
       q3: String(q3),
     })
-    // Incluye sid para que la página de resultados pueda reconsolidar si hace falta
     if (sid) qs.set("sid", sid)
-
-    router.push(`/test/comp-4-3-intermedio/results?${qs.toString()}`)
+    router.push(`/exercises/comp-4-4/intermedio/ej2`)
   }
 
-  const progressPct = 100
+  const progressPct = 33
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -276,66 +245,50 @@ export default function Page() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-3 py-1 rounded-full">
-                | 4.3 Protección de la salud y el bienestar - Nivel Intermedio
+                | 4.4 Protección medioambiental - Nivel Intermedio
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Progreso */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-white mb-4">
           <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
-            Pregunta 3 de 3
+            Pregunta 1 de 3
           </span>
           <div className="flex space-x-2">
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
+            <div className="w-3 h-3 rounded-full bg-[#286575]" />
+            <div className="w-3 h-3 rounded-full bg-gray-300" />
+            <div className="w-3 h-3 rounded-full bg-gray-300" />
           </div>
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
-          <div
-            className="h-full bg-[#286575] rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
-          />
+          <div className="h-full bg-[#286575] rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 
-      {/* Tarjeta principal */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
-        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
+        <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
-            {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Tecnologías digitales para el bienestar e inclusión social
+              Indicar el impacto medioambiental de acciones rutinarias en el uso de dispositivos y recursos digitales
             </h2>
-
-            {/* Escenario */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575] space-y-3">
                 <p className="text-gray-700 leading-relaxed">
-                  Una comunidad desea implementar tecnologías digitales para facilitar la participación 
-                  de personas adultas con baja alfabetización digital. A continuación, se presentan cinco 
-                  opciones tecnológicas.
+                  En una oficina, el equipo de trabajo busca implementar estrategias sencillas y de bajo costo para disminuir su huella
+                  medioambiental. Se presentan cinco acciones habituales relacionadas con el uso de equipos y recursos.
                 </p>
-                <p className="text-gray-700 leading-relaxed font-medium">
-                  Su tarea es ordenarlas de mayor a menor prioridad
-                  según el grado de inclusión que ofrecen a este grupo de usuarios.
+                <p className="text-gray-700 leading-relaxed">
+                  A continuación, se presentan cinco acciones digitales comunes. Ordénalas de mayor 
+                  menor impacto ambiental positivo de acuerdo con la evidencia sobre ahorro energético y reducción de emisiones de carbono.
                 </p>
               </div>
             </div>
-            {/* Layout DnD — dos recuadros iguales */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Pool */}
-              <section
-                className="bg-white border border-gray-300 rounded-2xl p-4"
-                onDragOver={allowDrop}
-                onDrop={onDropToPool}
-                aria-label="Tecnologías disponibles para arrastrar"
-              >
-                <h3 className="font-semibold text-gray-900 mb-3">Tecnologías disponibles</h3>
+              <section className="bg-white border border-gray-300 rounded-2xl p-4" onDragOver={allowDrop} onDrop={onDropToPool}>
+                <h3 className="font-semibold text-gray-900 mb-3">Acciones disponibles</h3>
                 <div className="space-y-3 min-h-[220px]">
                   {pool.map((id, idx) => {
                     const t = techById(id)
@@ -345,9 +298,7 @@ export default function Page() {
                         draggable
                         onDragStart={() => onDragStart("pool", idx)}
                         onDragEnd={onDragEnd}
-                        className="relative cursor-grab active:cursor-grabbing bg-white border border-black/60 rounded-xl p-3 hover:bg-gray-50"
-                        role="button"
-                        tabIndex={0}
+                        className="cursor-grab active:cursor-grabbing bg-white border border-black/60 rounded-xl p-3 hover:bg-gray-50"
                       >
                         {t.text}
                       </div>
@@ -356,9 +307,8 @@ export default function Page() {
                 </div>
               </section>
 
-              {/* Orden final */}
               <section className="bg-white border border-gray-200 rounded-2xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Orden de mayor a menor prioridad</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">Orden de mayor a menor impacto</h3>
                 <div className="space-y-3">
                   {slots.map((slot, i) => {
                     const isFilled = !!slot
@@ -367,29 +317,19 @@ export default function Page() {
                         key={i}
                         onDragOver={allowDrop}
                         onDrop={() => onDropToSlot(i)}
-                        className={`rounded-xl transition relative
-                          ${
-                            isFilled
-                              ? "border-2 border-transparent bg-transparent p-0 min-h-0"
-                              : "min-h-[56px] border-2 border-dashed border-gray-300 bg-white p-3"
-                          }
-                          ${dragData ? "ring-1 ring-[#286575]/40" : ""}`}
-                        aria-label={`Caja destino ${i + 1}`}
+                        className={`rounded-xl transition relative ${
+                          isFilled
+                            ? "border-2 border-transparent bg-transparent p-0 min-h-0"
+                            : "min-h-[56px] border-2 border-dashed border-gray-300 bg-white p-3"
+                        } ${dragData ? "ring-1 ring-[#286575]/40" : ""}`}
                       >
                         {isFilled ? (
-                          <div
-                            draggable
-                            onDragStart={() => onDragStart("slot", i)}
-                            onDragEnd={onDragEnd}
-                            className="cursor-grab active:cursor-grabbing"
-                          >
+                          <div draggable onDragStart={() => onDragStart("slot", i)} onDragEnd={onDragEnd}>
                             <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3">
                               <button
                                 onClick={() => removeFromSlot(i)}
                                 className="leading-none text-gray-500 hover:text-gray-700"
-                                aria-label="Quitar"
                                 type="button"
-                                title="Quitar"
                               >
                                 ×
                               </button>
@@ -406,13 +346,12 @@ export default function Page() {
               </section>
             </div>
 
-            {/* Acciones */}
             <div className="mt-8 flex items-center justify-end">
               <Button
                 onClick={handleFinish}
                 className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
               >
-                Finalizar
+                Siguiente
               </Button>
             </div>
           </CardContent>
@@ -422,7 +361,6 @@ export default function Page() {
   )
 }
 
-/* ===== Utils ===== */
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {

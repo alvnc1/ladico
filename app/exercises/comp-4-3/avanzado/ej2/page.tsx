@@ -173,11 +173,7 @@ export default function AdvancedEj2Page() {
                   vincúlala con el objetivo principal que mejor responda a sus necesidades de inclusión digital.
                 </p>
               </div>
-              <p className="text-xs sm:text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-full inline-block">
-                <b>Asignación múltiple</b>
-              </p>
             </div>
-
             {/* Tablero */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <GroupCard

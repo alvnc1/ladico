@@ -24,6 +24,7 @@ const ROUTE_MAP: Record<string, Partial<Record<LevelSlug, string>>> = {
     intermedio: "/exercises/comp-1-3/intermedio/ej1",
     avanzado: "/exercises/comp-1-3/avanzado/ej1",
   },
+  
 
   // --------------------------
   // Área 3: Creación de contenidos
@@ -59,6 +60,8 @@ const ROUTE_MAP: Record<string, Partial<Record<LevelSlug, string>>> = {
   },
   "4.4": {
     basico: "/test/4.4?level=basico",
+    intermedio: "/exercises/comp-4-4/intermedio/ej1",
+    avanzado: "/exercises/comp-4-4/avanzado/ej1",
   },
 }
 
