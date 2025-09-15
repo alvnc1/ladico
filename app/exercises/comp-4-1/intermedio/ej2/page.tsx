@@ -11,9 +11,9 @@ import { ensureSession, markAnswered } from "@/lib/testSession"
 import { setPoint } from "@/lib/levelProgress"
 
 // ===== Config =====
-const COMPETENCE = "4.2"
+const COMPETENCE = "4.1"
 const LEVEL = "intermedio"
-const SESSION_PREFIX = "session:4.2:Intermedio"
+const SESSION_PREFIX = "session:4.1:Intermedio"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
 type Threat =
@@ -105,7 +105,8 @@ export default function Page() {
   // Envío
   const handleNext = async () => {
     const point: 0 | 1 = correctCount >= 3 ? 1 : 0
-    setPoint(COMPETENCE, LEVEL, 1, point) // ajusta índice si corresponde en tu flujo
+    // P2 → guarda en índice visible 2
+    setPoint(COMPETENCE, LEVEL, 2, point)
 
     const sid =
       sessionId ||
@@ -113,15 +114,17 @@ export default function Page() {
 
     if (sid) {
       try {
-        await markAnswered(sid, 0, point === 1)
+        // P2 → índice 0-based = 1
+        await markAnswered(sid, 1, point === 1)
       } catch (e) {
         console.warn("No se pudo marcar la respuesta:", e)
       }
     }
-    router.push("/dashboard") // o a la siguiente pregunta de tu secuencia
+    // navega a la P3 del mismo bloque
+    router.push("/exercises/comp-4-1/intermedio/ej3")
   }
 
-  const progressPct = 100 / 3
+  const progressPct = (2 / 3) * 100
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -153,12 +156,15 @@ export default function Page() {
           </span>
           <div className="flex space-x-2">
             <div className="w-3 h-3 rounded-full bg-[#286575]" />
-            <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
+            <div className="w-3 h-3 rounded-full bg-[#286575]" />
             <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
           </div>
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
-          <div className="h-full bg-[#286575] rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+          <div
+            className="h-full bg-[#286575] rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
       </div>
 
@@ -180,7 +186,7 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Escenarios con HOVER estilo avanzado/ej2 */}
+            {/* Escenarios con hover consistente */}
             <div className="space-y-4">
               <Scenario
                 emoji=""
