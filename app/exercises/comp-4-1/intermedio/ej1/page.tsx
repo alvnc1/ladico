@@ -1,52 +1,61 @@
+// app/exercises/comp-4-1/intermedio/ej1/page.tsx
 "use client"
 
-import { useMemo, useState, useEffect, useRef } from "react"
+import { useMemo, useState, useEffect, useRef} from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
-  getProgress,
   setPoint,
-  levelPoints,
-  isLevelPassed,
-  getPoint,
 } from "@/lib/levelProgress"
 import { useAuth } from "@/contexts/AuthContext"
-import { ensureSession, markAnswered, finalizeSession } from "@/lib/testSession"
+import { ensureSession, markAnswered } from "@/lib/testSession"
 
-const COMPETENCE = "4.4" as const
+const COMPETENCE = "4.1" as const
 const LEVEL = "intermedio" as const
-const SESSION_PREFIX = "session:4.4:Intermedio"
+// Clave de sesión por-usuario (aislada para este ejercicio)
+const SESSION_PREFIX = "session:4.1:Intermedio:P1_Order"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-// Acciones del ejercicio
+// ============ Pasos/tecnologías (mostrar EXACTAMENTE en este orden inicial) ============
 const TECHNOLOGIES = [
-  { id: 1, text: "Reducir la resolución de streaming de 4K a HD o SD." },
-  { id: 2, text: "Apagar el router Wi-Fi durante la noche o cuando no se utiliza." },
-  { id: 3, text: "Usar Wi-Fi en lugar de datos móviles para navegar y reproducir contenido." },
-  { id: 4, text: "Descargar videos o música para reproducirlos sin conexión." },
-  { id: 5, text: "Enviar enlaces en lugar de adjuntos pesados en correos electrónicos." },
+  { id: 1, text: "Instalar un programa antimalware complementario desde una fuente confiable." },
+  { id: 2, text: "Activar el firewall del sistema operativo para bloquear conexiones no autorizadas." },
+  { id: 3, text: "Descargar un antivirus reconocido desde su sitio oficial." },
+  { id: 4, text: "Verificar que el sistema operativo esté actualizado mediante las herramientas oficiales." },
+  { id: 5, text: "Instalar y activar el antivirus, configurando las actualizaciones automáticas." },
 ] as const
 
-// Orden correcto
-const CORRECT_ORDER: ReadonlyArray<number> = [1, 3, 4, 2, 5]
+/**
+ * Orden correcto (por ID) para la instalación y activación adecuada:
+ * 1) Verificar SO actualizado         -> id 4
+ * 2) Activar firewall                  -> id 2
+ * 3) Descargar antivirus (sitio oficial)-> id 3
+ * 4) Instalar y activar antivirus      -> id 5
+ * 5) Instalar antimalware complementario-> id 1
+ */
+const CORRECT_ORDER: ReadonlyArray<number> = [4, 2, 3, 5, 1]
 
 type Tech = typeof TECHNOLOGIES[number]
 type SlotId = number | null
 
 export default function Page() {
   const router = useRouter()
-  const { user, userData } = useAuth()
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const ensuringRef = useRef(false)
+  const { user } = useAuth()
 
+  // ====== Sesión Firestore (única y aislada) ======
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const ensuringRef = useRef(false) // evita dobles llamados
+
+  // 1) Cargar sesión cacheada por-usuario
   useEffect(() => {
     if (!user || typeof window === "undefined") return
     const sid = localStorage.getItem(sessionKeyFor(user.uid))
     if (sid) setSessionId(sid)
   }, [user?.uid])
 
+  // 2) Asegurar/crear sesión por-usuario si no hay cache
   useEffect(() => {
     if (!user) {
       setSessionId(null)
@@ -75,17 +84,20 @@ export default function Page() {
         setSessionId(id)
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test:", e)
+        console.error("No se pudo asegurar la sesión de test (P1_Order 4.1):", e)
       } finally {
         ensuringRef.current = false
       }
     })()
   }, [user?.uid, sessionId])
 
-  const [pool, setPool] = useState<number[]>(() => shuffle(TECHNOLOGIES.map(t => t.id)))
+  // ====== Estado Drag & Drop ======
+  // Pool inicial: EXACTAMENTE en el orden solicitado (sin barajar)
+  const [pool, setPool] = useState<number[]>(TECHNOLOGIES.map(t => t.id))
   const [slots, setSlots] = useState<SlotId[]>([null, null, null, null, null])
 
   const techById = (id: number) => TECHNOLOGIES.find(t => t.id === id) as Tech
+
   const [dragData, setDragData] = useState<{ from: "pool" | "slot"; index: number } | null>(null)
 
   function onDragStart(from: "pool" | "slot", index: number) {
@@ -94,27 +106,37 @@ export default function Page() {
   function onDragEnd() {
     setDragData(null)
   }
+
   function onDropToSlot(slotIndex: number) {
     if (!dragData) return
+
+    // Calcular nueva foto de pool/slots de forma atómica
     let newPool = [...pool]
     let newSlots = [...slots] as SlotId[]
+
     if (dragData.from === "pool") {
       const id = pool[dragData.index]
       if (id == null) return
       const target = newSlots[slotIndex]
+      // 1) quitar del pool por índice original
       newPool.splice(dragData.index, 1)
+      // 2) si había algo en el slot, devolverlo al pool
       if (target !== null) newPool.push(target)
+      // 3) colocar en slot
       newSlots[slotIndex] = id
     } else {
+      // mover entre slots (intercambio)
       const id = slots[dragData.index]
       const target = newSlots[slotIndex]
       newSlots[dragData.index] = target
       newSlots[slotIndex] = id
     }
+
     setPool(newPool)
     setSlots(newSlots)
     setDragData(null)
   }
+
   function onDropToPool() {
     if (!dragData || dragData.from !== "slot") return
     let newPool = [...pool]
@@ -128,9 +150,12 @@ export default function Page() {
     setSlots(newSlots)
     setDragData(null)
   }
+
   function allowDrop(e: React.DragEvent) {
     e.preventDefault()
   }
+
+  // Quitar un item del slot con “×”
   function removeFromSlot(slotIndex: number) {
     let newPool = [...pool]
     let newSlots = [...slots] as SlotId[]
@@ -143,6 +168,7 @@ export default function Page() {
     setSlots(newSlots)
   }
 
+  // ====== Puntaje: coincidencia exacta del orden ======
   const point: 0 | 1 = useMemo(() => {
     const filled = slots.every(s => s !== null)
     if (!filled) return 0
@@ -152,83 +178,50 @@ export default function Page() {
     return 1
   }, [slots])
 
-  const handleFinish = async () => {
-    const isTeacher = userData?.role === "profesor"
+  // ====== Continuar ======
+  const handleNext = async () => {
+    // Guardar punto local (P1)
     setPoint(COMPETENCE, LEVEL, 1, point)
 
-    const prog = getProgress(COMPETENCE, LEVEL)
-    const totalPts = levelPoints(prog)
-    const passed = isLevelPassed(prog)
-    const score = Math.round((totalPts / 3) * 100)
-    const q1 = getPoint(prog, 1)
-    const q2 = getPoint(prog, 2)
-    const q3 = getPoint(prog, 3)
-
-    const finalTotalPts = isTeacher ? 3 : totalPts
-    const finalPassed = isTeacher ? true : passed
-    const finalScore = isTeacher ? 100 : score
-
-    let sid = sessionId
+    // Registrar respuesta en sesión (índice 0 = P1)
     try {
-      if (!sid && user) {
-        const LS_KEY = sessionKeyFor(user.uid)
-        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
-        if (cached) {
-          sid = cached
-        } else if (!ensuringRef.current) {
-          ensuringRef.current = true
-          try {
-            const { id } = await ensureSession({
-              userId: user.uid,
-              competence: COMPETENCE,
-              level: "Intermedio",
-              totalQuestions: 3,
-            })
-            sid = id
-            setSessionId(id)
-            if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
-          } finally {
-            ensuringRef.current = false
-          }
+      const LS_KEY = user ? sessionKeyFor(user.uid) : null
+
+      let sid =
+        sessionId ||
+        (LS_KEY && typeof window !== "undefined"
+          ? localStorage.getItem(LS_KEY)
+          : null)
+
+      if (!sid && user && !ensuringRef.current) {
+        ensuringRef.current = true
+        try {
+          const created = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Intermedio",
+            totalQuestions: 3,
+          })
+          sid = created.id
+          setSessionId(created.id)
+          if (typeof window !== "undefined")
+            localStorage.setItem(LS_KEY!, created.id)
+        } finally {
+          ensuringRef.current = false
         }
       }
 
       if (sid) {
-        try {
-          await markAnswered(sid, 0, point === 1)
-        } catch (e) {
-          console.warn("No se pudo registrar P1:", e)
-        }
-        try {
-          await finalizeSession(sid, { correctCount: finalTotalPts, total: 3, passMin: 2 })
-        } catch (e) {
-          console.warn("No se pudo finalizar la sesión en P1:", e)
-        }
+        await markAnswered(sid, 0, point === 1) // índice 0 = P1
       }
     } catch (e) {
-      console.warn("Error al finalizar P1:", e)
+      console.warn("No se pudo marcar P1 respondida:", e)
     }
 
-    try {
-      if (user) localStorage.removeItem(sessionKeyFor(user.uid))
-    } catch {}
-
-    const qs = new URLSearchParams({
-      score: String(finalScore),
-      passed: String(finalPassed),
-      correct: String(finalTotalPts),
-      total: "3",
-      competence: COMPETENCE,
-      level: LEVEL,
-      q1: String(q1),
-      q2: String(q2),
-      q3: String(q3),
-    })
-    if (sid) qs.set("sid", sid)
-    router.push(`/exercises/comp-4-4/intermedio/ej2`)
+    router.push("/exercises/comp-4-1/intermedio/ej2")
   }
 
-  const progressPct = 33
+  const progressPct = (1 / 3) * 100 // Pregunta 1 de 3
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -245,50 +238,68 @@ export default function Page() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-3 py-1 rounded-full">
-                | 4.4 Protección medioambiental - Nivel Intermedio
+                | 4.1 Protección de dispositivos - Nivel Intermedio
               </span>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Progreso */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-white mb-4">
           <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
             Pregunta 1 de 3
           </span>
           <div className="flex space-x-2">
-            <div className="w-3 h-3 rounded-full bg-[#286575]" />
-            <div className="w-3 h-3 rounded-full bg-gray-300" />
-            <div className="w-3 h-3 rounded-full bg-gray-300" />
+            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
+            <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
+            <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
           </div>
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
-          <div className="h-full bg-[#286575] rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+          <div
+            className="h-full bg-[#286575] rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
       </div>
 
+      {/* Tarjeta principal */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
-        <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
+        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
+            {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Indicar el impacto medioambiental de acciones rutinarias en el uso de dispositivos y recursos digitales
+              Organizar formas de proteger mis dispositivos y contenidos digitales
             </h2>
+
+            {/* Contexto */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575] space-y-3">
                 <p className="text-gray-700 leading-relaxed">
-                  En una oficina, el equipo de trabajo busca implementar estrategias sencillas y de bajo costo para disminuir su huella
-                  medioambiental. Se presentan cinco acciones habituales relacionadas con el uso de equipos y recursos.
+                  Has adquirido un computador nuevo, con el sistema operativo
+                  recién instalado y sin ninguna medida de protección activa. Para protegerlo
+                  contra virus, malware y accesos no autorizados, dispones de diferentes opciones
+                  de configuración y software.
                 </p>
-                <p className="text-gray-700 leading-relaxed">
-                  A continuación, se presentan cinco acciones digitales comunes. Ordénalas de mayor 
-                  menor impacto ambiental positivo de acuerdo con la evidencia sobre ahorro energético y reducción de emisiones de carbono.
+                <p className="text-gray-700 leading-relaxed font-medium">
+                  Organiza los pasos según el nivel de prioridad: primero los más vitales para 
+                  la seguridad inmediata del computador, y luego los complementarios.
                 </p>
               </div>
             </div>
+
+            {/* Layout DnD — dos recuadros */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <section className="bg-white border border-gray-300 rounded-2xl p-4" onDragOver={allowDrop} onDrop={onDropToPool}>
-                <h3 className="font-semibold text-gray-900 mb-3">Acciones disponibles</h3>
+              {/* Pool (lista inicial en el ORDEN solicitado) */}
+              <section
+                className="bg-white border-2 border-gray-200 rounded-2xl p-4"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={onDropToPool}
+                aria-label="Pasos disponibles para arrastrar"
+              >
+                <h3 className="font-semibold text-gray-900 mb-3">Pasos disponibles</h3>
                 <div className="space-y-3 min-h-[220px]">
                   {pool.map((id, idx) => {
                     const t = techById(id)
@@ -299,6 +310,8 @@ export default function Page() {
                         onDragStart={() => onDragStart("pool", idx)}
                         onDragEnd={onDragEnd}
                         className="relative cursor-grab active:cursor-grabbing bg-white p-3 rounded-2xl border-2 border-gray-200 text-sm transition-all duration-200 hover:border-[#286575] hover:bg-gray-50"
+                        role="button"
+                        tabIndex={0}
                       >
                         {t.text}
                       </div>
@@ -307,29 +320,39 @@ export default function Page() {
                 </div>
               </section>
 
+              {/* Orden final */}
               <section className="bg-white border border-gray-200 rounded-2xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Orden de mayor a menor impacto</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">Orden de mayor a menor prioridad</h3>
                 <div className="space-y-3">
                   {slots.map((slot, i) => {
                     const isFilled = !!slot
                     return (
                       <div
                         key={i}
-                        onDragOver={allowDrop}
+                        onDragOver={(e) => e.preventDefault()}
                         onDrop={() => onDropToSlot(i)}
-                        className={`rounded-xl transition relative ${
-                          isFilled
-                            ? "border-2 border-transparent bg-transparent p-0 min-h-0"
-                            : "min-h-[56px] border-2 border-dashed border-gray-300 bg-white p-3"
-                        } ${dragData ? "ring-1 ring-[#286575]/40" : ""}`}
+                        className={`rounded-xl transition relative
+                          ${
+                            isFilled
+                              ? "border-2 border-transparent bg-transparent p-0 min-h-0"
+                              : "min-h-[56px] border-2 border-dashed border-gray-300 bg-white p-3"
+                          }`}
+                        aria-label={`Caja destino ${i + 1}`}
                       >
                         {isFilled ? (
-                          <div draggable onDragStart={() => onDragStart("slot", i)} onDragEnd={onDragEnd}>
+                          <div
+                            draggable
+                            onDragStart={() => onDragStart("slot", i)}
+                            onDragEnd={onDragEnd}
+                            className="cursor-grab active:cursor-grabbing"
+                          >
                             <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3 text-sm">
                               <button
                                 onClick={() => removeFromSlot(i)}
                                 className="leading-none text-gray-500 hover:text-gray-700"
+                                aria-label="Quitar"
                                 type="button"
+                                title="Quitar"
                               >
                                 ×
                               </button>
@@ -345,10 +368,10 @@ export default function Page() {
                 </div>
               </section>
             </div>
-
+            {/* Acciones */}
             <div className="mt-8 flex items-center justify-end">
               <Button
-                onClick={handleFinish}
+                onClick={handleNext}
                 className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
               >
                 Siguiente
@@ -359,13 +382,4 @@ export default function Page() {
       </div>
     </div>
   )
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
