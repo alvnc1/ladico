@@ -415,10 +415,6 @@ export default function TestInterface({
 
             {/* Título e instrucciones */}
             <div className="mb-6 sm:mb-8">
-              <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 bg-blue-50 px-3 sm:px-4 py-2 rounded-full inline-block">
-                Selección única
-              </p>
-
               {/* Opciones */}
               <div className="space-y-3 sm:space-y-4">
                 {currentQuestion?.options?.map((option: string, index: number) => (

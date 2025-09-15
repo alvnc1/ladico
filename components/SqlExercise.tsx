@@ -227,7 +227,7 @@ const SqlExercise = forwardRef<SqlExerciseHandle, Props>(function SqlExercise(
 
             {/* Respuesta */}
             <div className="mt-4">
-                <p className="text-sm text-gray-600 mb-2">Escriba su respuesta aquí</p>
+                <p className="text-sm text-gray-600 mb-2">Indique cuantas filas se obtuvieron aquí</p>
                 <div className="flex gap-2">
                 <input
                     type="number"

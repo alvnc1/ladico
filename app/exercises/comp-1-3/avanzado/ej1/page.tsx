@@ -131,7 +131,7 @@ export default function EjercicioComp13Avanzado1() {
   const [desvM, setDesvM] = useState('')
 
   // Respuestas correctas (cm)
-  const EXPECTED = { mediaH: 170, medianaM: 159, modaH: 165, desvM: 3.81 }
+  const EXPECTED = { mediaH: 170, medianaM: 159, modaH: 172, desvM: 3.81 }
   const vMediaH = mediaH ? compareNumbers(mediaH, EXPECTED.mediaH).ok : null
   const vMedianaM = medianaM ? compareNumbers(medianaM, EXPECTED.medianaM).ok : null
   const vModaH = modaH ? compareNumbers(modaH, EXPECTED.modaH).ok : null
@@ -139,19 +139,19 @@ export default function EjercicioComp13Avanzado1() {
   const totalOk1 = [vMediaH, vMedianaM, vModaH, vDesvM].filter((v) => v === true).length
 
   // Paso 2 (tabla dinámica)
-  const [c1, setC1] = useState('') // 17
-  const [c2, setC2] = useState('') // 410
-  const [c3, setC3] = useState('') // Concepción
-  const v1 = c1 ? compareNumbers(c1, 17).ok : null
-  const v2 = c2 ? compareNumbers(c2, 410).ok : null
-  const v3 = c3 ? compareText(c3, 'Concepción').ok : null
+  const [c1, setC1] = useState('') // 91
+  const [c2, setC2] = useState('') // 350
+  const [c3, setC3] = useState('') // La Serena
+  const v1 = c1 ? compareNumbers(c1, 91).ok : null
+  const v2 = c2 ? compareNumbers(c2, 350).ok : null
+  const v3 = c3 ? compareText(c3, 'La Serena').ok : null
   const totalOk2 = [v1, v2, v3].filter((v) => v === true).length
 
   // Paso 3 (gráfico dinámico — placeholders)
   const [g1, setG1] = useState('') // país
   const [g2, setG2] = useState('') // robusta Colombia
   const [g3, setG3] = useState('') // diferencia Honduras
-  const EXPECTED3 = { paisMayor: 'Brasil', robustaColombia: 0, diferenciaHonduras: 0 }
+  const EXPECTED3 = { paisMayor: 'Venezuela', robustaColombia: 279.725, diferenciaHonduras: 243.613 }
   const vg1 = g1 ? compareText(g1, EXPECTED3.paisMayor).ok : null
   const vg2 = g2 ? compareNumbers(g2, EXPECTED3.robustaColombia).ok : null
   const vg3 = g3 ? compareNumbers(g3, EXPECTED3.diferenciaHonduras).ok : null
@@ -339,11 +339,11 @@ export default function EjercicioComp13Avanzado1() {
                       <BarChart3 className="w-5 h-5 text-blue-600" />
                       Resultados Estadísticos
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <ExcelField label="Media - Hombres" placeholder="170" value={mediaH} onChange={setMediaH} unit="cm" />
-                      <ExcelField label="Mediana - Mujeres" placeholder="159" value={medianaM} onChange={setMedianaM} unit="cm" />
-                      <ExcelField label="Moda - Hombres" placeholder="165" value={modaH} onChange={setModaH} unit="cm" />
-                      <ExcelField label="Desviación Estándar - Mujeres" placeholder="3.81" value={desvM} onChange={setDesvM} unit="cm" note="2 decimales" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-xl">
+                      <ExcelField label="Media - Hombres"  value={mediaH} onChange={setMediaH} unit="cm" note='entero' />
+                      <ExcelField label="Mediana - Mujeres" value={medianaM} onChange={setMedianaM} unit="cm" note='entero' />
+                      <ExcelField label="Moda - Hombres" value={modaH} onChange={setModaH} unit="cm" />
+                      <ExcelField label="Desviación Estándar - Mujeres" value={desvM} onChange={setDesvM} unit="cm" note="2 decimales" />
                     </div>
                   </div>
                 </div>
@@ -394,9 +394,9 @@ export default function EjercicioComp13Avanzado1() {
                     Resultados de Tabla Dinámica
                   </h3>
                   <div className="space-y-4">
-                    <ExcelField label="Unidades totales en Santiago" placeholder="17" value={c1} onChange={setC1} unit="unidades" />
-                    <ExcelField label="Precio promedio en Valparaíso" placeholder="410" value={c2} onChange={setC2} unit="$" />
-                    <ExcelField label="Tienda con mayor total de unidades" placeholder="Concepción" value={c3} onChange={setC3} />
+                    <ExcelField label="Unidades totales en Santiago" value={c1} onChange={setC1} unit="unidades" />
+                    <ExcelField label="Precio promedio en Valparaíso" value={c2} onChange={setC2} unit="$" />
+                    <ExcelField label="Tienda con mayor total de unidades" value={c3} onChange={setC3} />
                   </div>
                 </div>
               </>
@@ -446,9 +446,9 @@ export default function EjercicioComp13Avanzado1() {
                     Análisis del Gráfico Dinámico
                   </h3>
                   <div className="space-y-4">
-                    <ExcelField label="País con mayor producción total de café" placeholder="Brasil" value={g1} onChange={setG1} />
-                    <ExcelField label="Producción total de café Robusta en Colombia" placeholder="0" value={g2} onChange={setG2} unit="toneladas" />
-                    <ExcelField label="Diferencia entre Arábica y Robusta en Honduras" placeholder="0" value={g3} onChange={setG3} unit="toneladas" />
+                    <ExcelField label="País con mayor producción total de café" value={g1} onChange={setG1} />
+                    <ExcelField label="Producción total de café Robusta en Colombia" value={g2} onChange={setG2} unit="toneladas" />
+                    <ExcelField label="Diferencia entre Arábica y Robusta en Honduras" value={g3} onChange={setG3} unit="toneladas" />
                   </div>
                 </div>
               </>
@@ -519,8 +519,12 @@ function ExcelField({
         <Input
           placeholder={placeholder}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="border-2 border-gray-300 hover:border-gray-400 focus-visible:ring-[#286575] transition-all"
+          onChange={(e) => {
+            // Reemplaza comas por puntos antes de guardar
+            const raw = e.target.value
+            onChange(raw.replace(',', '.'))
+          }}
+          className="border-2 rounded-xl border-gray-300 hover:border-gray-400 focus-visible:ring-[#286575] transition-all"
           inputMode={unit === 'toneladas' || unit === 'unidades' || unit === 'cm' || unit === '$' ? 'decimal' : 'text'}
         />
       </div>

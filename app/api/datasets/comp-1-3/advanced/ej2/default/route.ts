@@ -3,7 +3,7 @@ import path from 'path'
 
 export async function GET() {
   try {
-    const filePath = path.join(process.cwd(), 'app/exercises/excels/Ejercicio_2_Avanzado.xlsx')
+    const filePath = path.join(process.cwd(), 'app/exercises/comp-1-3/avanzado/excels/Ejercicio_2_Avanzado.xlsx')
     const data = await fs.readFile(filePath)
     const arrayBuf = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
     const blob = new Blob([arrayBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })

@@ -36,12 +36,23 @@ export type ProgrammingExerciseHandle = {
 
     const ProgrammingExercise = forwardRef<ProgrammingExerciseHandle, {}>(function ProgrammingExercise(_, ref) {
     const [sequence, setSequence] = useState<(StepId | "")[]>(["", "", "", "", ""])
-    const used = useMemo(() => new Set(sequence.filter(Boolean)), [sequence])
     const [shuffledOptions, setShuffledOptions] = useState(ALL_STEPS)
 
     useEffect(() => {
         setShuffledOptions(shuffle(ALL_STEPS))
     }, [])
+
+    const availableOptions = (rowIndex: number) => {
+        const selectedElsewhere = new Set(
+        sequence
+            .map((s, i) => (i !== rowIndex ? s : ""))
+            .filter(Boolean) as StepId[]
+        )
+        const current = sequence[rowIndex]
+        return shuffledOptions.filter(
+        s => !selectedElsewhere.has(s.id) || s.id === current
+        )
+    }
 
     const rowStyle = "grid grid-cols-1 sm:grid-cols-[100px,20rem] items-center gap-2"
     const fieldStyle =
@@ -53,7 +64,6 @@ export type ProgrammingExerciseHandle = {
         setSequence(next)
     }
 
-    // Expone check() a la page
     useImperativeHandle(ref, () => ({
         check() {
         if (sequence.some(s => s === "")) return false
@@ -69,7 +79,7 @@ let b = "5";
 .
 .
 .`}
-    </pre>
+        </pre>
 
         <p className="mb-4 text-sm text-gray-700">
             Selecciona el <b>orden correcto</b> de instrucciones para resolver la tarea.
@@ -85,12 +95,8 @@ let b = "5";
                 className={fieldStyle}
                 >
                 <option value="">Selecciona…</option>
-                {shuffledOptions.map(s => (
-                    <option
-                    key={s.id}
-                    value={s.id}
-                    disabled={used.has(s.id) && s.id !== val}
-                    >
+                {availableOptions(idx).map(s => (
+                    <option key={s.id} value={s.id}>
                     {s.label}
                     </option>
                 ))}

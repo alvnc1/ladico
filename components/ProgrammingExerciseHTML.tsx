@@ -1,12 +1,14 @@
 "use client"
 
-import React, { useState, forwardRef, useImperativeHandle } from "react"
+import React, {
+  useState,
+  forwardRef,
+  useImperativeHandle,
+  useEffect,
+  useCallback,
+} from "react"
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter"
-import xml from "react-syntax-highlighter/dist/esm/languages/hljs/xml"
 import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs"
-
-// Registrar lenguaje para el build Light
-SyntaxHighlighter.registerLanguage("xml", xml)
 
 type Answer = {
   hidroClass: string
@@ -15,16 +17,79 @@ type Answer = {
 }
 
 type Props = {
-  /** callback que recibe 0|1 cuando el usuario finaliza */
   onFinish?: (point: 0 | 1) => void
-  /** si quieres mostrar además un botón “Finalizar” interno (opcional) */
   showFinishButton?: boolean
 }
 
 export type HtmlExerciseHandle = {
-  /** método imperativo para que la página dispare el finish desde afuera */
   finish: () => void
 }
+
+
+function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  wide = false,
+}: {
+  open: boolean
+  onClose: () => void
+  title: string
+  children: React.ReactNode
+  wide?: boolean
+}) {
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", handler)
+    return () => document.removeEventListener("keydown", handler)
+  }, [open, onClose])
+
+  useEffect(() => {
+    if (!open) return
+    const { overflow } = document.body.style
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = overflow
+    }
+  }, [open])
+
+  if (!open) return null
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fixed inset-0 z-[100] flex items-center justify-center"
+    >
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className={`relative mx-4 my-8 w-full ${wide ? "max-w-6xl" : "max-w-4xl"} rounded-2xl bg-white shadow-xl border`}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
+          <button
+            onClick={onClose}
+            className="inline-flex items-center px-2 py-1 rounded-xl text-sm bg-gray-100 hover:bg-gray-200"
+          >
+            Cerrar
+          </button>
+        </div>
+        <div className="p-4">{children}</div>
+      </div>
+    </div>
+  )
+}
+
 
 const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
   ({ onFinish, showFinishButton = false }, ref) => {
@@ -35,10 +100,13 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
     })
     const [feedback, setFeedback] = useState<string | null>(null)
 
+
+    const [previewOpen, setPreviewOpen] = useState(false)
+    const [codeOpen, setCodeOpen] = useState(false)
+
     const normalizeClass = (value: string) =>
       value.trim().toLowerCase().replace(/^class\s*=?\s*/, "").replace(/['"]/g, "").trim()
 
-    /** calcula 0|1 */
     const computePoint = (): 0 | 1 => {
       const okHidro = normalizeClass(answers.hidroClass) === "celeste"
       const okSolar = answers.solarHeading === "h3"
@@ -46,16 +114,19 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
       return okHidro && okSolar && okPlanta ? 1 : 0
     }
 
-    /** llamado desde afuera por la page */
-    const finish = () => {
+    const finish = useCallback(() => {
       const point = computePoint()
-      setFeedback(point ? "✅ ¡Perfecto! Todas las respuestas son correctas." : "❌ Algunas respuestas no son correctas. Revisa y vuelve a intentar.")
       onFinish?.(point)
-    }
+      setFeedback(
+        point
+          ? "✅ ¡Excelente! Todas las respuestas están correctas."
+          : "❌ Aún hay respuestas incorrectas. Revisa tus selecciones."
+      )
+    }, [onFinish, answers])
 
     useImperativeHandle(ref, () => ({ finish }))
 
-    const rowStyle = "grid grid-cols-1 sm:grid-cols-[minmax(240px,1fr),20rem] items-center gap-2"
+    const rowStyle = "grid grid-cols-1 sm:grid-cols-[500px,20rem] items-center gap-2"
     const selectStyle =
       "px-2 py-1 rounded-md border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#286575] w-full sm:w-80 font-inherit"
 
@@ -76,7 +147,7 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
     <p id="solar" class="amarillo">La radiación solar se puede aprovechar con paneles...</p>
 
     <h3>Eólica</h3>
-    <p id="viento" class="verdoso">El viento se utiliza mediante aerogeneradores...</p>
+    <p id="viento" class="verde">El viento se utiliza mediante aerogeneradores...</p>
 
     <h3>Hidráulica</h3>
     <p id="hidro">El agua de ríos y embalses produce energía hidráulica...</p>
@@ -89,20 +160,29 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
 </html>`
 
     return (
-      <div className="space-y-6">{/* sin borde/fondo: hereda de la tarjeta padre */}
+      <div className="rounded-2xl border bg-white p-6">
         {/* Vista previa + código */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* ---- Panel Vista previa ---- */}
           <div className="rounded-xl border overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b bg-gray-50">
               <span className="text-sm font-medium text-gray-700">Vista previa</span>
-              <a
-                href="/preview/renovables-latam.html"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center px-3 py-1.5 rounded-xl bg-[#286675] text-white text-sm hover:bg-[#3a7d89]"
-              >
-                Abrir en pestaña
-              </a>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPreviewOpen(true)}
+                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-gray-200 text-gray-900 text-sm hover:bg-gray-300"
+                >
+                  Ampliar
+                </button>
+                <a
+                  href="/preview/renovables-latam.html"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-[#286675] text-white text-sm hover:bg-[#3a7d89]"
+                >
+                  Abrir en pestaña
+                </a>
+              </div>
             </div>
             <iframe
               src="/preview/renovables-latam.html"
@@ -113,9 +193,18 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
             />
           </div>
 
+          {/* ---- Panel Código ---- */}
           <div className="rounded-xl border overflow-hidden">
-            <div className="px-3 py-2 border-b bg-gray-50">
+            <div className="flex items-center justify-between px-3 py-2 border-b bg-gray-50">
               <span className="text-sm font-medium text-gray-700">HTML</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCodeOpen(true)}
+                  className="inline-flex items-center px-3 py-1.5 rounded-xl bg-gray-200 text-gray-900 text-sm hover:bg-gray-300"
+                >
+                  Ampliar
+                </button>
+              </div>
             </div>
             <SyntaxHighlighter
               language="xml"
@@ -130,9 +219,7 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
         </div>
 
         {/* Preguntas */}
-        <div className="space-y-4 text-sm text-gray-700" role="group" aria-labelledby="preguntas-html">
-          <span id="preguntas-html" className="sr-only">Preguntas del ejercicio HTML</span>
-
+        <div className="space-y-4 text-sm text-gray-700">
           {/* 1) HIDRO */}
           <div className={rowStyle}>
             <label className="text-sm text-gray-800">
@@ -145,10 +232,8 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
               className={selectStyle}
             >
               <option value="" disabled>Selecciona…</option>
-              {/* Correctas compatibles con el normalizador */}
               <option value='class="celeste"'>class="celeste"</option>
               <option value="celeste">celeste</option>
-              {/* Distractores */}
               <option value='id="celeste"'>id="celeste"</option>
               <option value='class="azul"'>class="azul"</option>
               <option value='style="color: blue"'>style="color: blue"</option>
@@ -168,7 +253,7 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
               <option value="" disabled>Selecciona…</option>
               <option value="h1">h1</option>
               <option value="h2">h2</option>
-              <option value="h3">h3</option> {/* ✅ */}
+              <option value="h3">h3</option>
               <option value="h4">h4</option>
               <option value="h5">h5</option>
               <option value="h6">h6</option>
@@ -187,10 +272,8 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
               className={selectStyle}
             >
               <option value="" disabled>Selecciona…</option>
-              {/* Correctas */}
               <option value='class="verde"'>class="verde"</option>
               <option value="verde">verde</option>
-              {/* Distractores */}
               <option value='class="subrayado"'>class="subrayado"</option>
               <option value='style="text-decoration: none"'>style="text-decoration: none"</option>
               <option value='id="verde"'>id="verde"</option>
@@ -220,6 +303,45 @@ const ProgrammingExerciseHTML = forwardRef<HtmlExerciseHandle, Props>(
             {feedback}
           </div>
         )}
+
+        {/* ------ Modales ------ */}
+        <Modal
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          title="Vista previa — tamaño ampliado"
+          wide
+        >
+          <div className="w-full">
+            <iframe
+              src="/preview/renovables-latam.html"
+              title="Vista previa renovables (ampliada)"
+              className="w-full h-[75vh] bg-white rounded-xl border"
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            />
+          </div>
+        </Modal>
+
+        <Modal
+          open={codeOpen}
+          onClose={() => setCodeOpen(false)}
+          title="Código HTML"
+          wide
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500">Solo lectura</span>
+          </div>
+          <div className="rounded-xl overflow-hidden border">
+            <SyntaxHighlighter
+              language="xml"
+              style={atomOneDark}
+              customStyle={{ margin: 0, fontSize: "0.95rem", maxHeight: "70vh", background: "#1e1e1e" }}
+              wrapLongLines={false}
+              showLineNumbers
+            >
+              {codeString}
+            </SyntaxHighlighter>
+          </div>
+        </Modal>
       </div>
     )
   }

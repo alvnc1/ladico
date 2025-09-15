@@ -72,7 +72,6 @@ export default function PageBlocklyMaze() {
         const point: 0 | 1 = isCorrect ? 1 : 0
 
         setSaving(true)
-        // Guarda puntaje local (Ej1 ⇒ índice 1 en tu helper levelProgress)
         setPoint(COMPETENCE, LEVEL, 1, point)
 
         try {
@@ -89,62 +88,53 @@ export default function PageBlocklyMaze() {
         router.push("/exercises/comp-3-4/avanzado/ej2")
     }
 
-    const [currentIndex, setCurrentIndex] = useState(0);
-    
-      const totalQuestions = 3;
-      const progress = ((currentIndex + 1) / totalQuestions) * 100;
+    const progressPct = (1 / 3) * 100
 
     return (
         <div className="min-h-screen bg-[#f3fbfb]">
         {/* Header */}
-      <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-3">
-          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
-            <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4">
-              <Link href="/dashboard">
-                <img
-                  src="/ladico_green.png"
-                  alt="Ladico Logo"
-                  className="w-24 h-24 object-contain cursor-pointer hover:opacity-80 transition-opacity"
-                />
-              </Link>
-              <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
-                | 3.4 Programación -
-                Nivel Intermedio
-              </span>
+        <div className="bg-white/20 backdrop-blur-sm border-b border-white/10 rounded-b-xl">
+            <div className="max-w-6xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                <Link href="/dashboard" className="shrink-0">
+                    <img
+                    src="/ladico_green.png"
+                    alt="Ladico Logo"
+                    className="w-24 h-24 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                    />
+                </Link>
 
+                <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
+                    3.4 Programación — Nivel Avanzado
+                </span>
+                </div>
             </div>
-          </div>
-
-          {/* Progreso */}
-          <div className="mt-1">
-            <div className="flex items-center justify-between text-[#286575] mb-2">
-              <span className="text-xs sm:text-sm font-medium bg-white/40 px-2 sm:px-3 py-1 rounded-full">
-                Pregunta {currentIndex + 1} de {totalQuestions}
-              </span>
-              <div className="flex space-x-1 sm:space-x-2">
-                {Array.from({ length: totalQuestions }, (_, index) => (
-                  <div
-                    key={index}
-                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
-                      index <= currentIndex ? "bg-[#286575] shadow-lg" : "bg-[#dde3e8]"
-                    }`}
-                  />
-                ))}
-              </div>
             </div>
-            <div className="h-1.5 sm:h-2 bg-[#dde3e8] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#286575] rounded-full transition-all duration-500 ease-in-out shadow-sm"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
         </div>
-      </div>
 
         {/* Contenido */}
         <div className="max-w-6xl mx-auto px-4 pb-8 pt-4">
+            {/* Progreso */}
+            <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 py-1 rounded-full">
+                Ejercicio 1 de 3
+                </span>
+                <div className="flex space-x-2">
+                <div className="w-3 h-3 rounded-full bg-[#286575]" />
+                <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
+                <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
+                </div>
+            </div>
+            <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
+                <div
+                className="h-full bg-[#286575] rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+                />
+            </div>
+            </div>
+
             <Card className="bg-white shadow-2xl rounded-3xl border-0 ring-2 ring-[#286575] ring-opacity-30">
             <CardContent className="p-6 lg:p-8">
                 {/* Escenario */}

@@ -2,25 +2,62 @@
 
 import React, {
     useEffect,
+    useLayoutEffect,
     useRef,
     useState,
     forwardRef,
     useImperativeHandle,
 } from "react"
 
-type Dir = 0 | 1 | 2 | 3 // 0 der, 1 abj, 2 izq, 3 arrb
+type Dir = 0 | 1 | 2 | 3
 type Step = { type: "move" | "left" | "right" }
 
 export type MazeHandle = {
-    /** Devuelve true si el robot llegó a la meta (B) desde la última ejecución */
     check: () => boolean
-    /** Igual que check(); lo dejo por simetría con otros ejercicios */
     finish: () => boolean
     }
 
     type Props = {
-    /** Si lo necesitas, puedes recibir un callback opcional */
     onFinish?: (point: 0 | 1) => void
+    }
+
+    /** Carga Blockly y aplica locale ES de forma robusta (soporta distintas distros/versiones) */
+    const getBlockly = async () => {
+    const mod: any = await import("blockly")
+    const Blockly = mod?.default ?? mod
+    try {
+        const esMod: any = await import("blockly/msg/es")
+        const locale = esMod?.default ?? esMod
+        if (locale && typeof locale === "object" && typeof Blockly.setLocale === "function") {
+        Blockly.setLocale(locale)
+        }
+    } catch {}
+    return Blockly as any
+    }
+
+    /* ---------- Ajusta canvas al contenedor (HiDPI-safe) y devuelve tamaño de celda ---------- */
+    const fitCanvasToBox = (
+    canvas: HTMLCanvasElement,
+    box: HTMLElement,
+    grid: number
+    ) => {
+    const size = Math.floor(box.clientWidth) // tamaño CSS disponible (cuadrado)
+    const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1))
+
+    // CSS size
+    canvas.style.width = `${size}px`
+    canvas.style.height = `${size}px`
+
+    // Buffer interno
+    canvas.width = size * dpr
+    canvas.height = size * dpr
+
+    // Dibujo en coords CSS (no en coords del buffer)
+    const ctx = canvas.getContext("2d")!
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    // Tamaño de celda en píxeles CSS
+    return Math.max(1, Math.floor(size / grid))
     }
 
     const BlocklyMaze = forwardRef<MazeHandle, Props>(function BlocklyMaze(
@@ -29,70 +66,69 @@ export type MazeHandle = {
     ) {
     const blocklyDivRef = useRef<HTMLDivElement | null>(null)
     const workspaceRef = useRef<any>(null)
+
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
+    const canvasBoxRef = useRef<HTMLDivElement | null>(null)
+
     const runnerRef = useRef<number | null>(null)
     const queueRef = useRef<Step[]>([])
 
-    // Mundo
     const GRID = 6
-    const CELL = 44
-    // Inicio (A) y Meta (B)
+
+    // Estado "visual" (opcional) y ref inmediato para usar en draw()
+    const [CELL, setCELL] = useState(0)
+    const cellRef = useRef(0)
+
     const START = { x: 0, y: 5 }
     const GOAL = { x: 5, y: 0 }
 
-    // Estado del robot
     const [robot, setRobot] = useState<{ x: number; y: number; dir: Dir }>({
         x: START.x,
         y: START.y,
         dir: 0,
     })
 
-    // UI
     const [isReady, setIsReady] = useState(false)
     const [isRunning, setIsRunning] = useState(false)
     const [msg, setMsg] = useState("")
     const [remaining, setRemaining] = useState<number>(0)
-
-    // ¿Se alcanzó la meta en la última ejecución?
     const [reached, setReached] = useState(false)
 
-    // Banco de laberintos 
     const LABYRINTHS: boolean[][][] = [
         [
-        [ true,  true,  true,  true,  true,  false],
-        [ true,  true,  true,  true,  true,  false],
-        [ true,  true,  true,  false, false, false],
-        [ true,  true,  true,  false,  true,  true ],
-        [ true,  true,  false, false,  true,  true ],
-        [ false, false, false,  true,  true,  true ],
+        [true, true, true, true, true, false],
+        [true, true, true, true, true, false],
+        [true, true, true, false, false, false],
+        [true, true, true, false, true, true],
+        [true, true, false, false, true, true],
+        [false, false, false, true, true, true],
         ],
         [
-        [ true,  true,  true,  true,  true,  false],
-        [ true,  true,  true,  true,  false, false],
-        [ true,  true,  true,  true,  false,  true],
-        [ true,  true,  true,  false, false,  true],
-        [ true,  true,  true,  false,  true,  true],
-        [ false, false, false, false,  true,  true],
+        [true, true, true, true, true, false],
+        [true, true, true, true, false, false],
+        [true, true, true, true, false, true],
+        [true, true, true, false, false, true],
+        [true, true, true, false, true, true],
+        [false, false, false, false, true, true],
         ],
         [
-        [ true,  true,  true,  true,  true,  false],
-        [ true,  true,  true,  true,  true,  false],
-        [ true,  true,  false, false, false,  false],
-        [ false, false, false,  true,  true,  true ],
-        [ false,  true,  true,  true,  true,  true ],
-        [ false,  true,  true,  true,  true,  true ],
+        [true, true, true, true, true, false],
+        [true, true, true, true, true, false],
+        [true, true, false, false, false, false],
+        [false, false, false, true, true, true],
+        [false, true, true, true, true, true],
+        [false, true, true, true, true, true],
         ],
         [
-        [ true,  true,  true,  true,  true,  false],
-        [ true,  true,  false, false, false,  false],
-        [ true,  true,  false,  true,  true,  true ],
-        [ true,  true,  false,  true,  true,  true ],
-        [ true,  true,  false,  true,  true,  true ],
-        [ false, false, false,  true,  true,  true ],
+        [true, true, true, true, true, false],
+        [true, true, false, false, false, false],
+        [true, true, false, true, true, true],
+        [true, true, false, true, true, true],
+        [true, true, false, true, true, true],
+        [false, false, false, true, true, true],
         ],
     ]
 
-    // Elegir uno aleatorio al cargar
     const [walls] = useState<boolean[][]>(
         LABYRINTHS[Math.floor(Math.random() * LABYRINTHS.length)]
     )
@@ -102,94 +138,137 @@ export type MazeHandle = {
         return walls[y][x] === true
     }
 
-    // Dibujo del canvas
     const draw = () => {
         const canvas = canvasRef.current
-        if (!canvas) return
+        const CELL_NOW = cellRef.current
+        if (!canvas || CELL_NOW <= 0) return
+
         const ctx = canvas.getContext("2d")!
-        const w = GRID * CELL
-        const h = GRID * CELL
-        canvas.width = w
-        canvas.height = h
+        const w = GRID * CELL_NOW
+        const h = GRID * CELL_NOW
+
+        ctx.clearRect(0, 0, w, h)
 
         // Fondo
         ctx.fillStyle = "#ffffff"
         ctx.fillRect(0, 0, w, h)
 
-        // Grid
+        // Grilla
         ctx.strokeStyle = "#e5e7eb"
         for (let i = 0; i <= GRID; i++) {
         ctx.beginPath()
-        ctx.moveTo(i * CELL + 0.5, 0)
-        ctx.lineTo(i * CELL + 0.5, h)
+        ctx.moveTo(i * CELL_NOW + 0.5, 0)
+        ctx.lineTo(i * CELL_NOW + 0.5, h)
         ctx.stroke()
         ctx.beginPath()
-        ctx.moveTo(0, i * CELL + 0.5)
-        ctx.lineTo(w, i * CELL + 0.5)
+        ctx.moveTo(0, i * CELL_NOW + 0.5)
+        ctx.lineTo(w, i * CELL_NOW + 0.5)
         ctx.stroke()
         }
 
-        // Paredes
+        // Muros
         for (let y = 0; y < GRID; y++) {
         for (let x = 0; x < GRID; x++) {
             if (walls[y][x]) {
-            ctx.fillStyle = "#111827" // gris oscuro
-            ctx.fillRect(x * CELL + 2, y * CELL + 2, CELL - 4, CELL - 4)
+            ctx.fillStyle = "#111827"
+            ctx.fillRect(x * CELL_NOW + 2, y * CELL_NOW + 2, CELL_NOW - 4, CELL_NOW - 4)
             }
         }
         }
 
-        // Inicio A
-        ctx.fillStyle = "#38bdf8" // celeste
-        ctx.fillRect(START.x * CELL + 6, START.y * CELL + 6, CELL - 12, CELL - 12)
+        // A
+        ctx.fillStyle = "#38bdf8"
+        ctx.fillRect(START.x * CELL_NOW + 6, START.y * CELL_NOW + 6, CELL_NOW - 12, CELL_NOW - 12)
         ctx.fillStyle = "#075985"
         ctx.font = "bold 14px sans-serif"
-        ctx.fillText("A", START.x * CELL + CELL / 2 - 4, START.y * CELL + CELL / 2 + 5)
+        ctx.fillText("A", START.x * CELL_NOW + CELL_NOW / 2 - 4, START.y * CELL_NOW + CELL_NOW / 2 + 5)
 
-        // Meta B
-        ctx.fillStyle = "#22c55e" // verde
-        ctx.fillRect(GOAL.x * CELL + 6, GOAL.y * CELL + 6, CELL - 12, CELL - 12)
+        // B
+        ctx.fillStyle = "#22c55e"
+        ctx.fillRect(GOAL.x * CELL_NOW + 6, GOAL.y * CELL_NOW + 6, CELL_NOW - 12, CELL_NOW - 12)
         ctx.fillStyle = "#14532d"
         ctx.font = "bold 14px sans-serif"
-        ctx.fillText("B", GOAL.x * CELL + CELL / 2 - 4, GOAL.y * CELL + CELL / 2 + 5)
+        ctx.fillText("B", GOAL.x * CELL_NOW + CELL_NOW / 2 - 4, GOAL.y * CELL_NOW + CELL_NOW / 2 + 5)
 
         // Robot
         const { x, y, dir } = robot
         ctx.save()
-        ctx.translate(x * CELL + CELL / 2, y * CELL + CELL / 2)
+        ctx.translate(x * CELL_NOW + CELL_NOW / 2, y * CELL_NOW + CELL_NOW / 2)
         ctx.rotate((Math.PI / 2) * dir)
         ctx.fillStyle = "#f72020"
         ctx.beginPath()
-        ctx.moveTo(CELL * 0.28, 0)
-        ctx.lineTo(-CELL * 0.22, CELL * 0.18)
-        ctx.lineTo(-CELL * 0.22, -CELL * 0.18)
+        ctx.moveTo(CELL_NOW * 0.28, 0)
+        ctx.lineTo(-CELL_NOW * 0.22, CELL_NOW * 0.18)
+        ctx.lineTo(-CELL_NOW * 0.22, -CELL_NOW * 0.18)
         ctx.closePath()
         ctx.fill()
         ctx.restore()
     }
 
+    // Dibuja cuando cambie el robot (CELL visual ya no es necesario)
     useEffect(() => {
         draw()
     }, [robot])
 
+    // Primer ajuste/dibujo antes del primer pintado
+    useLayoutEffect(() => {
+        let raf = 0
+        const init = () => {
+        const box = canvasBoxRef.current
+        const canvas = canvasRef.current
+        if (!box || !canvas) return
+        if (box.clientWidth === 0) {
+            raf = requestAnimationFrame(init)
+            return
+        }
+        const cell = fitCanvasToBox(canvas, box, GRID)
+        cellRef.current = cell
+        setCELL(cell) // solo para que puedas mostrar valores si quieres
+        requestAnimationFrame(draw)
+        }
+        init()
+        return () => cancelAnimationFrame(raf)
+    }, [])
+
+    // ResizeObserver para cambios posteriores de tamaño
+    useEffect(() => {
+        if (!canvasBoxRef.current || !canvasRef.current) return
+        const box = canvasBoxRef.current
+        const canvas = canvasRef.current
+
+        const ro = new ResizeObserver(() => {
+        const cell = fitCanvasToBox(canvas, box, GRID)
+        cellRef.current = cell
+        setCELL(cell)
+        requestAnimationFrame(draw)
+        })
+        ro.observe(box)
+
+        // primer ajuste extra por seguridad
+        const cell = fitCanvasToBox(canvas, box, GRID)
+        cellRef.current = cell
+        setCELL(cell)
+        requestAnimationFrame(draw)
+
+        return () => ro.disconnect()
+    }, [GRID])
+
     // Blockly
     useEffect(() => {
-        let mounted = true
-        ;(async () => {
-        const Blockly = await import("blockly")
-        await import("blockly/blocks") // bloques base
-        const { javascriptGenerator } = await import("blockly/javascript")
-        const locale = await import("blockly/msg/es")
-        ;(Blockly as any).setLocale(locale)
+        let disposed = false
+        let workspace: any | null = null
 
-        // Bloques personalizados
+        ;(async () => {
+        const Blockly = await getBlockly()
+        await import("blockly/blocks")
+        const { javascriptGenerator } = await import("blockly/javascript")
+
         Blockly.Blocks["move_forward"] = {
             init: function () {
             this.appendDummyInput().appendField("Avanzar 1")
             this.setPreviousStatement(true, null)
             this.setNextStatement(true, null)
             this.setColour(210)
-            this.setTooltip("Avanza 1 celda en la dirección actual")
             },
         }
         Blockly.Blocks["turn_left"] = {
@@ -198,7 +277,6 @@ export type MazeHandle = {
             this.setPreviousStatement(true, null)
             this.setNextStatement(true, null)
             this.setColour(210)
-            this.setTooltip("Gira 90° a la izquierda")
             },
         }
         Blockly.Blocks["turn_right"] = {
@@ -207,24 +285,15 @@ export type MazeHandle = {
             this.setPreviousStatement(true, null)
             this.setNextStatement(true, null)
             this.setColour(210)
-            this.setTooltip("Gira 90° a la derecha")
             },
         }
 
-        // Generadores JS
-        javascriptGenerator.forBlock["move_forward"] = function () {
-            return "api.enqueue('move');\n"
-        }
-        javascriptGenerator.forBlock["turn_left"] = function () {
-            return "api.enqueue('left');\n"
-        }
-        javascriptGenerator.forBlock["turn_right"] = function () {
-            return "api.enqueue('right');\n"
-        }
+        javascriptGenerator.forBlock["move_forward"] = () => "api.enqueue('move');\n"
+        javascriptGenerator.forBlock["turn_left"] = () => "api.enqueue('left');\n"
+        javascriptGenerator.forBlock["turn_right"] = () => "api.enqueue('right');\n"
 
-        // Toolbox
         const toolboxXml = `
-            <xml id="toolbox" style="display: none">
+            <xml id="toolbox" style="display:none">
             <block type="move_forward"></block>
             <block type="turn_left"></block>
             <block type="turn_right"></block>
@@ -232,15 +301,12 @@ export type MazeHandle = {
             <block type="controls_repeat">
                 <field name="TIMES">0</field>
             </block>
-            </xml>
-        `
+            </xml>`
 
-        if (!mounted || !blocklyDivRef.current) return
+        if (!blocklyDivRef.current || disposed) return
 
-        // Límite de bloques
         const MAX_BLOCKS = 15
-
-        const workspace = Blockly.inject(blocklyDivRef.current, {
+        workspace = Blockly.inject(blocklyDivRef.current, {
             toolbox: toolboxXml,
             trashcan: true,
             scrollbars: true,
@@ -251,19 +317,32 @@ export type MazeHandle = {
         workspaceRef.current = workspace
         setRemaining(workspace.remainingCapacity())
 
-        // Actualiza contador al cambiar
-        const listener = () => setRemaining(workspace.remainingCapacity())
-        workspace.addChangeListener(listener)
+        const onChange = () => setRemaining(workspace.remainingCapacity())
+        workspace.addChangeListener(onChange)
+
+        const resizeBlockly = () => {
+            if (!blocklyDivRef.current || !workspace) return
+            const h = Math.max(320, Math.min(window.innerHeight - 280, 640))
+            blocklyDivRef.current.style.height = `${h}px`
+            Blockly.svgResize(workspace)
+        }
+        resizeBlockly()
+        window.addEventListener("resize", resizeBlockly)
 
         setIsReady(true)
         draw()
+
+        const cleanup = () => {
+            try { workspace && workspace.removeChangeListener(onChange) } catch {}
+            window.removeEventListener("resize", resizeBlockly)
+            try { workspace && workspace.dispose() } catch {}
+        }
+        ;(workspaceRef as any)._cleanup = cleanup
         })()
 
         return () => {
-        mounted = false
-        try {
-            workspaceRef.current?.dispose()
-        } catch {}
+        disposed = true
+        if ((workspaceRef as any)._cleanup) (workspaceRef as any)._cleanup()
         if (runnerRef.current) window.clearInterval(runnerRef.current)
         }
     }, [])
@@ -272,7 +351,7 @@ export type MazeHandle = {
         setRobot({ x: START.x, y: START.y, dir: 0 })
         setReached(false)
         setMsg("")
-        draw()
+        requestAnimationFrame(draw)
     }
 
     const stop = () => {
@@ -287,12 +366,11 @@ export type MazeHandle = {
         if (!workspaceRef.current) return
         stop()
         setMsg("")
-        setReached(false) // nueva ejecución ⇒ reinicia "éxito"
+        setReached(false)
 
         const { javascriptGenerator } = await import("blockly/javascript")
         const code = javascriptGenerator.workspaceToCode(workspaceRef.current)
 
-        // API pasa comandos a una cola
         queueRef.current = []
         const api = {
         enqueue: (type: Step["type"]) => queueRef.current.push({ type }),
@@ -324,17 +402,13 @@ export type MazeHandle = {
         }
 
         setRobot((r) => {
-            let nx = r.x,
-            ny = r.y,
-            nd = r.dir
+            let nx = r.x, ny = r.y, nd = r.dir
 
             if (step.type === "move") {
             if (nd === 0) nx = r.x + 1
             if (nd === 1) ny = r.y + 1
             if (nd === 2) nx = r.x - 1
             if (nd === 3) ny = r.y - 1
-
-            // paredes/bordes
             if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID || isWall(nx, ny)) {
                 stop()
                 setMsg("Te chocaste con una pared o borde. Reiniciando...")
@@ -348,7 +422,6 @@ export type MazeHandle = {
             nd = ((r.dir + 1) % 4) as Dir
             }
 
-            // comprobar meta 
             if (nx === GOAL.x && ny === GOAL.y) {
             const next = { x: nx, y: ny, dir: nd }
             setTimeout(() => {
@@ -359,7 +432,6 @@ export type MazeHandle = {
             }, 0)
             return next
             }
-
             return { x: nx, y: ny, dir: nd }
         })
         }, 350)
@@ -367,17 +439,16 @@ export type MazeHandle = {
 
     const clearBlocks = async () => {
         const Blockly = await import("blockly")
-        workspaceRef.current && Blockly.getMainWorkspace()?.clear()
+        workspaceRef.current && (Blockly as any).getMainWorkspace()?.clear()
     }
 
-    // Exponer API al padre
     useImperativeHandle(ref, () => ({
         check: () => reached,
         finish: () => reached,
     }))
 
     return (
-        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[calc(100vh-200px)] md:max-h-[calc(100vh-180px)]">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Editor Blockly */}
         <div className="rounded-2xl border p-2 md:p-3 bg-white shadow-sm h-full flex flex-col">
             <div className="flex items-center justify-between mb-2 shrink-0">
@@ -389,7 +460,7 @@ export type MazeHandle = {
                 <button
                 onClick={run}
                 disabled={!isReady || isRunning}
-                className="px-3 py-2 rounded-xl bg-blue-600 text-white disabled:opacity-50"
+                className="px-3 py-2 rounded-xl bg-[#3a7d89] text-white disabled:opacity-50"
                 >
                 Ejecutar
                 </button>
@@ -400,7 +471,7 @@ export type MazeHandle = {
             </div>
             <div
             ref={blocklyDivRef}
-            className="w-full flex-1 min-h-[360px] md:min-h-[420px] border bg-[#f9fafb] rounded-xl overflow-hidden"
+            className="w-full flex-1 min-h-[200px] border bg-[#f9fafb] rounded-xl overflow-hidden"
             />
         </div>
 
@@ -409,12 +480,16 @@ export type MazeHandle = {
             <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">Mundo simulado</h2>
             </div>
+
+            {/* Contenedor cuadrado responsivo */}
+            <div ref={canvasBoxRef} className="w-full relative aspect-square">
             <canvas
-            ref={canvasRef}
-            className="rounded-xl border self-center"
-            width={GRID * CELL}
-            height={GRID * CELL}
+                ref={canvasRef}
+                className="absolute inset-0 w-full h-full rounded-xl border block mx-auto"
+                style={{ imageRendering: "crisp-edges" as any }}
             />
+            </div>
+
             <p className="text-sm text-gray-600 mt-3 min-h-[24px]">{msg}</p>
             <ul className="text-xs text-gray-500 mt-2 list-disc ml-5">
             <li>El robot inicia en A (celda celeste). Debe llegar a B (celda verde)</li>

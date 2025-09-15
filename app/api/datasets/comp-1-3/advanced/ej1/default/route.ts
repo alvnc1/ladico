@@ -4,7 +4,7 @@ import path from 'path'
 // Sirve un XLSX por defecto incluido en el repo (raíz del proyecto)
 export async function GET() {
   try {
-    const filePath = path.join(process.cwd(), 'app/exercises/excels/Ejercicio_1_Avanzado.xlsx')
+    const filePath = path.join(process.cwd(), 'app/exercises/comp-1-3/avanzado/excels/Ejercicio_1_Avanzado.xlsx')
     const data = await fs.readFile(filePath)
     const arrayBuf = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
     const blob = new Blob([arrayBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
