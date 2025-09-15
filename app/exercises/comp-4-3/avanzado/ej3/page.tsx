@@ -282,12 +282,6 @@ export default function AdvancedEj3Page() {
                 </Link>
               </p>
             </div>
-
-            {/* === Tipo de ejercicio === */}
-            <p className="text-xs sm:text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-full inline-block">
-              <b>Entorno simulado</b>
-            </p>
-
             {/* Botón Finalizar (evalúa y registra punto) */}
             <div className="flex justify-end pt-2">
               <Button
