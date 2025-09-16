@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { ensureSession, markAnswered } from "@/lib/testSession";
 import { setPoint } from "@/lib/levelProgress";
+import { skillsInfo } from "@/components/data/digcompSkills";
+import { useRouter } from "next/navigation";
 
 /* ========= Config puntaje/sesión ========= */
 const COMPETENCE = "1.2";
@@ -134,6 +136,7 @@ export default function LadicoP2FuentesFiables() {
   const [currentIndex] = useState(Q_ZERO_BASED);
   const progress = useMemo(() => ((currentIndex + 1) / TOTAL_QUESTIONS) * 100, [currentIndex]);
 
+  const router = useRouter();
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const ensuringRef = useRef(false);
@@ -204,38 +207,7 @@ export default function LadicoP2FuentesFiables() {
 
   /* ========= Validar + Puntaje ========= */
   const handleValidate = async () => {
-    if (selectedCount !== 3) {
-      setFeedback(
-        <p className="text-orange-700">
-          Debes seleccionar exactamente <b>3</b> fuentes.
-        </p>
-      );
-      return;
-    }
-
     const ok = correctChosen >= 2; // ✅ aprueba con 2/3 correctas
-    setFeedback(
-      ok ? (
-        <div className="text-green-700">
-          ¡Bien! Seleccionaste {correctChosen}/3 confiables. Las más sólidas eran:
-          <ul className="list-disc pl-5 mt-1">
-            <li>INPE (Gobierno de Brasil, metodología pública, datos abiertos).</li>
-            <li>FAO (organismo ONU con comparabilidad y referencias).</li>
-            <li>Revista SciELO (revisión por pares, DOI, bibliografía).</li>
-          </ul>
-        </div>
-      ) : (
-        <div className="text-red-700">
-          Casi. Elegiste {correctChosen}/3 confiables. Revisa señales de calidad:
-          <ul className="list-disc pl-5 mt-1">
-            <li>Autoría y filiación verificables (institucional o académica).</li>
-            <li>Metodología, datos abiertos, glosarios y comparabilidad.</li>
-            <li>Transparencia (conflictos de interés, correcciones, contacto).</li>
-          </ul>
-        </div>
-      )
-    );
-
     const point: 0 | 1 = ok ? 1 : 0;
 
     // 1) progreso local
@@ -267,48 +239,49 @@ export default function LadicoP2FuentesFiables() {
     } catch (e) {
       console.warn("No se pudo marcar P2 respondida:", e);
     }
+    router.push("/exercises/comp-1-2/avanzado/ej3");
   };
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4">
               <Link href="/dashboard">
                 <img
                   src="/ladico_green.png"
                   alt="Ladico Logo"
-                  className="w-20 h-20 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                  className="w-24 h-24 object-contain cursor-pointer hover:opacity-80 transition-opacity"
                 />
               </Link>
-              <span className="text-[#2e6372] text-sm opacity-80 bg-white/10 px-3 py-1 rounded-full">
-                | 1.2 Evaluar datos, información y contenidos digitales - Nivel Avanzado
+              <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
+                | {COMPETENCE} {skillsInfo[COMPETENCE].title} - Nivel {LEVEL_FS}
               </span>
             </div>
           </div>
 
           {/* Progreso */}
           <div className="mt-1">
-            <div className="flex items-center justify-between text-[#286575] mb-1">
-              <span className="text-xs font-medium bg-white/40 px-2 py-1 rounded-full">
+            <div className="flex items-center justify-between text-[#286575] mb-2">
+              <span className="text-xs sm:text-sm font-medium bg-white/40 px-2 sm:px-3 py-1 rounded-full">
                 Pregunta {currentIndex + 1} de {TOTAL_QUESTIONS}
               </span>
-              <div className="flex space-x-1">
-                {Array.from({ length: TOTAL_QUESTIONS }, (_, i) => (
+              <div className="flex space-x-1 sm:space-x-2">
+                {Array.from({ length: TOTAL_QUESTIONS }, (_, index) => (
                   <div
-                    key={i}
-                    className={`w-2 h-2 rounded-full ${
-                      i <= currentIndex ? "bg-[#286575]" : "bg-[#dde3e8]"
+                    key={index}
+                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                      index <= currentIndex ? "bg-[#286575] shadow-lg" : "bg-[#dde3e8]"
                     }`}
                   />
                 ))}
               </div>
             </div>
-            <div className="h-1.5 bg-[#dde3e8] rounded-full overflow-hidden">
+            <div className="h-1.5 sm:h-2 bg-[#dde3e8] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#286575] rounded-full transition-all"
+                className="h-full bg-[#286575] rounded-full transition-all duration-500 ease-in-out shadow-sm"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -317,22 +290,21 @@ export default function LadicoP2FuentesFiables() {
       </div>
 
       {/* Tarjeta Ladico */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-8">
-        <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575]/30">
-          <CardContent className="p-4 sm:p-6 lg:p-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
+          <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
+            <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Instrucciones */}
-            <div className="mb-6 bg-gray-50 p-4 sm:p-6 rounded-xl border-l-4 border-[#286575]">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Valorar la fiabilidad de fuentes (Amazonía)
-              </h2>
-              <p className="text-gray-800">
-                Debes preparar un informe sobre <b>deforestación en la Amazonía</b>. A continuación verás
-                seis fuentes diversas. Lee sus señales de calidad (dominio, autoría, metodología, transparencia,
-                conflicto de interés, referencia a datos, etc.) y <b>selecciona las 3 más confiables</b>.
-              </p>
-              <p className="mt-2 text-sm text-gray-600">
-                Apruebas si aciertas <b>al menos 2 de las 3</b>.
-              </p>
+            <div className="mb-8">
+              <div className="flex items-center gap-4 mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Valorar la fiabilidad de fuentes</h2>
+              </div>
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
+                <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
+                  Debes preparar un informe sobre <b>deforestación en la Amazonía</b>. A continuación verás
+                  seis fuentes diversas. Lee sus señales de calidad (dominio, autoría, metodología, transparencia,
+                  conflicto de interés, referencia a datos, etc.) y <b>selecciona las 3 más confiables</b>.
+                </p>
+              </div>
             </div>
 
             {/* Lista de fuentes */}
@@ -342,7 +314,7 @@ export default function LadicoP2FuentesFiables() {
                 const isChecked = selected.includes(s.id);
                 const canAdd = isChecked || selected.length < 3;
                 return (
-                  <div key={s.id} className="border rounded-xl">
+                  <div key={s.id} className="border border-gray-200 bg-gray-50 rounded-2xl">
                     <div className="p-3 sm:p-4 flex items-start gap-3">
                       <input
                         type="checkbox"
@@ -409,25 +381,15 @@ export default function LadicoP2FuentesFiables() {
               })}
             </div>
 
-            {/* Acciones */}
-            <div className="mt-6 flex items-center justify-between">
-              <div className="text-xs text-gray-600">
-                Seleccionadas: {selected.length}/3
-              </div>
+            {/* Botón fuera del explorador, dentro de la tarjeta */}
+            <div className="mt-6 flex justify-end">
               <Button
                 onClick={handleValidate}
-                className="px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
+                className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
               >
-                Validar
+                Siguiente
               </Button>
             </div>
-
-            {/* Feedback */}
-            {feedback && (
-              <div className="mt-3 bg-gray-50 border rounded-xl p-3 text-sm">
-                {feedback}
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

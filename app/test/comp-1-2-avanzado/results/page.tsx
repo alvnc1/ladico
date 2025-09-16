@@ -21,7 +21,7 @@ function ResultsAvanzadoContent() {
   const passed = sp.get("passed") === "true"
   const correct = Number.parseInt(sp.get("correct") || "0")
   const total = Number.parseInt(sp.get("total") || "3")
-  const competence = sp.get("competence") || "1.3"
+  const competence = sp.get("competence") || "1.2"
   const level = (sp.get("level") || "avanzado").toLowerCase()
 
   // Resultados por pregunta (1 = correcta, 0 = incorrecta)
@@ -50,7 +50,7 @@ function ResultsAvanzadoContent() {
   }, [sid, competence, level, correct, total])
 
   const handleBack = () => router.push("/dashboard")
-  const handleRetry = () => router.push("/exercises/comp-1-3/avanzado/ej1")
+  const handleRetry = () => router.push("/exercises/comp-1-2/avanzado/ej1")
   
   // Función para continuar al siguiente nivel (para profesores)
   const handleNextLevel = () => {
@@ -60,7 +60,7 @@ function ResultsAvanzadoContent() {
       level === "intermedio" ? "avanzado" : "basico";
     
     // Redirigir al primer ejercicio del siguiente nivel
-    router.push(`/exercises/comp-1-3/${nextLevel}/ej1`);
+    router.push(`/exercises/comp-1-2/${nextLevel}/ej1`);
   }
 
   return (
@@ -156,7 +156,7 @@ function ResultsAvanzadoContent() {
                   >
                     <div className="flex items-center gap-2 text-gray-800">
                       {q1 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XIcon className="w-5 h-5 text-red-700" />}
-                      <span>Ejercicio 1: Análisis Estadístico en Excel</span>
+                      <span>Ejercicio 1: Verificación de artículos en la web</span>
                     </div>
                     <span className={`font-semibold ${q1 ? "text-green-700" : "text-red-700"}`}>
                       {q1 ? "Correcta" : "Incorrecta"}
@@ -170,7 +170,7 @@ function ResultsAvanzadoContent() {
                   >
                     <div className="flex items-center gap-2 text-gray-800">
                       {q2 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XIcon className="w-5 h-5 text-red-700" />}
-                      <span>Ejercicio 2: Tabla Dinámica en Excel</span>
+                      <span>Ejercicio 2: Valorar la fiabilidad de fuentes</span>
                     </div>
                     <span className={`font-semibold ${q2 ? "text-green-700" : "text-red-700"}`}>
                       {q2 ? "Correcta" : "Incorrecta"}
@@ -184,7 +184,7 @@ function ResultsAvanzadoContent() {
                   >
                     <div className="flex items-center gap-2 text-gray-800">
                       {q3 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XIcon className="w-5 h-5 text-red-700" />}
-                      <span>Ejercicio 3: Gráfico Dinámico en Excel</span>
+                      <span>Ejercicio 3: ¿Qué afirmaciones están sustentadas por los datos?</span>
                     </div>
                     <span className={`font-semibold ${q3 ? "text-green-700" : "text-red-700"}`}>
                       {q3 ? "Correcta" : "Incorrecta"}

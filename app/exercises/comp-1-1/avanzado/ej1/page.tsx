@@ -95,11 +95,6 @@ export default function LadicoFiltersExercise() {
 
     // Feedback UI
     setStatus(ok ? "ok" : "err");
-    setHelper(
-      ok
-        ? "¡Correcto! Se guardó tu resultado."
-        : "Respuesta incorrecta. Asegúrate de escribir el título del primer resultado tal como aparece."
-    );
 
     // Puntaje local
     try {
@@ -137,8 +132,7 @@ export default function LadicoFiltersExercise() {
       console.warn("No se pudo marcar la pregunta respondida:", e);
     }
 
-    // Si quieres navegar después, descomenta y ajusta a tu ruta:
-    // if (ok) router.push("/exercises/comp-1-1/avanzado/ej2");
+    router.push("/exercises/comp-1-1/avanzado/ej2");
   };
 
   return (
@@ -237,7 +231,6 @@ export default function LadicoFiltersExercise() {
                   onChange={(e) => {
                     setAnswer(e.target.value);
                     setStatus("idle");
-                    setHelper("");
                   }}
                   className={`flex-1 px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 text-sm`}
                 />

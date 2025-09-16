@@ -6,68 +6,57 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { ensureSession, markAnswered } from "@/lib/testSession";
-import { setPoint } from "@/lib/levelProgress";
+import { skillsInfo } from "@/components/data/digcompSkills";
+import { useRouter } from "next/navigation";
+import {
+  getProgress,
+  setPoint,
+  levelPoints,
+  isLevelPassed,
+  getPoint,
+} from "@/lib/levelProgress";
 
-/* ================== Config Puntaje/Sesión ================== */
+/* ================== Config Puntaje/Sesión (P3 · 1.1 Intermedio) ================== */
 const COMPETENCE = "1.1";
 const LEVEL_LOCAL = "intermedio";   // levelProgress
 const LEVEL_FS = "Intermedio";      // Firestore
 const TOTAL_QUESTIONS = 3;
 
-const Q_ZERO_BASED = 2;             // P3 (0-based) para Firestore
-const Q_ONE_BASED  = 3;             // P3 (1-based) para levelProgress
+const Q_ZERO_BASED = 2;  // P3 (0-based) para Firestore
+const Q_ONE_BASED  = 3;  // P3 (1-based) para levelProgress
 
 const SESSION_PREFIX = "session:1.1:Intermedio";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
-/* ================== Utils ================== */
-const normalize = (s: string) =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-
-const tokenSet = (s: string) =>
-  new Set(
-    normalize(s)
-      .split(/[^a-zñ]+/i)
-      .filter(Boolean)
-  );
-
-const hasOperator = (q: string) => {
-  // mantén comillas y operadores para detectar
-  const pairQuotes = (q.match(/"/g) || []).length >= 2;
-  return (
-    /\bOR\b/.test(q) ||
-    pairQuotes ||
-    /\s-/.test(q) ||
-    /site:/.test(q) ||
-    /filetype:/.test(q) ||
-    /intitle:/.test(q) ||
-    /inurl:/.test(q)
-  );
-};
-
-/* ================== Léxicos para evaluación ================== */
-const WORDS_BECAS = ["beca","becas","scholarship","scholarships","convocatoria","convocatorias","financiamiento"];
-const WORDS_STEM = ["stem","ciencia","cientific","tecnolog","ingenier","matematic"];
-const WORDS_REGION = [
-  "latinoamerica","latinoamérica","america latina","américa latina","latam",
-  "mexico","méxico","peru","perú","bolivia","chile","argentina","colombia",
-  "ecuador","uruguay","paraguay","centroamerica","centroamérica","brasil","brasil","brasil"
+/* ================== Dataset del ejercicio ================== */
+type Step = { id: string; text: string };
+const CANONICAL_STEPS: Step[] = [
+  { id: "A", text: "Definir la necesidad y palabras clave (p. ej., “Beca Benito Juárez 2025 requisitos PDF”)." },
+  { id: "B", text: "Lanzar la búsqueda con operadores (site:gob.mx \"Beca Benito Juárez 2025\" requisitos filetype:pdf)." },
+  { id: "C", text: "Elegir un resultado del dominio oficial (gob.mx / becasbenitojuarez.gob.mx)." },
+  { id: "D", text: "Navegar dentro del sitio: Convocatorias → Media Superior → Requisitos." },
+  { id: "E", text: "Abrir o descargar la convocatoria/requisitos (PDF o página oficial)." },
+  { id: "F", text: "Verificar fecha/vigencia y si existe versión actualizada." },
+  { id: "G", text: "Guardar el enlace/archivo y anotar la consulta para tu lista de estrategias." },
 ];
 
-const SOURCE_HINTS = [
-  "conacyt","conahcyt","anid","conicet","icetex","colfuturo","becas benito juarez",
-  "senescyt","oea","unesco","capes","cnpq","minedu","ministerio de educacion",
-  "gob","gobierno",".edu",".gob",".gov","who","paho","ops"
+const PRECEDENCE_RULES: Array<{ left: string; right: string; note: string }> = [
+  { left: "A", right: "B", note: "Primero aclarar la necesidad y luego buscar." },
+  { left: "B", right: "C", note: "Buscar antes de elegir un dominio oficial." },
+  { left: "C", right: "D", note: "Elegir el dominio antes de navegar su menú." },
+  { left: "D", right: "E", note: "Navegar a la sección correcta antes de abrir/descargar." },
+  { left: "C", right: "F", note: "Solo puedes verificar fecha/vigencia tras llegar a una fuente." },
+  { left: "E", right: "G", note: "Guardar/organizar debe realizarse al final." },
 ];
 
-const NAV_VERBS = ["suscrib","configur","filtr","revis","program","automatiz","export","naveg","acced","descarg","organ"];
-
-/* ================== Página P3 ================== */
-export default function LadicoP3BecasSTEM() {
+/* ================== Página ================== */
+export default function P3OrdenarEstrategiaBusqueda() {
+  const router = useRouter();
   const [currentIndex] = useState(Q_ZERO_BASED);
-  const progress = useMemo(() => ((currentIndex + 1) / TOTAL_QUESTIONS) * 100, [currentIndex]);
+  const totalQuestions = 3;
+  const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const ensuringRef = useRef(false);
 
@@ -78,7 +67,7 @@ export default function LadicoP3BecasSTEM() {
     if (sid) setSessionId(sid);
   }, [user?.uid]);
 
-  // Asegurar sesión por-usuario
+  // Asegurar/crear sesión por-usuario
   useEffect(() => {
     if (!user) {
       setSessionId(null);
@@ -86,15 +75,12 @@ export default function LadicoP3BecasSTEM() {
     }
     const LS_KEY = sessionKeyFor(user.uid);
     const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-
     if (cached) {
       if (!sessionId) setSessionId(cached);
       return;
     }
-
     if (ensuringRef.current) return;
     ensuringRef.current = true;
-
     (async () => {
       try {
         const { id } = await ensureSession({
@@ -106,116 +92,66 @@ export default function LadicoP3BecasSTEM() {
         setSessionId(id);
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
       } catch (e) {
-        console.error("No se pudo asegurar la sesión (P3):", e);
+        console.error("No se pudo asegurar la sesión (P3 1.1):", e);
       } finally {
         ensuringRef.current = false;
       }
     })();
   }, [user?.uid, sessionId]);
 
-  /* ================== Estado del ejercicio ================== */
-  // 1) Exponer necesidad
-  const [need, setNeed] = useState("");
-
-  // 2) Consulta base (con operadores)
-  const [query, setQuery] = useState("");
-
-  // 3) Canales/estrategia (checkboxes)
-  const [channels, setChannels] = useState({
-    alerts: false,   // Alertas (p. ej., Google Alerts)
-    rss: false,      // RSS/Atom
-    newsletters: false, // Newsletters/boletines
-    social: false,   // Redes profesionales (LinkedIn, X, grupos)
+  /* ============== Estado: lista reordenable + feedback ============== */
+  const [steps, setSteps] = useState<Step[]>(() => {
+    const shuffled = [...CANONICAL_STEPS].sort(() => Math.random() - 0.5);
+    return shuffled;
   });
+  const [result, setResult] = useState<{ passed: boolean; checks: boolean[] } | null>(null);
 
-  // 4) Acceso/navegación (fuentes objetivo + plan de pasos)
-  const [navPlan, setNavPlan] = useState("");
+  const move = (index: number, dir: -1 | 1) => {
+    setSteps((prev) => {
+      const next = [...prev];
+      const j = index + dir;
+      if (j < 0 || j >= next.length) return prev;
+      [next[index], next[j]] = [next[j], next[index]];
+      return next;
+    });
+    setResult(null);
+  };
 
-  const [feedback, setFeedback] = useState<React.ReactNode>(null);
+  const positions = useMemo(() => {
+    const map: Record<string, number> = {};
+    steps.forEach((s, idx) => (map[s.id] = idx));
+    return map;
+  }, [steps]);
 
-  const toggleChannel = (k: keyof typeof channels) =>
-    setChannels((s) => ({ ...s, [k]: !s[k] }));
+  const validateOrder = async () => {
+    // 1) Evaluar reglas
+    const checks = PRECEDENCE_RULES.map(({ left, right }) => positions[left] < positions[right]);
+    const gLastOk = positions["G"] > positions["F"]; // extra
+    const allChecks = [...checks, gLastOk];
 
-  /* ================== Validación ================== */
-  const validate = async () => {
-    const needTokens = tokenSet(need);
-    const qTokens = tokenSet(query);
-    const navTokens = tokenSet(navPlan);
+    const satisfied = allChecks.filter(Boolean).length;
+    const passedChecks = satisfied >= 5; // ✅ aprueba con ≥5/7
+    setResult({ passed: passedChecks, checks: allChecks });
 
-    const containsAny = (tokens: Set<string>, list: string[]) =>
-      list.some((w) => {
-        const n = normalize(w);
-        // match por prefijo (tecnolog* / ingenier*)
-        return [...tokens].some((t) => t.startsWith(n));
-      });
-
-    // A) La necesidad expone correctamente el tema (≥2 de 3 grupos)
-    const A = [
-      containsAny(needTokens, WORDS_BECAS),
-      containsAny(needTokens, WORDS_STEM),
-      containsAny(needTokens, WORDS_REGION),
-    ].filter(Boolean).length >= 2;
-
-    // B) La consulta base usa al menos 1 operador y cubre el tema (≥2 de 3)
-    const B =
-      hasOperator(query) &&
-      [
-        containsAny(qTokens, WORDS_BECAS),
-        containsAny(qTokens, WORDS_STEM),
-        containsAny(qTokens, WORDS_REGION),
-      ].filter(Boolean).length >= 2;
-
-    // C) Canales: elige al menos 2 (p. ej., Alertas + RSS)
-    const C = Object.values(channels).filter(Boolean).length >= 2;
-
-    // D) Plan de acceso/navegación: ≥100 chars, incluye verbos de acción y menciona ≥1 fuente/institución
-    const hasVerb = NAV_VERBS.some((v) => normalize(navPlan).includes(v));
-    const hasSource = SOURCE_HINTS.some((s) => normalize(navPlan).includes(normalize(s)));
-    const D = navPlan.trim().length >= 100 && hasVerb && hasSource;
-
-    const met = [
-      { key: "Necesidad de información bien expuesta", ok: A },
-      { key: "Consulta base con operadores y foco temático", ok: B },
-      { key: "Estrategia: al menos 2 canales seleccionados", ok: C },
-      { key: "Acceso y navegación: plan con fuentes y acciones", ok: D },
-    ];
-    const passedCount = met.filter(m => m.ok).length;
-    const ok = passedCount >= 3; // ✅ aprueba con 3/4
-
-    setFeedback(
-      <div className="space-y-2">
-        <p className={ok ? "text-green-700" : "text-red-700"}>
-          {ok
-            ? `¡Excelente! Cumpliste ${passedCount}/4 criterios.`
-            : `Aún no: cumpliste ${passedCount}/4 (se requieren 3).`}
-        </p>
-        <ul className="text-sm">
-          {met.map((m, i) => (
-            <li key={i} className={`flex items-start gap-2 ${m.ok ? "text-green-700" : "text-red-700"}`}>
-              <span>{m.ok ? "✅" : "❌"}</span>
-              <span>{m.key}</span>
-            </li>
-          ))}
-        </ul>
-        {!ok && (
-          <div className="text-xs text-gray-600">
-            Pistas:
-            <ul className="list-disc pl-5">
-              <li>En la consulta, combina comillas/OR/-palabra/ <code>site:</code> / <code>filetype:</code>.</li>
-              <li>Activa al menos 2 canales (ej.: Alertas + RSS o Newsletters).</li>
-              <li>Menciona una fuente (ej.: <i>CONACYT</i>, <i>ANID</i>, <i>CONICET</i>, <i>ICETEX</i>, <i>OEA</i>, <i>UNESCO</i>) y describe acciones: <i>configurar</i>, <i>filtrar</i>, <i>suscribirme</i>, <i>descargar</i>.</li>
-            </ul>
-          </div>
-        )}
-      </div>
-    );
-
-    const point: 0 | 1 = ok ? 1 : 0;
-
-    // 1) progreso local
+    // 2) Puntaje local
+    const point: 0 | 1 = passedChecks ? 1 : 0;
     setPoint(COMPETENCE, LEVEL_LOCAL, Q_ONE_BASED, point);
 
-    // 2) Firestore
+    const prog = getProgress(COMPETENCE, LEVEL_LOCAL);
+    const totalPts = levelPoints(prog);
+    const levelPassed = isLevelPassed(prog);
+    const score = Math.round((totalPts / TOTAL_QUESTIONS) * 100);
+    const q1 = getPoint(prog, 1);
+    const q2 = getPoint(prog, 2);
+    const q3 = getPoint(prog, 3);
+
+    // 3) Modo profesor (opcional)
+    const isTeacher = userData?.role === "profesor";
+    const finalTotalPts = isTeacher ? TOTAL_QUESTIONS : totalPts;
+    const finalPassed   = isTeacher ? true : levelPassed;
+    const finalScore    = isTeacher ? 100 : score;
+
+    // 4) Firestore
     let sid = sessionId;
     try {
       if (!sid && user) {
@@ -239,50 +175,67 @@ export default function LadicoP3BecasSTEM() {
       }
       if (sid) await markAnswered(sid, Q_ZERO_BASED, point === 1);
     } catch (e) {
-      console.warn("No se pudo marcar P3 respondida:", e);
+      console.warn("No se pudo marcar la P3 respondida:", e);
     }
+
+    // 5) Ir a resultados
+    const qs = new URLSearchParams({
+      score: String(finalScore),
+      passed: String(finalPassed),
+      correct: String(finalTotalPts),
+      total: String(TOTAL_QUESTIONS),
+      competence: COMPETENCE,
+      level: LEVEL_LOCAL,
+      q1: String(q1),
+      q2: String(q2),
+      q3: String(q3),
+      sid: sid ?? "",
+    });
+
+    router.push(`/test/comp-1-1-intermedio/results?${qs.toString()}`);
   };
 
+  /* ================== UI ================== */
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4">
               <Link href="/dashboard">
                 <img
                   src="/ladico_green.png"
                   alt="Ladico Logo"
-                  className="w-20 h-20 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                  className="w-24 h-24 object-contain cursor-pointer hover:opacity-80 transition-opacity"
                 />
               </Link>
-              <span className="text-[#2e6372] text-sm opacity-80 bg-white/10 px-3 py-1 rounded-full">
-                | 1.1 Navegar, buscar y filtrar datos - Nivel Intermedio
+              <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
+                | {COMPETENCE} {skillsInfo[COMPETENCE].title} - Nivel {LEVEL_FS}
               </span>
             </div>
           </div>
 
           {/* Progreso */}
           <div className="mt-1">
-            <div className="flex items-center justify-between text-[#286575] mb-1">
-              <span className="text-xs font-medium bg-white/40 px-2 py-1 rounded-full">
-                Pregunta {currentIndex + 1} de {TOTAL_QUESTIONS}
+            <div className="flex items-center justify-between text-[#286575] mb-2">
+              <span className="text-xs sm:text-sm font-medium bg-white/40 px-2 sm:px-3 py-1 rounded-full">
+                Pregunta {currentIndex + 1} de {totalQuestions}
               </span>
-              <div className="flex space-x-1">
-                {Array.from({ length: TOTAL_QUESTIONS }, (_, i) => (
+              <div className="flex space-x-1 sm:space-x-2">
+                {Array.from({ length: totalQuestions }, (_, index) => (
                   <div
-                    key={i}
-                    className={`w-2 h-2 rounded-full ${
-                      i <= currentIndex ? "bg-[#286575]" : "bg-[#dde3e8]"
+                    key={index}
+                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                      index <= currentIndex ? "bg-[#286575] shadow-lg" : "bg-[#dde3e8]"
                     }`}
                   />
                 ))}
               </div>
             </div>
-            <div className="h-1.5 bg-[#dde3e8] rounded-full overflow-hidden">
+            <div className="h-1.5 sm:h-2 bg-[#dde3e8] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#286575] rounded-full transition-all"
+                className="h-full bg-[#286575] rounded-full transition-all duration-500 ease-in-out shadow-sm"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -290,111 +243,62 @@ export default function LadicoP3BecasSTEM() {
         </div>
       </div>
 
-      {/* Tarjeta Ladico */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-8">
-        <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575]/30">
+      {/* Tarjeta */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
+        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Instrucciones */}
-            <div className="mb-6 bg-gray-50 p-4 sm:p-6 rounded-xl border-l-4 border-[#286575]">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Estrategia de búsqueda: Becas STEM en Latinoamérica
-              </h2>
-              <p className="text-gray-800">
-                Tu grupo necesita identificar <b>becas para estudiantes STEM</b> en países de LATAM
-                y seguir nuevas convocatorias. Define la necesidad, crea una consulta con operadores,
-                elige canales de monitoreo y describe cómo acceder/navegar hasta las fuentes oficiales.
-              </p>
-              <p className="mt-2 text-sm text-gray-600">
-                Apruebas cumpliendo <b>3 de 4</b> criterios.
-              </p>
+            <div className="mb-8">
+              <div className="flex items-center gap-4 mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Ordenar estrategia de búsqueda</h2>
+              </div>
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
+                <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
+                  Debes encontrar los <b>requisitos 2025</b> de la <b>Beca Benito Juárez</b> desde una fuente
+                  oficial en México. <b>Organiza tu estrategia</b> ordenando los pasos de búsqueda, acceso
+                  y navegación.
+                </p>
+              </div>
             </div>
 
-            {/* Campos */}
-            <div className="space-y-5">
-              {/* 1) Necesidad */}
-              <label className="block text-sm text-gray-700">
-                1) Expón tu necesidad de información
-                <textarea
-                  value={need}
-                  onChange={(e) => setNeed(e.target.value)}
-                  rows={3}
-                  placeholder='Ej.: "Mapear becas para estudiantes de ingeniería y ciencias en México y Perú para el próximo semestre"'
-                  className="mt-1 w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#286675]"
-                />
-                <span className="block text-xs text-gray-500 mt-1">
-                  Incluye al menos dos de: <i>becas/convocatorias</i>, <i>STEM/ciencia/ingeniería</i>, <i>país o región LATAM</i>.
-                </span>
-              </label>
-
-              {/* 2) Consulta con operadores */}
-              <label className="block text-sm text-gray-700">
-                2) Consulta base (usa operadores)
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder='Ej.: "becas STEM" OR "becas ingenieria" site:gob.mx -posgrado filetype:pdf'
-                  className="mt-1 w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#286675]"
-                />
-                <span className="block text-xs text-gray-500 mt-1">
-                  Operadores: <code>"..."</code>, <code>OR</code>, <code>-palabra</code>, <code>site:</code>, <code>filetype:</code>, <code>intitle:</code>, <code>inurl:</code>.
-                </span>
-              </label>
-
-              {/* 3) Canales */}
-              <fieldset className="mt-2">
-                <legend className="text-sm font-medium mb-1">3) Canales de monitoreo (elige ≥ 2)</legend>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={channels.alerts} onChange={() => toggleChannel("alerts")} />
-                    Alertas de búsqueda
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={channels.rss} onChange={() => toggleChannel("rss")} />
-                    RSS / Atom
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={channels.newsletters} onChange={() => toggleChannel("newsletters")} />
-                    Newsletters/boletines
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={channels.social} onChange={() => toggleChannel("social")} />
-                    Redes profesionales
-                  </label>
+            {/* Lista reordenable */}
+            <div className="space-y-2">
+              {steps.map((s, idx) => (
+                <div
+                  key={s.id}
+                  className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3"
+                >
+                  <div className="w-6 h-6 rounded-full bg-white border grid place-items-center text-xs font-semibold text-gray-700">
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 text-[15px] text-gray-900">{s.text}</div>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-2 py-1 text-xs border rounded-xl hover:bg-white"
+                      onClick={() => move(idx, -1)}
+                    >
+                      ↑ Subir
+                    </button>
+                    <button
+                      className="px-2 py-1 text-xs border rounded-xl hover:bg-white"
+                      onClick={() => move(idx, +1)}
+                    >
+                      ↓ Bajar
+                    </button>
+                  </div>
                 </div>
-              </fieldset>
-
-              {/* 4) Acceso / Navegación */}
-              <label className="block text-sm text-gray-700">
-                4) Fuentes y plan de navegación/acceso
-                <textarea
-                  value={navPlan}
-                  onChange={(e) => setNavPlan(e.target.value)}
-                  rows={4}
-                  placeholder='Ej.: "Configurar alerta y RSS de CONACYT y ANID; filtrar por pregrado; revisar newsletters semanales; en ICETEX buscar convocatorias vigentes y descargar PDFs."'
-                  className="mt-1 w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#286675]"
-                />
-                <span className="block text-xs text-gray-500 mt-1">
-                  Menciona al menos una fuente (p. ej., <i>CONACYT</i>, <i>ANID</i>, <i>CONICET</i>, <i>ICETEX</i>, <i>OEA</i>, <i>UNESCO</i>) y acciones como <i>configurar</i>, <i>filtrar</i>, <i>suscribirme</i>, <i>descargar</i>.
-                </span>
-              </label>
+              ))}
             </div>
 
-            {/* Acciones */}
+            {/* Validar */}
             <div className="mt-6 flex justify-end">
               <Button
-                onClick={validate}
-                className="px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
+                onClick={validateOrder}
+                className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
               >
-                Validar
+                Finalizar
               </Button>
             </div>
-
-            {/* Feedback */}
-            {feedback && (
-              <div className="mt-3 bg-gray-50 border rounded-xl p-3 text-sm">
-                {feedback}
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
