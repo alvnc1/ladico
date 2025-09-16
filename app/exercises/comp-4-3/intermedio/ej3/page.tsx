@@ -330,7 +330,7 @@ export default function Page() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Pool */}
               <section
-                className="bg-white border border-gray-300 rounded-2xl p-4"
+                className="bg-white border-2 border-gray-200 rounded-2xl p-4"
                 onDragOver={allowDrop}
                 onDrop={onDropToPool}
                 aria-label="Tecnologías disponibles para arrastrar"
@@ -345,7 +345,7 @@ export default function Page() {
                         draggable
                         onDragStart={() => onDragStart("pool", idx)}
                         onDragEnd={onDragEnd}
-                        className="relative cursor-grab active:cursor-grabbing bg-white border border-black/60 rounded-xl p-3 hover:bg-gray-50"
+                        className="relative cursor-grab active:cursor-grabbing bg-white p-3 rounded-2xl border-2 border-gray-200 text-sm transition-all duration-200 hover:border-[#286575] hover:bg-gray-50"
                         role="button"
                         tabIndex={0}
                       >
@@ -383,7 +383,7 @@ export default function Page() {
                             onDragEnd={onDragEnd}
                             className="cursor-grab active:cursor-grabbing"
                           >
-                            <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3">
+                            <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3 text-sm">
                               <button
                                 onClick={() => removeFromSlot(i)}
                                 className="leading-none text-gray-500 hover:text-gray-700"

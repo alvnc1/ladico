@@ -1,4 +1,4 @@
-// app/exercises/comp-4-3/intermedio/ej1/page.tsx
+// app/exercises/comp-4-2/intermedio/ej1/page.tsx
 "use client"
 
 import Link from "next/link"
@@ -13,37 +13,37 @@ import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
 import { useRouter } from "next/navigation"
 
-// ====== Configuración del ejercicio (4.3 Intermedio) ======
-type ThreatId = "A1" | "A2" | "A3" | "A4" | "A5"
-type MeasureId = "M1" | "M2" | "M3" | "M4" | "M5" | "M6" | "M7"
+// ====== Configuración del ejercicio (4.2 Intermedio) ======
+type MotiveId = "A1" | "A2" | "A3" | "A4" | "A5" | "A6" | "A7"
+type ActionId = "M1" | "M2" | "M3" | "M4" | "M5"
 
-// Amenazas (orden mezclado)
-const THREATS: { id: ThreatId; title: string }[] = [
-  { id: "A4", title: "Distracción y menor productividad por interrupciones digitales" },
-  { id: "A2", title: "Trastornos del sueño" },
-  { id: "A5", title: "Aislamiento social y disminución de interacciones" },
-  { id: "A1", title: "Fatiga visual y dolores de cabeza" },
-  { id: "A3", title: "Dolores musculares o posturales" },
+// Motivos (arrastrables en el pool a la IZQUIERDA; A6 y A7 son distractores)
+const THREATS: { id: MotiveId; title: string }[] = [
+  { id: "A1", title: "Garantizar que un atacante no pueda entrar aunque tenga tu contraseña." },
+  { id: "A2", title: "Evitar que aplicaciones con acceso innecesario recopilen datos adicionales." },
+  { id: "A3", title: "Evitar que otros accedan a tu información desde equipos públicos o compartidos." },
+  { id: "A4", title: "Crear y recordar contraseñas seguras sin anotarlas físicamente." },
+  { id: "A5", title: "Mantener el software protegido contra vulnerabilidades recientes." },
+  { id: "A6", title: "Ahorrar espacio en el dispositivo eliminando permisos y accesos innecesarios." }, // distractor
+  { id: "A7", title: "Evitar que la batería se consuma rápidamente al mantener el sistema actualizado." }, // distractor
 ]
 
-// Medidas (correctas + distractores)
+// Acciones (SLOTS a la DERECHA; esperan recibir un motivo)
 const MEASURES: {
-  id: MeasureId
+  id: ActionId
   text: string
-  correctFor: ThreatId[]
+  correctFor: MotiveId[]
   isMyth?: boolean
 }[] = [
-  { id: "M3", text: "Adaptar el mobiliario de trabajo para favorecer una posición ergonómica.", correctFor: ["A3"] },
-  { id: "M1", text: "Hacer pausas regulares para moverse y cambiar el foco de atención de la pantalla.", correctFor: ["A1"] },
-  { id: "M4", text: "Configurar periodos sin interrupciones en el dispositivo.", correctFor: ["A4"] },
-  { id: "M2", text: "Establecer rutinas de cierre de dispositivos en la noche.", correctFor: ["A2"] },
-  { id: "M5", text: "Bajar al mínimo el brillo de la pantalla durante todo el día.", correctFor: [], isMyth: true },
-  { id: "M7", text: "Mantener contacto constante en grupos de WhatsApp para no perder la conexión social.", correctFor: [], isMyth: true },
-  { id: "M6", text: "Incorporar encuentros presenciales en la rutina semanal.", correctFor: ["A5"] },
+  { id: "M1", text: "Usar un gestor de contraseñas para almacenar credenciales.", correctFor: ["A4"] },
+  { id: "M2", text: "Cerrar sesión en dispositivos compartidos después de usarlos.", correctFor: ["A3"] },
+  { id: "M3", text: "Actualizar el sistema operativo y las aplicaciones regularmente.", correctFor: ["A5"] },
+  { id: "M4", text: "Activar la verificación en dos pasos en todas las cuentas críticas.", correctFor: ["A1"] },
+  { id: "M5", text: "Revisar los permisos de aplicaciones móviles cada tres meses.", correctFor: ["A2"] },
 ]
 
 // ====== Helpers Drag & Drop ======
-const DRAG_TYPE = "application/ladico-measure-id"
+const DRAG_TYPE = "application/ladico-measure-id" // (se mantiene para no tocar el front)
 
 function draggableProps(id: string) {
   return {
@@ -55,23 +55,23 @@ function draggableProps(id: string) {
   }
 }
 
-function droppableProps(onDropId: (id: MeasureId) => void) {
+function droppableProps(onDropId: (id: MotiveId) => void) {
   return {
     onDragOver: (e: React.DragEvent) => {
       if (e.dataTransfer.types.includes(DRAG_TYPE)) e.preventDefault()
     },
     onDrop: (e: React.DragEvent) => {
       const raw = e.dataTransfer.getData(DRAG_TYPE)
-      if (raw) onDropId(raw as MeasureId)
+      if (raw) onDropId(raw as MotiveId)
     },
   }
 }
 
 // ====== Página ======
-const COMPETENCE = "4.3"
+const COMPETENCE = "4.2"
 const LEVEL = "intermedio"
 /** Clave de sesión por-usuario para evitar duplicados */
-const SESSION_PREFIX = "session:4.3:Intermedio";
+const SESSION_PREFIX = "session:4.2:Intermedio";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
 export default function Page() {
@@ -81,15 +81,15 @@ export default function Page() {
   // Sesión Firestore
   const [sessionId, setSessionId] = useState<string | null>(null)
 
-  // pool = medidas aún no asignadas
-  const [pool, setPool] = useState<MeasureId[]>(MEASURES.map((m) => m.id))
-  // asignaciones: amenaza -> UNA medida (máx 1)
-  const [assign, setAssign] = useState<Record<ThreatId, MeasureId | null>>({
-    A1: null,
-    A2: null,
-    A3: null,
-    A4: null,
-    A5: null,
+  // pool = MOTIVOS aún no asignados (arrastrables)
+  const [pool, setPool] = useState<MotiveId[]>(THREATS.map((m) => m.id))
+  // asignaciones: acción -> UN motivo (máx 1)
+  const [assign, setAssign] = useState<Record<ActionId, MotiveId | null>>({
+    M1: null,
+    M2: null,
+    M3: null,
+    M4: null,
+    M5: null,
   })
   const [done, setDone] = useState(false)
 
@@ -114,7 +114,6 @@ export default function Page() {
       typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
 
     if (cached) {
-      // ya existe para este usuario
       if (!sessionId) setSessionId(cached);
       return;
     }
@@ -140,45 +139,43 @@ export default function Page() {
     })();
   }, [user?.uid, sessionId]);
 
-  const measureMap = useMemo(() => Object.fromEntries(MEASURES.map((m) => [m.id, m])), [])
+  const actionMap = useMemo(() => Object.fromEntries(MEASURES.map((m) => [m.id, m])), [])
+  const motiveMap = useMemo(() => Object.fromEntries(THREATS.map((t) => [t.id, t])), [])
 
-  // Quita la medida de todos lados
-  const removeEverywhere = (id: MeasureId) => {
-    setPool((prev) => prev.filter((x) => x !== id))
+  // Quita el MOTIVO de todos lados
+  const removeEverywhere = (motiveId: MotiveId) => {
+    // quita del pool
+    setPool((prev) => prev.filter((x) => x !== motiveId))
+    // quita de cualquier acción asignada
     setAssign((prev) => {
-      const next: Record<ThreatId, MeasureId | null> = { ...prev }
-      ;(Object.keys(next) as ThreatId[]).forEach((k) => {
-        if (next[k] === id) next[k] = null
+      const next: Record<ActionId, MotiveId | null> = { ...prev }
+      ;(Object.keys(next) as ActionId[]).forEach((k) => {
+        if (next[k] === motiveId) next[k] = null
       })
       return next
     })
   }
 
-  // Volver al pool
-  const dropToPool = (id: MeasureId) => {
-    removeEverywhere(id)
-    setPool((prev) => (prev.includes(id) ? prev : [...prev, id]))
+  // Volver un MOTIVO al pool
+  const dropToPool = (motiveId: MotiveId) => {
+    removeEverywhere(motiveId)
+    setPool((prev) => (prev.includes(motiveId) ? prev : [...prev, motiveId]))
   }
 
-  // Asignar (solo 1 por amenaza)
-  const dropToThreat = (threat: ThreatId, id: MeasureId) => {
-    setAssign((prev) => {
-      const previous = prev[threat]
-      if (previous && previous !== id) {
-        setPool((p) => (p.includes(previous) ? p : [...p, previous]))
-      }
-      return prev
-    })
-    removeEverywhere(id)
-    setAssign((prev) => ({ ...prev, [threat]: id }))
+  // Asignar (solo 1 motivo por ACCIÓN)
+  const dropToAction = (action: ActionId, motiveId: MotiveId) => {
+    // El motivo deja cualquier otro lugar
+    removeEverywhere(motiveId)
+    // Asignar al slot (acción)
+    setAssign((prev) => ({ ...prev, [action]: motiveId }))
   }
 
-  // Quitar manualmente desde el chip
-  const unassign = (threat: ThreatId) => {
+  // Quitar manualmente desde el chip (desde una ACCIÓN)
+  const unassign = (action: ActionId) => {
     setAssign((prev) => {
-      const mid = prev[threat]
+      const mid = prev[action]
       if (!mid) return prev
-      const next = { ...prev, [threat]: null }
+      const next = { ...prev, [action]: null }
       setPool((p) => (mid && !p.includes(mid) ? [...p, mid] : p))
       return next
     })
@@ -187,15 +184,15 @@ export default function Page() {
   // ===== Calcular correctas (solo puntaje) =====
   const { correctCount } = useMemo(() => {
     let ok = 0
-    for (const th of Object.keys(assign) as ThreatId[]) {
-      const mid = assign[th]
-      if (!mid) continue
-      const m = measureMap[mid]
-      if (!m) continue
-      if (m.correctFor.includes(th)) ok += 1
+    for (const actionId of Object.keys(assign) as ActionId[]) {
+      const motiveId = assign[actionId]
+      if (!motiveId) continue
+      const action = actionMap[actionId]
+      if (!action) continue
+      if (action.correctFor.includes(motiveId)) ok += 1
     }
     return { correctCount: ok }
-  }, [assign, measureMap])
+  }, [assign, actionMap])
 
   // ===== Navegación =====
   const handleNext = async () => {
@@ -206,7 +203,7 @@ export default function Page() {
     try {
       const LS_KEY = user ? sessionKeyFor(user.uid) : null;
 
-      // Usa la sesión existente (estado o LS); NO vuelvas a crear si ya hay una
+      // Usa la sesión existente (estado o LS)
       let sid =
         sessionId ||
         (LS_KEY && typeof window !== "undefined"
@@ -228,7 +225,7 @@ export default function Page() {
           if (typeof window !== "undefined")
             localStorage.setItem(LS_KEY!, created.id);
         } finally {
-          ensuringRef.current = false;
+            ensuringRef.current = false;
         }
       }
 
@@ -239,7 +236,7 @@ export default function Page() {
       console.warn("No se pudo marcar P1 respondida:", e);
     }
 
-    router.push("/exercises/comp-4-3/intermedio/ej2")
+    router.push("/exercises/comp-4-2/intermedio/ej2")
   }
 
   const progressPct = 100 / 3 // Pregunta 1 de 3
@@ -259,7 +256,7 @@ export default function Page() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-3 py-1 rounded-full">
-                | 4.3 Protección de la salud y el bienestar - Nivel Intermedio
+                | 4.2 Protección de datos personales y privacidad - Nivel Intermedio
               </span>
             </div>
           </div>
@@ -292,77 +289,77 @@ export default function Page() {
           <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Prevención de riesgos para la salud y el bienestar en entornos digitales
+              Medidas básicas para proteger tus datos personales
             </h2>
 
             {/* Instrucción */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Arrastra la medida preventiva que corresponda a cada amenaza para reducir sus efectos.
+                  Empareja cada medida preventiva con su objetivo.
                 </p>
               </div>
             </div>
 
             {/* Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Pool de medidas — ahora con el mismo estilo de “chips” seleccionables */}
+              {/* Pool de MOTIVOS — izquierda */}
               <section
                 className="lg:col-span-1 bg-white rounded-2xl border border-gray-200 p-4"
                 {...droppableProps(dropToPool)}
               >
-                <h3 className="font-semibold text-gray-900 mb-3">Medidas preventivas</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">Objetivos</h3>
+
                 <ul className="space-y-2 min-h-[110px]">
-                  {pool.length === 0 && <li className="text-sm text-gray-400 italic">No quedan medidas.</li>}
+                  {pool.length === 0 && <li className="text-sm text-gray-400 italic">No quedan motivos.</li>}
                   {pool.map((id) => (
                     <li
                       key={id}
-                      className="p-2.5 rounded-2xl border-2 text-sm bg-white transition-all duration-200 cursor-grab active:cursor-grabbing border-gray-200 hover:border-[#286575] hover:bg-gray-50"
+                      className="relative cursor-grab active:cursor-grabbing bg-white p-3 rounded-2xl border-2 border-gray-200 text-sm transition-all duration-200 hover:border-[#286575] hover:bg-gray-50"
                       {...draggableProps(id)}
-                      title="Arrastra esta medida"
                     >
-                      {measureMap[id].text}
+                      {motiveMap[id].title}
                     </li>
                   ))}
                 </ul>
               </section>
 
-              {/* Amenazas: vacío dashed, asignado con el mismo color que selección múltiple */}
+              {/* ACCIONES con slots — derecha (vacío dashed, asignado AZUL) */}
               <section className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {THREATS.map((t) => {
-                  const mid = assign[t.id]
-                  const m = mid ? measureMap[mid] : null
-                  const assigned = Boolean(mid)
+                {MEASURES.map((a) => {
+                  const motiveId = assign[a.id]
+                  const motive = motiveId ? motiveMap[motiveId] : null
+                  const assigned = Boolean(motiveId)
 
                   return (
                     <div
-                      key={t.id}
+                      key={a.id}
                       className={
                         assigned
-                          ? "rounded-2xl border-2 p-3 bg-[#e6f2f3] border-[#286575] shadow-md"
-                          : "rounded-2xl border-2 border-dashed p-3 bg-white border-gray-200 hover:border-[#286575] transition-colors"
+                          ? "rounded-2xl border-2 p-3 bg-blue-50 border-blue-400"
+                          : "rounded-2xl border-2 border-dashed p-3 bg-white border-gray-200"
                       }
-                      {...droppableProps((mm) => dropToThreat(t.id, mm))}
+                      {...droppableProps((mId) => dropToAction(a.id, mId))}
                     >
-                      <h4 className="font-semibold text-gray-900 mb-2">{t.title}</h4>
+                      <h4 className="font-semibold text-gray-900 mb-2">{a.text}</h4>
                       <div className="min-h-[72px]">
-                        {!mid ? (
-                          <p className="text-xs text-gray-400 italic">Suelta aquí la medida.</p>
+                        {!motiveId ? (
+                          <p className="text-xs text-gray-400 italic">Suelta aquí el motivo.</p>
                         ) : (
                           <div
-                            className="p-2.5 rounded-2xl border-2 text-sm bg-white border-gray-200 flex items-start gap-2"
-                            {...draggableProps(mid)}
+                            className="p-2.5 rounded-xl border text-sm bg-white border-gray-200 flex items-start gap-2"
+                            {...draggableProps(motiveId)}
                           >
                             <button
                               type="button"
-                              onClick={() => unassign(t.id)}
+                              onClick={() => unassign(a.id)}
                               className="rounded-md hover:bg-gray-100 p-1"
-                              aria-label="Quitar medida"
-                              title="Quitar medida"
+                              aria-label="Quitar motivo"
+                              title="Quitar motivo"
                             >
                               <X className="w-4 h-4 text-gray-500" />
                             </button>
-                            <span className="text-gray-700">{m?.text}</span>
+                            <span className="text-gray-700">{motive?.title}</span>
                           </div>
                         )}
                       </div>

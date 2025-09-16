@@ -262,7 +262,7 @@ function GroupCard(props: {
   const { title, techOptions, techValue, onTechChange, objectiveValue, onObjectiveChange, chosenTechs } = props
 
   return (
-    <Card className="bg-white rounded-2xl border shadow-sm">
+    <Card className="bg-white rounded-2xl border-2 border-gray-200 hover:border-[#286575] transition-colors shadow-sm">
       <CardContent className="p-5 space-y-4">
         <div className="text-gray-900 font-semibold">{title}</div>
 
