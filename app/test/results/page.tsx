@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
@@ -9,9 +9,6 @@ import { Trophy, XCircle, CheckCircle, XCircle as XIcon, ChevronRight } from "lu
 import { finalizeSession } from "@/lib/testSession"
 import { useAuth } from "@/contexts/AuthContext"
 import { skillsInfo } from "@/components/data/digcompSkills"
-import type { Question } from "@/types"
-
-type AnswerValue = number | number[] | null
 
 function ResultsUniversalContent() {
   const sp = useSearchParams()
@@ -24,34 +21,26 @@ function ResultsUniversalContent() {
   const passed = sp.get("passed") === "true"
   const correct = Number.parseInt(sp.get("correct") || "0")
   const total = Number.parseInt(sp.get("total") || "3")
+  const competence = sp.get("competence") || "Competencia"
+  const level = (sp.get("level") || "Nivel").toLowerCase()
 
-  const competence = sp.get("competence") || "1.1"
-  const level = (sp.get("level") || "basico").toLowerCase()
+  // Resultados por pregunta (1 = correcta, 0 = incorrecta)
+  const q1 = sp.get("q1") === "1"
+  const q2 = sp.get("q2") === "1"
+  const q3 = sp.get("q3") === "1"
 
-  // Resultados por pregunta (si no llegan, intentaremos reconstruirlos desde sessionStorage)
-  const qp1 = sp.get("q1")
-  const qp2 = sp.get("q2")
-  const qp3 = sp.get("q3")
-
-  // Flags opcionales
+  // Opcionales extra
   const sid = sp.get("sid") || null
-  const passMin = Number.parseInt(sp.get("passMin") || "2")
-  const compPath = sp.get("compPath") || `comp-${competence.replace(/\./g, "-")}`
+  const passMin = Number.parseInt(sp.get("passMin") || "2") // mínimo para aprobar
+  const compPath = sp.get("compPath") || `comp-${competence.replace(".", "-")}`
   const retryBase = sp.get("retryBase") || `/exercises/${compPath}/${level}`
 
-  const isAlreadyCompleted = sp.get("completed") === "true"
-  const areaCompleted = sp.get("areaCompleted") === "1"
-
-  // Continuar a otra competencia (opcional: puedes pasarlo desde el test)
-  const nextCompetenceId = sp.get("nextCompetenceId") // ej: "1.2"
-  const nextCompetenceName = sp.get("nextCompetenceName") // ej: "Valorar datos…"
-
-  // Etiquetas opcionales
+  // Etiquetas opcionales por ejercicio (si no llegan, usa genéricas)
   const ex1Label = sp.get("ex1Label") || "Ejercicio 1"
   const ex2Label = sp.get("ex2Label") || "Ejercicio 2"
   const ex3Label = sp.get("ex3Label") || "Ejercicio 3"
 
-  // Métricas opcionales (orden relativo, etc.)
+  // Métricas opcionales (p. ej., orden relativo)
   const pairs = sp.get("pairs") // "12/15"
   const kscore = sp.get("kscore") // "80"
 
@@ -72,55 +61,6 @@ function ResultsUniversalContent() {
     })()
   }, [sid, competence, level, correct, total, passMin])
 
-  // --------- Intento de reconstruir q1/q2/q3 desde sessionStorage ---------
-  const [testQuestions, setTestQuestions] = useState<Question[]>([])
-  const [userAnswers, setUserAnswers] = useState<AnswerValue[]>([])
-  const [hasTriedLoad, setHasTriedLoad] = useState(false)
-
-  useEffect(() => {
-    if (hasTriedLoad) return
-    setHasTriedLoad(true)
-    try {
-      const raw = sessionStorage.getItem("testResultData")
-      if (!raw) return
-      const data = JSON.parse(raw)
-      const valid =
-        data?.questions?.length &&
-        data?.answers &&
-        data?.competence &&
-        String(data.competence) === String(competence) &&
-        data?.level &&
-        String(data.level).toLowerCase() === level
-
-      if (valid) {
-        setTestQuestions(data.questions as Question[])
-        setUserAnswers(data.answers as AnswerValue[])
-        // si no completaste el área, puedes limpiar de inmediato
-        if (sp.get("areaCompleted") !== "1") {
-          sessionStorage.removeItem("testResultData")
-        }
-      } else {
-        sessionStorage.removeItem("testResultData")
-      }
-    } catch (e) {
-      console.warn("No se pudo leer testResultData:", e)
-    }
-  }, [hasTriedLoad, competence, level, sp])
-
-  // Booleans finales de cada ejercicio:
-  const [q1, q2, q3] = useMemo(() => {
-    // Prioridad 1: usar flags de la URL si vinieron
-    if (qp1 !== null && qp2 !== null && qp3 !== null) {
-      return [qp1 === "1", qp2 === "1", qp3 === "1"]
-    }
-    // Prioridad 2: reconstruir con sessionStorage
-    if (testQuestions.length >= 3 && userAnswers.length >= 3) {
-      return [0, 1, 2].map(i => userAnswers[i] === (testQuestions[i] as any)?.correctAnswerIndex) as [boolean, boolean, boolean]
-    }
-    // Fallback: marcar como correctas las primeras "correct"
-    return [0, 1, 2].map(i => i < correct) as [boolean, boolean, boolean]
-  }, [qp1, qp2, qp3, testQuestions, userAnswers, correct])
-
   // --------- Acciones ----------
   const handleBack = () => router.push("/dashboard")
   const handleRetry = () => router.push(`${retryBase}/ej1`)
@@ -129,10 +69,6 @@ function ResultsUniversalContent() {
       level === "basico" ? "intermedio" :
       level === "intermedio" ? "avanzado" : "basico"
     router.push(`/exercises/${compPath}/${nextLevel}/ej1`)
-  }
-  const handleNextCompetence = () => {
-    if (!nextCompetenceId) return
-    router.push(`/test/${nextCompetenceId}?level=${level}`)
   }
 
   const compTitle = skillsInfo[competence]?.title || "Competencia"
@@ -161,25 +97,16 @@ function ResultsUniversalContent() {
               </div>
 
               <CardTitle className="text-2xl sm:text-3xl font-bold text-[#3a5d61]">
-                {areaCompleted
-                  ? "¡Nivel del área completado!"
-                  : isAlreadyCompleted
-                    ? "¡Competencia Completada!"
-                    : isTeacher
-                      ? "Evaluación Completada"
-                      : (passed ? "¡Felicitaciones!" : "Sigue practicando")}
+                {isTeacher ? "Evaluación Completada" : (passed ? "¡Felicitaciones!" : "Sigue practicando")}
               </CardTitle>
 
               <p className="mt-1 text-gray-600">
-                {areaCompleted
-                  ? "Has completado este nivel en todas las competencias del área."
-                  : isAlreadyCompleted
-                    ? "Ya has completado exitosamente esta competencia anteriormente."
-                    : isTeacher
-                      ? "Evaluación finalizada como profesor."
-                      : (passed
-                          ? "Has completado exitosamente esta competencia."
-                          : `Necesitas al menos ${passMin} respuestas correctas para avanzar.`)}
+                {isTeacher
+                  ? "Evaluación finalizada como profesor"
+                  : (passed
+                      ? "Has completado exitosamente esta competencia"
+                      : `Necesitas al menos ${passMin} respuestas correctas para avanzar`)
+                }
               </p>
 
               <div className="mt-2 text-xs text-gray-500">
@@ -294,21 +221,12 @@ function ResultsUniversalContent() {
                 </>
               ) : (
                 <>
-                  {passed && nextCompetenceId ? (
-                    <Button
-                      onClick={handleNextCompetence}
-                      className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base font-semibold"
-                    >
-                      Continuar con {nextCompetenceName || `Comp. ${nextCompetenceId}`}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleBack}
-                      className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
-                    >
-                      Volver al Dashboard
-                    </Button>
-                  )}
+                  <Button
+                    onClick={handleBack}
+                    className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
+                  >
+                    Volver al Dashboard
+                  </Button>
                   <Button
                     onClick={handleRetry}
                     variant="outline"
