@@ -228,7 +228,7 @@ export default function EjercicioComp13Avanzado1() {
 
     // Enviar también q1/q2/q3 y sid
     const sid = await ensureSid()
-    const params = new URLSearchParams({
+    const qs = new URLSearchParams({
       score: String(score),
       correct: String(correctas),
       total: String(total),
@@ -238,8 +238,20 @@ export default function EjercicioComp13Avanzado1() {
       q2: finalQ2 ? "1" : "0",
       q3: finalQ3 ? "1" : "0",
       sid: sid ?? "",
+      passMin: "2",                       // (opcional) mínimo para aprobar
+      compPath: "comp-1-3",               // <- necesario para rutas de “retry/next level”
+      retryBase: "/exercises/comp-1-3/avanzado", // (opcional) si quieres forzarlo
+      // Etiquetas opcionales
+      ex1Label: "Ejercicio 1: Análisis Estadístico en Excel",
+      ex2Label: "Ejercicio 2: Tabla Dinámica en Excel",
+      ex3Label: "Ejercicio 3: Gráfico Dinámico en Excel",
+      // Métricas opcionales (si aplica)
+      // pairs: `${correctPairs}/${totalPairs}`,
+      // kscore: String(percent),
     })
-    router.push(`/test/comp-1-3-advanced/results?${params.toString()}`)
+
+    // 2) Empuja SIEMPRE a la misma página:
+    router.push(`/test/results?${qs.toString()}`)
   }
 
   return (

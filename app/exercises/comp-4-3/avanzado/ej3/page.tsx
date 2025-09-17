@@ -207,11 +207,22 @@ export default function AdvancedEj3Page() {
       q2: String(q2),
       q3: String(q3),
       sub3: String(sub),
-      sid: sid || "",
+      sid: sid ?? "",
       refresh: String(Date.now()),
+      passMin: "2",                       // (opcional) mínimo para aprobar
+      compPath: "comp-4-3",               // <- necesario para rutas de “retry/next level”
+      retryBase: "/exercises/comp-4-3/avanzado", // (opcional) si quieres forzarlo
+      // Etiquetas opcionales
+      ex1Label: "Ejercicio 1: Protección y autocuidado en el uso de tecnologías",
+      ex2Label: "Ejercicio 2: Tecnologías para la inclusión social",
+      ex3Label: "Ejercicio 3: Aplica medidas integrales de protección ante acoso en línea",
+      // Métricas opcionales (si aplica)
+      // pairs: `${correctPairs}/${totalPairs}`,
+      // kscore: String(percent),
     })
 
-    router.push(`/test/comp-4-3-advanced/results?${qs.toString()}`)
+    // 2) Empuja SIEMPRE a la misma página:
+    router.push(`/test/results?${qs.toString()}`)
   }, [router, sessionId, user?.uid, isTeacher])
 
   return (

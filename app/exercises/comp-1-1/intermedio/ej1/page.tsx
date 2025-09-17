@@ -296,7 +296,7 @@ export default function LadicoP1InfoNeedsOpen() {
               <div className="flex items-center gap-4 mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    Escribir Consultas Precisas en Buscadores
+                    Consultas Precisas
                   </h2>
                 </div>
               </div>

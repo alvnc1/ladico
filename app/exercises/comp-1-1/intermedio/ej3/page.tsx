@@ -186,23 +186,32 @@ export default function P3OrdenarEstrategiaBusquedaCL() {
       console.warn("No se pudo marcar la P3 respondida:", e);
     }
 
-    // Redirige a resultados (puedes incluir percent si lo quieres mostrar allí)
+    // 1) Construye los params (usa los que ya tienes)
     const qs = new URLSearchParams({
       score: String(finalScore),
       passed: String(finalPassed),
       correct: String(finalTotalPts),
       total: String(TOTAL_QUESTIONS),
-      competence: COMPETENCE,
-      level: LEVEL_LOCAL,
+      competence: COMPETENCE,            // ej. "1.1" o "1.2"
+      level: LEVEL_LOCAL,                 // ej. "intermedio" | "avanzado" | "basico"
       q1: String(q1),
       q2: String(q2),
       q3: String(q3),
-      pairs: String(`${correctPairs}/${totalPairs}`),
-      kscore: String(percent),
       sid: sid ?? "",
-    });
+      passMin: "2",                       // (opcional) mínimo para aprobar
+      compPath: "comp-1-1",               // <- necesario para rutas de “retry/next level”
+      retryBase: "/exercises/comp-1-1/intermedio", // (opcional) si quieres forzarlo
+      // Etiquetas opcionales
+      ex1Label: "Ejercicio 1: Consultas precisas",
+      ex2Label: "Ejercicio 2: Búsqueda en Internet",
+      ex3Label: "Ejercicio 3: Ordenar estrategia de búsqueda",
+      // Métricas opcionales (si aplica)
+      // pairs: `${correctPairs}/${totalPairs}`,
+      // kscore: String(percent),
+    })
 
-    router.push(`/test/comp-1-1-intermedio/results?${qs.toString()}`);
+    // 2) Empuja SIEMPRE a la misma página:
+    router.push(`/test/results?${qs.toString()}`)
   };
 
   /* ================== UI ================== */

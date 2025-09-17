@@ -186,15 +186,26 @@ export default function LadicoP3EstrategiasBusquedaAvanzado() {
       passed: String(finalPassed),
       correct: String(finalTotalPts),
       total: String(TOTAL_QUESTIONS),
-      competence: COMPETENCE,
-      level: LEVEL_LOCAL,
+      competence: COMPETENCE,            // ej. "1.1" o "1.2"
+      level: LEVEL_LOCAL,                 // ej. "intermedio" | "avanzado" | "basico"
       q1: String(q1),
       q2: String(q2),
       q3: String(q3),
       sid: sid ?? "",
-    });
+      passMin: "2",                       // (opcional) mínimo para aprobar
+      compPath: "comp-1-1",               // <- necesario para rutas de “retry/next level”
+      retryBase: "/exercises/comp-1-1/avanzado", // (opcional) si quieres forzarlo
+      // Etiquetas opcionales
+      ex1Label: "Ejercicio 1: Alerta de Búsqueda",
+      ex2Label: "Ejercicio 2: Estrategia de búsqueda",
+      ex3Label: "Ejercicio 3: Selecciona tácticas de búsqueda",
+      // Métricas opcionales (si aplica)
+      // pairs: `${correctPairs}/${totalPairs}`,
+      // kscore: String(percent),
+    })
 
-    router.push(`/test/comp-1-1-avanzado/results?${qs.toString()}`);
+    // 2) Empuja SIEMPRE a la misma página:
+    router.push(`/test/results?${qs.toString()}`)
   };
 
   /* ----- UI ----- */

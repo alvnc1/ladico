@@ -166,8 +166,20 @@ export default function LuggageChartExerciseP3() {
       q2: String(q2),
       q3: String(q3),
       sid: sid ?? "",
-    });
-    router.push(`/test/comp-1-2-intermedio/results?${qs.toString()}`);
+      passMin: "2",                       // (opcional) mínimo para aprobar
+      compPath: "comp-1-2",               // <- necesario para rutas de “retry/next level”
+      retryBase: "/exercises/comp-1-2/intermedio", // (opcional) si quieres forzarlo
+      // Etiquetas opcionales
+      ex1Label: "Ejercicio 1: Clasificar sitios web",
+      ex2Label: "Ejercicio 2: Montaje Fotográfico",
+      ex3Label: "Ejercicio 3: Gráfico de equipaje por tipo",
+      // Métricas opcionales (si aplica)
+      // pairs: `${correctPairs}/${totalPairs}`,
+      // kscore: String(percent),
+    })
+
+    // 2) Empuja SIEMPRE a la misma página:
+    router.push(`/test/results?${qs.toString()}`)
   };
 
   return (
