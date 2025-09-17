@@ -28,57 +28,14 @@ const Q_ONE_BASED  = 3; // P3 (1-based) para levelProgress
 const SESSION_PREFIX = "session:1.1:Avanzado";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
-/* ========= Normalizador ========= */
-const norm = (s: string) =>
-  s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-
-/* ========= Chequeos de consulta ========= */
-// P3-A: plantillas de ventas (recursos prácticos)
-const A_GROUPS: string[][] = [
-  ["plantilla", "plantillas", "template", "modelo", "modelos"],
-  ["ventas", "venta", "comercial", "punto de venta", "pos"],
-  ["excel", "xlsx", "hoja de calculo", "google sheets", "sheet", "sheets"],
-];
-
-// P3-B: guía oficial de facturación electrónica (normativa, sitio gubernamental)
-const GOV_DOMAINS = [
-  // MX / CL / AR / CO / PE / BR (algunos ejemplos frecuentes)
-  "sat.gob.mx", "sii.cl", "afip.gob.ar", "argentina.gob.ar", "dian.gov.co",
-  "gob.pe", "sunat.gob.pe", "gov.br", "receita.economia.gov.br", "gob.mx",
-  "gob.cl", "gob.ar", "gob.co"
-];
-
-const hasSiteGov = (q: string) => {
-  const nq = norm(q);
-  if (!nq.includes("site:")) return false;
-  return GOV_DOMAINS.some(d => nq.includes(`site:${d}`) || nq.includes(`site:*${d}`) || nq.includes(d));
-};
-
-const hasPhraseFactura = (q: string) => {
-  const nq = norm(q);
-  return (
-    nq.includes('"facturacion electronica"') ||
-    nq.includes("facturacion electronica") ||
-    nq.includes("cfdi") || // MX
-    nq.includes("comprobante fiscal digital") ||
-    nq.includes("boleta electronica") || // CL
-    nq.includes("nota fiscal electronica") // BR
-  );
-};
-
-const matchesAtLeastNGroups = (q: string, groups: string[][], n: number) => {
-  const nq = norm(q);
-  let hits = 0;
-  for (const g of groups) {
-    if (g.some(token => nq.includes(norm(token)))) hits++;
-  }
-  return hits >= n;
-};
+type StratKey =
+  | "quotes"
+  | "site"
+  | "filetype"
+  | "date"
+  | "inSite"
+  | "findPDF"
+  | "regionLang";
 
 /* ========= Componente ========= */
 export default function LadicoP3EstrategiasBusquedaAvanzado() {
@@ -88,9 +45,9 @@ export default function LadicoP3EstrategiasBusquedaAvanzado() {
   const ensuringRef = useRef(false);
 
   /* ----- Progreso UI ----- */
-  const [currentIndex] = useState(2); // Ejercicio 1 (0-based)
-      const totalQuestions = 3;
-      const progress = ((currentIndex + 1) / totalQuestions) * 100;
+  const [currentIndex] = useState(2);
+  const totalQuestions = 3;
+  const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   /* ----- Sesión por-usuario ----- */
   useEffect(() => {
@@ -130,21 +87,17 @@ export default function LadicoP3EstrategiasBusquedaAvanzado() {
     })();
   }, [user?.uid, sessionId]);
 
-  /* ----- Estado del ejercicio ----- */
-  const [qA, setQA] = useState(""); // Consulta A
-  const [qB, setQB] = useState(""); // Consulta B
-
-  // Estrategias marcadas
-  type StratKey =
-    | "quotes"
-    | "site"
-    | "filetype"
-    | "date"
-    | "inSite"
-    | "findPDF"
-    | "regionLang";
-
-  const [strats, setStrats] = useState<Record<StratKey, boolean>>({
+  /* ----- Estado del ejercicio: tácticas por caso ----- */
+  const [stratsA, setStratsA] = useState<Record<StratKey, boolean>>({
+    quotes: false,
+    site: false,
+    filetype: false,
+    date: false,
+    inSite: false,
+    findPDF: false,
+    regionLang: false,
+  });
+  const [stratsB, setStratsB] = useState<Record<StratKey, boolean>>({
     quotes: false,
     site: false,
     filetype: false,
@@ -154,23 +107,28 @@ export default function LadicoP3EstrategiasBusquedaAvanzado() {
     regionLang: false,
   });
 
-  const toggle = (k: StratKey) => setStrats(s => ({ ...s, [k]: !s[k] }));
+  const toggleA = (k: StratKey) => setStratsA(s => ({ ...s, [k]: !s[k] }));
+  const toggleB = (k: StratKey) => setStratsB(s => ({ ...s, [k]: !s[k] }));
 
-  /* ----- Validación ----- */
-  const passA = useMemo(() => matchesAtLeastNGroups(qA, A_GROUPS, 2), [qA]);
-  const passB = useMemo(() => hasSiteGov(qB) && hasPhraseFactura(qB), [qB]);
-  const passStrats = useMemo(() => {
-    const total = Object.values(strats).filter(Boolean).length;
-    // Al menos 3 tácticas, y debe estar presente la de "site" para evidenciar restricción por fuente oficial
-    return total >= 3 && strats.site === true;
-  }, [strats]);
+  /* ----- Validación (solo tácticas) ----- */
+  // Caso A (plantillas de ventas): ≥2 de {quotes, filetype, regionLang}
+  const passA = useMemo(() => {
+    const core: StratKey[] = ["quotes", "filetype", "regionLang"];
+    const hits = core.filter(k => stratsA[k]).length;
+    return hits >= 2;
+  }, [stratsA]);
 
-  const passed = passA && passB && passStrats;
+  // Caso B (guía oficial): site obligatorio + ≥2 de {quotes, filetype, date, inSite}
+  const passB = useMemo(() => {
+    if (!stratsB.site) return false;
+    const core: StratKey[] = ["quotes", "filetype", "date", "inSite"];
+    const hits = core.filter(k => stratsB[k]).length;
+    return hits >= 2;
+  }, [stratsB]);
 
-  const [feedback, setFeedback] = useState<React.ReactNode>("");
+  const passed = passA && passB;
 
   const handleValidate = async () => {
-    // Puntaje
     const point: 0 | 1 = passed ? 1 : 0;
 
     // 1) Local
@@ -180,7 +138,7 @@ export default function LadicoP3EstrategiasBusquedaAvanzado() {
       console.warn("No se pudo guardar el punto local:", e);
     }
 
-    // Recalcular progreso del nivel después de guardar el punto de esta pregunta
+    // Recalcular progreso
     const prog = getProgress(COMPETENCE, LEVEL_LOCAL);
     const totalPts = levelPoints(prog);
     const levelPassedNow = isLevelPassed(prog);
@@ -221,22 +179,39 @@ export default function LadicoP3EstrategiasBusquedaAvanzado() {
       console.warn("No se pudo marcar P3 respondida:", e);
     }
     try { if (user) localStorage.removeItem(sessionKeyFor(user.uid)); } catch {}
+
     // 3) Ir a resultados
     const qs = new URLSearchParams({
-        score: String(finalScore),
-        passed: String(finalPassed),
-        correct: String(finalTotalPts),
-        total: String(TOTAL_QUESTIONS),
-        competence: COMPETENCE,
-        level: LEVEL_LOCAL,
-        q1: String(q1),
-        q2: String(q2),
-        q3: String(q3),
-        sid: sid ?? "",
+      score: String(finalScore),
+      passed: String(finalPassed),
+      correct: String(finalTotalPts),
+      total: String(TOTAL_QUESTIONS),
+      competence: COMPETENCE,
+      level: LEVEL_LOCAL,
+      q1: String(q1),
+      q2: String(q2),
+      q3: String(q3),
+      sid: sid ?? "",
     });
 
     router.push(`/test/comp-1-1-avanzado/results?${qs.toString()}`);
   };
+
+  /* ----- UI ----- */
+  const TacticRow = ({
+    value,
+    onToggle,
+    label,
+  }: {
+    value: boolean;
+    onToggle: () => void;
+    label: React.ReactNode;
+  }) => (
+    <label className="inline-flex items-center gap-2">
+      <input type="checkbox" checked={value} onChange={onToggle} />
+      <span>{label}</span>
+    </label>
+  );
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -255,7 +230,6 @@ export default function LadicoP3EstrategiasBusquedaAvanzado() {
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
                 | {COMPETENCE} {skillsInfo[COMPETENCE].title} - Nivel {LEVEL_FS}
               </span>
-
             </div>
           </div>
 
@@ -289,96 +263,52 @@ export default function LadicoP3EstrategiasBusquedaAvanzado() {
       {/* Tarjeta */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
-            <CardContent className="p-4 sm:p-6 lg:p-8">
+          <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Enunciado */}
             <div className="mb-8">
-                <div className="flex items-center gap-4 mb-6">
-                    <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        Crear búsquedas efectivas
-                    </h2>
-                    </div>
-                </div>
-                {/* Instrucciones */}
-                <div className="mb-6 sm:mb-8">
-                    <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
-                    <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
-                        Tienes <b>dos necesidades de información distintas</b> y debes adaptar tu estrategia:
-                    </p>
-                    <ul className="list-disc pl-5 text-gray-800 mt-2 space-y-1">
-                        <li>
-                        <b>A) Recursos prácticos</b>: localizar <i>plantillas</i> de <i>ventas</i> para PyMEs en
-                        <i> Excel/Sheets</i>, en español.
-                        </li>
-                        <li>
-                        <b>B) Normativa oficial</b>: encontrar una <i>guía de facturación electrónica</i> en un
-                        <i> sitio gubernamental</i> de un país latinoamericano que elijas (p. ej., SAT/AFIP/SII/DIAN/SUNAT).
-                        </li>
-                    </ul>
-                    <p className="text-sm text-gray-600 mt-2">
-                        Escribe <b>dos consultas</b> (una por cada necesidad) y marca las <b>tácticas</b> que aplicarías.
-                    </p>
-                    </div>
-                </div>
-            </div>
-              
-            {/* Consultas */}
-            <div className="grid gap-4">
-              <label className="text-sm text-gray-700 block">
-                <span className="font-medium">Consulta A (plantillas de ventas):</span>
-                <input
-                  value={qA}
-                  onChange={(e) => setQA(e.target.value)}
-                  className="mt-1 w-full sm:w-[720px] px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#286675]"
-                />
-              </label>
-
-              <label className="text-sm text-gray-700 block">
-                <span className="font-medium">Consulta B (guía oficial de facturación electrónica):</span>
-                <input
-                  value={qB}
-                  onChange={(e) => setQB(e.target.value)}
-                  className="mt-1 w-full sm:w-[720px] px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#286675]"
-                />
-              </label>
-            </div>
-
-            {/* Tácticas */}
-            <div className="mt-6">
-              <div className="text-sm font-medium mb-2">Tácticas que aplicarías</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                <label className="inline-flex items-center gap-2">
-                  <input type="checkbox" checked={strats.quotes} onChange={() => toggle("quotes")} />
-                  Usar comillas para frases exactas ("…")
-                </label>
-                <label className="inline-flex items-center gap-2">
-                  <input type="checkbox" checked={strats.site} onChange={() => toggle("site")} />
-                  Restringir por sitio (site:)
-                </label>
-                <label className="inline-flex items-center gap-2">
-                  <input type="checkbox" checked={strats.filetype} onChange={() => toggle("filetype")} />
-                  Restringir tipo de archivo (filetype:pdf)
-                </label>
-                <label className="inline-flex items-center gap-2">
-                  <input type="checkbox" checked={strats.date} onChange={() => toggle("date")} />
-                  Filtrar por fecha (último año)
-                </label>
-                <label className="inline-flex items-center gap-2">
-                  <input type="checkbox" checked={strats.inSite} onChange={() => toggle("inSite")} />
-                  Buscar dentro del sitio (buscador interno)
-                </label>
-                <label className="inline-flex items-center gap-2">
-                  <input type="checkbox" checked={strats.findPDF} onChange={() => toggle("findPDF")} />
-                  Abrir PDF y usar <b>Ctrl+F</b> para “requisitos/registro”
-                </label>
-                <label className="inline-flex items-center gap-2">
-                  <input type="checkbox" checked={strats.regionLang} onChange={() => toggle("regionLang")} />
-                  Ajustar región/idioma a Español (LatAm)
-                </label>
+              <div className="flex items-center gap-4 mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Selecciona tácticas de búsqueda</h2>
+              </div>
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
+                <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
+                  Tienes <b>dos necesidades de información</b>. Para cada una, <b>marca las tácticas</b> que aplicarías.
+                </p>
               </div>
             </div>
 
+            {/* Caso A */}
+            <div className="mb-6">
+              <div className="text-[15px] font-semibold text-gray-900">
+                A) Recursos prácticos: plantillas de ventas (Excel/Sheets), en español
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mt-2">
+                <TacticRow value={stratsA.quotes} onToggle={() => toggleA("quotes")} label={<>Usar comillas para frases exactas ("…")</>} />
+                <TacticRow value={stratsA.site} onToggle={() => toggleA("site")} label={<>Restringir por sitio (site:)</>} />
+                <TacticRow value={stratsA.filetype} onToggle={() => toggleA("filetype")} label={<>Restringir tipo de archivo (filetype:xlsx / filetype:pdf)</>} />
+                <TacticRow value={stratsA.date} onToggle={() => toggleA("date")} label={<>Filtrar por fecha (reciente)</>} />
+                <TacticRow value={stratsA.inSite} onToggle={() => toggleA("inSite")} label={<>Buscar dentro del sitio (buscador interno)</>} />
+                <TacticRow value={stratsA.findPDF} onToggle={() => toggleA("findPDF")} label={<>Abrir documentos y usar <b>Ctrl+F</b> para “plantilla/ventas”</>} />
+                <TacticRow value={stratsA.regionLang} onToggle={() => toggleA("regionLang")} label={<>Ajustar región/idioma a Español (LatAm)</>} />
+              </div>
+            </div>
 
+            {/* Caso B */}
+            <div className="mb-2">
+              <div className="text-[15px] font-semibold text-gray-900">
+                B) Normativa oficial: guía de facturación electrónica en un sitio gubernamental (LATAM)
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mt-2">
+                <TacticRow value={stratsB.quotes} onToggle={() => toggleB("quotes")} label={<>Usar comillas para “facturación electrónica”</>} />
+                <TacticRow value={stratsB.site} onToggle={() => toggleB("site")} label={<>Restringir por sitio (site:afip.gob.ar / sii.cl / dian.gov.co / sunat.gob.pe …)</>} />
+                <TacticRow value={stratsB.filetype} onToggle={() => toggleB("filetype")} label={<>Restringir tipo de archivo (filetype:pdf)</>} />
+                <TacticRow value={stratsB.date} onToggle={() => toggleB("date")} label={<>Filtrar por fecha (último año)</>} />
+                <TacticRow value={stratsB.inSite} onToggle={() => toggleB("inSite")} label={<>Buscar dentro del sitio (menú o buscador institucional)</>} />
+                <TacticRow value={stratsB.findPDF} onToggle={() => toggleB("findPDF")} label={<>Abrir guías y usar <b>Ctrl+F</b> para “requisitos/CFDI/boleta”</>} />
+                <TacticRow value={stratsB.regionLang} onToggle={() => toggleB("regionLang")} label={<>Ajustar región/idioma a Español (LatAm)</>} />
+              </div>
+            </div>
+
+            {/* Validar */}
             <div className="mt-6 flex justify-end">
               <Button
                 onClick={handleValidate}

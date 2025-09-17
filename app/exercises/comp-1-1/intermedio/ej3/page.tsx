@@ -16,10 +16,10 @@ import {
   getPoint,
 } from "@/lib/levelProgress";
 
-/* ================== Config Puntaje/Sesión (P3 · 1.1 Intermedio) ================== */
+/* ================== Config Puntaje/Sesión (P3 · 1.1 Intermedio · CHILE) ================== */
 const COMPETENCE = "1.1";
-const LEVEL_LOCAL = "intermedio";   // levelProgress
-const LEVEL_FS = "Intermedio";      // Firestore
+const LEVEL_LOCAL = "intermedio";
+const LEVEL_FS = "Intermedio";
 const TOTAL_QUESTIONS = 3;
 
 const Q_ZERO_BASED = 2;  // P3 (0-based) para Firestore
@@ -28,29 +28,20 @@ const Q_ONE_BASED  = 3;  // P3 (1-based) para levelProgress
 const SESSION_PREFIX = "session:1.1:Intermedio";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
-/* ================== Dataset del ejercicio ================== */
+/* ================== Pasos (CHILE · JUNAEB BAES 2025) ================== */
 type Step = { id: string; text: string };
-const CANONICAL_STEPS: Step[] = [
-  { id: "A", text: "Definir la necesidad y palabras clave (p. ej., “Beca Benito Juárez 2025 requisitos PDF”)." },
-  { id: "B", text: "Lanzar la búsqueda con operadores (site:gob.mx \"Beca Benito Juárez 2025\" requisitos filetype:pdf)." },
-  { id: "C", text: "Elegir un resultado del dominio oficial (gob.mx / becasbenitojuarez.gob.mx)." },
-  { id: "D", text: "Navegar dentro del sitio: Convocatorias → Media Superior → Requisitos." },
-  { id: "E", text: "Abrir o descargar la convocatoria/requisitos (PDF o página oficial)." },
-  { id: "F", text: "Verificar fecha/vigencia y si existe versión actualizada." },
-  { id: "G", text: "Guardar el enlace/archivo y anotar la consulta para tu lista de estrategias." },
-];
 
-const PRECEDENCE_RULES: Array<{ left: string; right: string; note: string }> = [
-  { left: "A", right: "B", note: "Primero aclarar la necesidad y luego buscar." },
-  { left: "B", right: "C", note: "Buscar antes de elegir un dominio oficial." },
-  { left: "C", right: "D", note: "Elegir el dominio antes de navegar su menú." },
-  { left: "D", right: "E", note: "Navegar a la sección correcta antes de abrir/descargar." },
-  { left: "C", right: "F", note: "Solo puedes verificar fecha/vigencia tras llegar a una fuente." },
-  { left: "E", right: "G", note: "Guardar/organizar debe realizarse al final." },
+const CANONICAL_STEPS: Step[] = [
+  { id: "A", text: "Definir la necesidad y palabras clave (p. ej., “Beca Alimentación JUNAEB 2025 requisitos PDF”)." },
+  { id: "B", text: "Lanzar la búsqueda con operadores (site:junaeb.cl \"Beca Alimentación 2025\" requisitos filetype:pdf)." },
+  { id: "C", text: "Elegir un resultado del dominio oficial (junaeb.cl)." },
+  { id: "D", text: "Navegar dentro del sitio: Becas → BAES/Alimentación → Requisitos/Convocatoria 2025." },
+  { id: "E", text: "Abrir o descargar la convocatoria/requisitos (PDF o página oficial)." },
+  { id: "F", text: "Verificar fecha/vigencia 2025 y si existe versión actualizada." },
 ];
 
 /* ================== Página ================== */
-export default function P3OrdenarEstrategiaBusqueda() {
+export default function P3OrdenarEstrategiaBusquedaCL() {
   const router = useRouter();
   const [currentIndex] = useState(Q_ZERO_BASED);
   const totalQuestions = 3;
@@ -92,19 +83,18 @@ export default function P3OrdenarEstrategiaBusqueda() {
         setSessionId(id);
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
       } catch (e) {
-        console.error("No se pudo asegurar la sesión (P3 1.1):", e);
+        console.error("No se pudo asegurar la sesión (P3 1.1 CL):", e);
       } finally {
         ensuringRef.current = false;
       }
     })();
   }, [user?.uid, sessionId]);
 
-  /* ============== Estado: lista reordenable + feedback ============== */
+  /* ============== Estado: lista reordenable ============== */
   const [steps, setSteps] = useState<Step[]>(() => {
     const shuffled = [...CANONICAL_STEPS].sort(() => Math.random() - 0.5);
     return shuffled;
   });
-  const [result, setResult] = useState<{ passed: boolean; checks: boolean[] } | null>(null);
 
   const move = (index: number, dir: -1 | 1) => {
     setSteps((prev) => {
@@ -114,7 +104,6 @@ export default function P3OrdenarEstrategiaBusqueda() {
       [next[index], next[j]] = [next[j], next[index]];
       return next;
     });
-    setResult(null);
   };
 
   const positions = useMemo(() => {
@@ -123,20 +112,39 @@ export default function P3OrdenarEstrategiaBusqueda() {
     return map;
   }, [steps]);
 
+  /* ============== Validación por orden relativo (todos los pares) ============== */
   const validateOrder = async () => {
-    // 1) Evaluar reglas
-    const checks = PRECEDENCE_RULES.map(({ left, right }) => positions[left] < positions[right]);
-    const gLastOk = positions["G"] > positions["F"]; // extra
-    const allChecks = [...checks, gLastOk];
+    // Mapa del orden canónico
+    const canonicalPos: Record<string, number> = {};
+    CANONICAL_STEPS.forEach((s, i) => (canonicalPos[s.id] = i));
 
-    const satisfied = allChecks.filter(Boolean).length;
-    const passedChecks = satisfied >= 5; // ✅ aprueba con ≥5/7
-    setResult({ passed: passedChecks, checks: allChecks });
+    const ids = CANONICAL_STEPS.map((s) => s.id);
+    let totalPairs = 0;
+    let correctPairs = 0;
 
-    // 2) Puntaje local
-    const point: 0 | 1 = passedChecks ? 1 : 0;
+    // Compara cada par (Kendall-like)
+    const pairChecks: Array<{ pair: string; ok: boolean }> = [];
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const a = ids[i], b = ids[j];
+        totalPairs++;
+        const canonAB = canonicalPos[a] < canonicalPos[b];
+        const userAB  = positions[a] < positions[b];
+        const ok = canonAB === userAB;
+        if (ok) correctPairs++;
+        pairChecks.push({ pair: `${a}→${b}`, ok });
+      }
+    }
+
+    const percent = Math.round((correctPairs / totalPairs) * 100);
+    const minCorrectPairs = Math.ceil(0.7 * totalPairs); // umbral 70%
+    const passedRelative = correctPairs >= minCorrectPairs;
+
+    // Puntaje local
+    const point: 0 | 1 = passedRelative ? 1 : 0;
     setPoint(COMPETENCE, LEVEL_LOCAL, Q_ONE_BASED, point);
 
+    // Resumen de progreso
     const prog = getProgress(COMPETENCE, LEVEL_LOCAL);
     const totalPts = levelPoints(prog);
     const levelPassed = isLevelPassed(prog);
@@ -145,13 +153,13 @@ export default function P3OrdenarEstrategiaBusqueda() {
     const q2 = getPoint(prog, 2);
     const q3 = getPoint(prog, 3);
 
-    // 3) Modo profesor (opcional)
+    // Modo profesor
     const isTeacher = userData?.role === "profesor";
     const finalTotalPts = isTeacher ? TOTAL_QUESTIONS : totalPts;
     const finalPassed   = isTeacher ? true : levelPassed;
     const finalScore    = isTeacher ? 100 : score;
 
-    // 4) Firestore
+    // Firestore
     let sid = sessionId;
     try {
       if (!sid && user) {
@@ -178,7 +186,7 @@ export default function P3OrdenarEstrategiaBusqueda() {
       console.warn("No se pudo marcar la P3 respondida:", e);
     }
 
-    // 5) Ir a resultados
+    // Redirige a resultados (puedes incluir percent si lo quieres mostrar allí)
     const qs = new URLSearchParams({
       score: String(finalScore),
       passed: String(finalPassed),
@@ -189,6 +197,8 @@ export default function P3OrdenarEstrategiaBusqueda() {
       q1: String(q1),
       q2: String(q2),
       q3: String(q3),
+      pairs: String(`${correctPairs}/${totalPairs}`),
+      kscore: String(percent),
       sid: sid ?? "",
     });
 
@@ -254,9 +264,7 @@ export default function P3OrdenarEstrategiaBusqueda() {
               </div>
               <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
-                  Debes encontrar los <b>requisitos 2025</b> de la <b>Beca Benito Juárez</b> desde una fuente
-                  oficial en México. <b>Organiza tu estrategia</b> ordenando los pasos de búsqueda, acceso
-                  y navegación.
+                  Debes encontrar los <b>requisitos 2025</b> de la <b>Beca de Alimentación para la Educación Superior (BAES)</b> en <b>Chile</b>, desde la fuente oficial. <b>Organiza tu estrategia</b> ordenando los pasos de búsqueda, acceso y navegación.
                 </p>
               </div>
             </div>

@@ -106,7 +106,7 @@ function getCompetenceName(code: string): string {
 }
 
 function getCompetenceDimension(code: string): string {
-  if (code.startsWith("1.")) return "Búsqueda y gestión de información"
+  if (code.startsWith("1.")) return "Búsqueda y gestión de información y datos"
   if (code.startsWith("2.")) return "Comunicación y colaboración"
   if (code.startsWith("3.")) return "Creación de contenidos digitales"
   if (code.startsWith("4.")) return "Seguridad"

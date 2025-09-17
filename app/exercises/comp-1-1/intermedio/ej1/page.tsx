@@ -45,16 +45,16 @@ type CaseSpec = {
   minGroups: number;    // cuántas señales deben cumplirse
 };
 
-/* ================== Casos (LATAM) ================== */
+/* ================== Casos (CHILE) ================== */
 const CASES: CaseSpec[] = [
   {
-    id: "pasaporte-mx",
-    title: "Renovación de pasaporte (México)",
+    id: "pasaporte-cl",
+    title: "Renovación de pasaporte (Chile)",
     need:
-      "Debes renovar tu pasaporte mexicano en 2025. Quieres los requisitos actualizados desde el sitio oficial y, si es posible, en un PDF descargable.",
+      "Debes renovar tu pasaporte chileno en 2025. Quieres los requisitos actualizados desde el sitio oficial y, si es posible, en un PDF descargable.",
     groups: [
-      { label: "Concepto (pasaporte/renovar)", alts: ["pasaporte", "renovar"], required: true },
-      { label: "Dominio oficial (site:gob.mx)", alts: ["site:gob.mx"], required: true },
+      { label: "Concepto (pasaporte/renovar)", alts: ["pasaporte", "renovar", "renovacion", "renovación"], required: true },
+      { label: "Dominio oficial (site:registrocivil.cl o site:gob.cl)", alts: ["site:registrocivil.cl", "site:gob.cl"], required: true },
       { label: "Palabra clave (requisitos)", alts: ["requisitos", "requisito"] },
       { label: "Formato PDF (filetype:pdf)", alts: ["filetype:pdf", "pdf"] },
       { label: "Año (2025)", alts: ["2025"] },
@@ -76,20 +76,21 @@ const CASES: CaseSpec[] = [
     minGroups: 3, // concepto + site + (alguna extra)
   },
   {
-    id: "ipc-ar",
-    title: "IPC de Argentina (INDEC)",
+    id: "ipc-cl",
+    title: "IPC de Chile (INE)",
     need:
-      "Necesitas el informe mensual oficial del IPC (inflación) 2024 de Argentina, preferentemente en PDF, desde el organismo estadístico nacional.",
+      "Necesitas el boletín mensual oficial del IPC 2024 de Chile, preferentemente en PDF, desde el Instituto Nacional de Estadísticas.",
     groups: [
       { label: "Concepto (IPC/Inflación)", alts: ["ipc", "inflacion", "inflación"], required: true },
-      { label: "Dominio oficial (site:indec.gob.ar)", alts: ["site:indec.gob.ar"], required: true },
+      { label: "Dominio oficial (site:ine.gob.cl)", alts: ["site:ine.gob.cl"], required: true },
       { label: "Formato PDF (filetype:pdf)", alts: ["filetype:pdf", "pdf"] },
       { label: "Año (2024)", alts: ["2024"] },
-      { label: "Palabra clave (informe/comunicado)", alts: ["informe", "comunicado", "press", "prensa"] },
+      { label: "Palabra clave (boletín/informe/comunicado)", alts: ["boletin", "boletín", "informe", "comunicado", "prensa"] },
     ],
     minGroups: 3, // concepto + site + (alguna extra)
   },
 ];
+
 
 /* ===== Evalúa una consulta contra las señales del caso ===== */
 function evaluateQuery(rawQuery: string, spec: CaseSpec) {

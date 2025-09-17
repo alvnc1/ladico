@@ -205,8 +205,7 @@ export default function P2EstrategiaBusquedaAvanzado() {
                     <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
                         Necesitas ubicar <b>convocatorias oficiales 2024</b> de
                         <b> subsidios/fondos para microempresas en Chile</b>, con acceso a
-                        <b> bases y requisitos (PDF)</b>. Selecciona las <b>tácticas de búsqueda</b> más adecuadas
-                        (puedes marcar varias).
+                        <b> bases y requisitos (PDF)</b>. Selecciona todas las <b>tácticas de búsqueda</b> más adecuadas.
                     </p>
                     </div>
                 </div>
