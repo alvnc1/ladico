@@ -6,8 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { ensureSession, markAnswered } from "@/lib/testSession";
-import { skillsInfo } from "@/components/data/digcompSkills";
-import { useRouter } from "next/navigation";
 import {
   getProgress,
   setPoint,
@@ -15,41 +13,101 @@ import {
   isLevelPassed,
   getPoint,
 } from "@/lib/levelProgress";
+import { skillsInfo } from "@/components/data/digcompSkills";
+import { useRouter } from "next/navigation";
 
-/* ================== Config Puntaje/Sesión (P3 · 1.1 Intermedio · CHILE) ================== */
+// ⬇️ IMPORTA EL JSON (tsconfig: "resolveJsonModule": true)
+import RAW from "./orden/steps.json";
+
+/* ================== Config Puntaje/Sesión (P3 · 1.1 Intermedio) ================== */
 const COMPETENCE = "1.1";
 const LEVEL_LOCAL = "intermedio";
 const LEVEL_FS = "Intermedio";
 const TOTAL_QUESTIONS = 3;
 
 const Q_ZERO_BASED = 2;  // P3 (0-based) para Firestore
+const Q_ONE_BASEED_FALLBACK = 3;
 const Q_ONE_BASED  = 3;  // P3 (1-based) para levelProgress
 
 const SESSION_PREFIX = "session:1.1:Intermedio";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
-/* ================== Pasos (CHILE · JUNAEB BAES 2025) ================== */
-type Step = { id: string; text: string };
+/* ================== Tipos JSON ================== */
+type Scenario = {
+  id: string;
+  title: string;
+  description: string;
+  criteria?: {
+    countries?: string[];
+    genders?: string[];
+    ageGroups?: string[];
+  };
+  passRule?: {
+    minPctCorrectPairs?: number; // 0..1
+  };
+  steps: { id: string; text: string }[];
+};
 
-const CANONICAL_STEPS: Step[] = [
-  { id: "A", text: "Definir la necesidad y palabras clave (p. ej., “Beca Alimentación JUNAEB 2025 requisitos PDF”)." },
-  { id: "B", text: "Lanzar la búsqueda con operadores (site:junaeb.cl \"Beca Alimentación 2025\" requisitos filetype:pdf)." },
-  { id: "C", text: "Elegir un resultado del dominio oficial (junaeb.cl)." },
-  { id: "D", text: "Navegar dentro del sitio: Becas → BAES/Alimentación → Requisitos/Convocatoria 2025." },
-  { id: "E", text: "Abrir o descargar la convocatoria/requisitos (PDF o página oficial)." },
-  { id: "F", text: "Verificar fecha/vigencia 2025 y si existe versión actualizada." },
-];
+type StepsJson = { schemaVersion: number; scenarios: Scenario[] };
+
+/* ================== Perfil utils ================== */
+const normalizeGender = (
+  g?: string | null
+): "Masculino" | "Femenino" | "Prefiero no decir" | "any" => {
+  const v = (g || "").toLowerCase();
+  if (v.includes("masc")) return "Masculino";
+  if (v.includes("fem")) return "Femenino";
+  if (v.includes("prefiero") || v.includes("no decir")) return "Prefiero no decir";
+  return "any";
+};
+
+const getAgeGroup = (
+  age?: number | null
+): "teen" | "young_adult" | "adult" | "older_adult" | "any" => {
+  if (typeof age !== "number" || Number.isNaN(age)) return "any";
+  if (age >= 13 && age <= 17) return "teen";
+  if (age >= 18 && age <= 24) return "young_adult";
+  if (age >= 25 && age <= 54) return "adult";
+  if (age >= 55) return "older_adult";
+  return "any";
+};
+
+function matchList(pref: string[] | undefined, val: string) {
+  const list = (pref ?? ["any"]).map((x) => x.toLowerCase());
+  return list.includes("any") || list.includes(val.toLowerCase());
+}
+
+function pickScenarioForProfile(all: Scenario[], country: string, gender: string, ageGroup: string): Scenario {
+  return (
+    all.find((s) => {
+      const c = s.criteria || {};
+      return matchList(c.countries, country) &&
+             matchList(c.genders, gender) &&
+             matchList(c.ageGroups, ageGroup);
+    }) ||
+    all.find((s) => {
+      const c = s.criteria || {};
+      return matchList(c.countries, country);
+    }) ||
+    all[0]
+  );
+}
 
 /* ================== Página ================== */
-export default function P3OrdenarEstrategiaBusquedaCL() {
+export default function P3OrdenarEstrategiaBusquedaFromJson() {
   const router = useRouter();
   const [currentIndex] = useState(Q_ZERO_BASED);
-  const totalQuestions = 3;
+  const totalQuestions = TOTAL_QUESTIONS;
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   const { user, userData } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const ensuringRef = useRef(false);
+
+  // Perfil
+  const country = (userData?.country as string) || "global";
+  const gender = normalizeGender(userData?.gender);
+  const ageGroup = getAgeGroup(userData?.age);
 
   // Cargar sesión cacheada
   useEffect(() => {
@@ -83,18 +141,26 @@ export default function P3OrdenarEstrategiaBusquedaCL() {
         setSessionId(id);
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
       } catch (e) {
-        console.error("No se pudo asegurar la sesión (P3 1.1 CL):", e);
+        console.error("No se pudo asegurar la sesión (P3 1.1):", e);
       } finally {
         ensuringRef.current = false;
       }
     })();
   }, [user?.uid, sessionId]);
 
+  /* ============== Escenario por perfil desde JSON ============== */
+  const SCENARIO: Scenario = useMemo(() => {
+    const data = RAW as StepsJson;
+    return pickScenarioForProfile(data.scenarios || [], country, gender, ageGroup);
+  }, [country, gender, ageGroup]);
+
+  const CANONICAL_STEPS = SCENARIO.steps;
+  const MIN_PCT = SCENARIO.passRule?.minPctCorrectPairs ?? 0.7;
+
   /* ============== Estado: lista reordenable ============== */
-  const [steps, setSteps] = useState<Step[]>(() => {
-    const shuffled = [...CANONICAL_STEPS].sort(() => Math.random() - 0.5);
-    return shuffled;
-  });
+  const [steps, setSteps] = useState(() =>
+    [...CANONICAL_STEPS].sort(() => Math.random() - 0.5)
+  );
 
   const move = (index: number, dir: -1 | 1) => {
     setSteps((prev) => {
@@ -112,9 +178,8 @@ export default function P3OrdenarEstrategiaBusquedaCL() {
     return map;
   }, [steps]);
 
-  /* ============== Validación por orden relativo (todos los pares) ============== */
+  /* ============== Validación por pares (Kendall-like) ============== */
   const validateOrder = async () => {
-    // Mapa del orden canónico
     const canonicalPos: Record<string, number> = {};
     CANONICAL_STEPS.forEach((s, i) => (canonicalPos[s.id] = i));
 
@@ -122,23 +187,18 @@ export default function P3OrdenarEstrategiaBusquedaCL() {
     let totalPairs = 0;
     let correctPairs = 0;
 
-    // Compara cada par (Kendall-like)
-    const pairChecks: Array<{ pair: string; ok: boolean }> = [];
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
         const a = ids[i], b = ids[j];
         totalPairs++;
         const canonAB = canonicalPos[a] < canonicalPos[b];
         const userAB  = positions[a] < positions[b];
-        const ok = canonAB === userAB;
-        if (ok) correctPairs++;
-        pairChecks.push({ pair: `${a}→${b}`, ok });
+        if (canonAB === userAB) correctPairs++;
       }
     }
 
-    const percent = Math.round((correctPairs / totalPairs) * 100);
-    const minCorrectPairs = Math.ceil(0.7 * totalPairs); // umbral 70%
-    const passedRelative = correctPairs >= minCorrectPairs;
+    const pct = correctPairs / totalPairs;
+    const passedRelative = pct >= MIN_PCT;
 
     // Puntaje local
     const point: 0 | 1 = passedRelative ? 1 : 0;
@@ -186,32 +246,27 @@ export default function P3OrdenarEstrategiaBusquedaCL() {
       console.warn("No se pudo marcar la P3 respondida:", e);
     }
 
-    // 1) Construye los params (usa los que ya tienes)
+    // → Resultados universales
     const qs = new URLSearchParams({
       score: String(finalScore),
       passed: String(finalPassed),
       correct: String(finalTotalPts),
       total: String(TOTAL_QUESTIONS),
-      competence: COMPETENCE,            // ej. "1.1" o "1.2"
-      level: LEVEL_LOCAL,                 // ej. "intermedio" | "avanzado" | "basico"
+      competence: COMPETENCE,
+      level: LEVEL_LOCAL,
       q1: String(q1),
       q2: String(q2),
       q3: String(q3),
       sid: sid ?? "",
-      passMin: "2",                       // (opcional) mínimo para aprobar
-      compPath: "comp-1-1",               // <- necesario para rutas de “retry/next level”
-      retryBase: "/exercises/comp-1-1/intermedio", // (opcional) si quieres forzarlo
-      // Etiquetas opcionales
+      passMin: "2",
+      compPath: "comp-1-1",
+      retryBase: "/exercises/comp-1-1/intermedio",
       ex1Label: "Ejercicio 1: Consultas precisas",
       ex2Label: "Ejercicio 2: Búsqueda en Internet",
-      ex3Label: "Ejercicio 3: Ordenar estrategia de búsqueda",
-      // Métricas opcionales (si aplica)
-      // pairs: `${correctPairs}/${totalPairs}`,
-      // kscore: String(percent),
-    })
+      ex3Label: "Ejercicio 3: Ordenar estrategia de búsqueda"
+    });
 
-    // 2) Empuja SIEMPRE a la misma página:
-    router.push(`/test/results?${qs.toString()}`)
+    router.push(`/test/results?${qs.toString()}`);
   };
 
   /* ================== UI ================== */
@@ -264,7 +319,7 @@ export default function P3OrdenarEstrategiaBusquedaCL() {
 
       {/* Tarjeta */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
-        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
+        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duración-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Instrucciones */}
             <div className="mb-8">
@@ -273,7 +328,7 @@ export default function P3OrdenarEstrategiaBusquedaCL() {
               </div>
               <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
-                  Debes encontrar los <b>requisitos 2025</b> de la <b>Beca de Alimentación para la Educación Superior (BAES)</b> en <b>Chile</b>, desde la fuente oficial. <b>Organiza tu estrategia</b> ordenando los pasos de búsqueda, acceso y navegación.
+                  {SCENARIO.description}
                 </p>
               </div>
             </div>

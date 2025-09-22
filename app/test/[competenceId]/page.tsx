@@ -172,17 +172,17 @@ export default function TestPage() {
       const isTeacher = userData?.role === "profesor"
       let correctAnswers = 0
 
+      // 1) Corregir y actualizar estadísticas por pregunta
       await Promise.all(
         finalSession.questions.map(async (question, index) => {
           const userAnswer = finalSession.answers[index]
           const wasCorrect = userAnswer === question.correctAnswerIndex
-
           if (!isTeacher && wasCorrect) correctAnswers++
           await updateQuestionStats(question.id, !!wasCorrect)
         })
       )
 
-      // Profesor: aprobado aunque el puntaje real sea 0/1/2/3
+      // Profesor aprueba siempre a efectos de flujo (no puntaje real)
       if (isTeacher) {
         correctAnswers = finalSession.questions.length
       }
@@ -190,22 +190,23 @@ export default function TestPage() {
       const score = Math.round((correctAnswers / finalSession.questions.length) * 100)
       const passed = isTeacher ? true : correctAnswers >= 2
 
-      const completedSession = {
+      const completedSession: TestSession = {
         ...finalSession,
         endTime: new Date(),
         score,
         passed,
       }
 
+      // 2) Persistir sesión
       await completeSession(completedSession, correctAnswers)
 
-      // 🔔 PING AL DASHBOARD: forzar recomputo de hooks/anillo
+      // 3) Forzar recomputo local de progreso/anillos
       try {
         localStorage.setItem("ladico:progress:version", String(Date.now()))
         window.dispatchEvent(new Event("ladico:refresh"))
       } catch {}
 
-      // Profesor: NO modificar progreso/puntos
+      // 4) Guardar resultados y progreso SOLO alumno
       if (!isTeacher) {
         try {
           await saveUserResult(completedSession)
@@ -213,16 +214,16 @@ export default function TestPage() {
           console.error("Error saving user result:", error)
         }
 
+        // Si aprobó, marcar competencia como completada y sumar Ladicos
         if (passed && userData && db) {
           try {
             const updatedCompetences = [...userData.completedCompetences]
             if (!updatedCompetences.includes(finalSession.competence)) {
               updatedCompetences.push(finalSession.competence)
             }
-
             await updateDoc(doc(db, "users", user!.uid), {
               completedCompetences: updatedCompetences,
-              LadicoScore: userData.LadicoScore + (passed ? 10 : 0),
+              LadicoScore: userData.LadicoScore + 10,
             })
           } catch (error) {
             console.error("Error updating user progress:", error)
@@ -230,17 +231,17 @@ export default function TestPage() {
         }
       }
 
+      // 5) Chequear si el ÁREA (todas sus competencias) quedó completa en este nivel
       const comps = await loadCompetences()
       const currentComp = comps.find((c) => c.id === (params.competenceId as string))
       const dimension = currentComp?.dimension || ""
-      const levelParam = (searchParams.get("level") || "basico").toLowerCase()
+      const levelParam = (searchParams.get("level") || "basico").toLowerCase() // "basico" | "intermedio" | "avanzado"
 
       const areaCompetences = comps
         .filter((c) => c.dimension === dimension)
         .sort((a, b) => a.code.localeCompare(b.code))
 
-      let allCompletedAtLevel = true
-      let nextCompetenceId: string | null = null
+      let missingAfter = 0
       for (const c of areaCompetences) {
         const qs = await getDocs(
           query(
@@ -251,15 +252,32 @@ export default function TestPage() {
           )
         )
         const hasPerfect = qs.docs.some((d) => (d.data() as any)?.score === 100)
-        if (!hasPerfect) {
-          allCompletedAtLevel = false
-          if (!nextCompetenceId) nextCompetenceId = c.id
+        if (!hasPerfect) missingAfter++
+      }
+      const justCompletedArea = missingAfter === 0
+
+      // 6) Subir currentLevel cuando se complete el ÁREA en ese nivel (solo alumnos)
+      if (!isTeacher && justCompletedArea && db && user?.uid) {
+        const completedLevel = levelParam as "basico" | "intermedio" | "avanzado"
+        // permite estado inicial "-" y evita bajar nivel
+        const rank = { "-": 0, basico: 1, intermedio: 2, avanzado: 3 } as const
+        const current =
+          ((userData?.currentLevel ?? "-") as "-" | "basico" | "intermedio" | "avanzado")
+
+        if (rank[completedLevel] > rank[current]) {
+          try {
+            await updateDoc(doc(db, "users", user.uid), { currentLevel: completedLevel })
+            try {
+              localStorage.setItem("ladico:progress:version", String(Date.now()))
+              window.dispatchEvent(new Event("ladico:refresh"))
+            } catch {}
+          } catch (e) {
+            console.warn("No se pudo actualizar currentLevel:", e)
+          }
         }
       }
 
-      const wasAreaAlreadyComplete = allCompletedAtLevel && nextCompetenceId !== params.competenceId
-      const justCompletedArea = allCompletedAtLevel && !wasAreaAlreadyComplete
-
+      // 7) Pasar payload mínimo a la pantalla de resultados
       const testResultData = {
         questions: finalSession.questions,
         answers: finalSession.answers,
@@ -270,16 +288,15 @@ export default function TestPage() {
         totalQuestions: finalSession.questions.length,
         isAreaComplete: justCompletedArea,
       }
-
       try {
         sessionStorage.setItem("testResultData", JSON.stringify(testResultData))
-      } catch (error) {
-        console.error("Error guardando datos en sessionStorage:", error)
-      }
+      } catch {}
 
+      // 8) Redirección a resultados
       const areaCompletedParam = justCompletedArea ? "1" : "0"
       router.push(
-        `/test/${params.competenceId}/results?score=${score}&passed=${passed}&correct=${correctAnswers}&areaCompleted=${areaCompletedParam}&level=${levelParam}`
+        `/test/${params.competenceId}/results?score=${score}&passed=${passed}` +
+        `&correct=${correctAnswers}&areaCompleted=${areaCompletedParam}&level=${levelParam}`
       )
     } catch (error) {
       console.error("Error saving test results:", error)
@@ -290,6 +307,7 @@ export default function TestPage() {
       })
     }
   }
+
 
   if (loading) {
     return (

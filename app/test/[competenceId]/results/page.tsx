@@ -418,13 +418,14 @@ function TestResultsContent() {
                   variant="outline"
                   className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
                 >
-                  Ir al Dashboard
+                  Volver al Dashboard
                 </Button>
                 <Button
                   onClick={handleContinueEvaluation}
                   className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
                 >
-                  Continuar al siguiente nivel
+                  <ChevronRight className="w-4 h-4 mr-2" />
+                  Siguiente nivel
                 </Button>
               </>
             ) : (
@@ -432,7 +433,7 @@ function TestResultsContent() {
               <>
                 {areaCompleted && (
                   <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
-                    Ir al Dashboard
+                    Volver al Dashboard
                   </Button>
                 )}
 

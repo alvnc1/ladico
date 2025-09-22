@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "cl-baes-2025",
+      "title": "Chile — BAES/JUNAEB 2025 (requisitos oficiales)",
+      "description": "Ordena los pasos para encontrar los requisitos 2025 de la Beca de Alimentación para la Educación Superior (BAES) directamente en el sitio oficial de JUNAEB.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["young_adult", "adult", "any"]
+      },
+      "passRule": {
+        "minPctCorrectPairs": 0.7
+      },
+      "steps": [
+        { "id": "A", "text": "Definir la necesidad y palabras clave (p. ej., “Beca Alimentación JUNAEB 2025 requisitos PDF”)." },
+        { "id": "B", "text": "Lanzar la búsqueda con operadores (site:junaeb.cl \"Beca Alimentación 2025\" requisitos filetype:pdf)." },
+        { "id": "C", "text": "Elegir un resultado del dominio oficial (junaeb.cl)." },
+        { "id": "D", "text": "Navegar dentro del sitio: Becas → BAES/Alimentación → Requisitos/Convocatoria 2025." },
+        { "id": "E", "text": "Abrir o descargar la convocatoria/requisitos (PDF o página oficial)." },
+        { "id": "F", "text": "Verificar fecha/vigencia 2025 y si existe versión actualizada." }
+      ]
+    },
+    {
+      "id": "co-icetex-2025",
+      "title": "Colombia — ICETEX 2025 (créditos/convocatorias oficiales)",
+      "description": "Ordena los pasos para localizar una convocatoria 2025 de ICETEX (créditos/becas), priorizando requisitos y documentos oficiales.",
+      "criteria": {
+        "countries": ["Colombia"],
+        "genders": ["any"],
+        "ageGroups": ["young_adult", "adult", "any"]
+      },
+      "passRule": {
+        "minPctCorrectPairs": 0.7
+      },
+      "steps": [
+        { "id": "A", "text": "Definir la necesidad y palabras clave (p. ej., “ICETEX convocatoria 2025 requisitos PDF”)." },
+        { "id": "B", "text": "Ejecutar búsqueda con operadores (site:icetex.gov.co convocatoria 2025 requisitos filetype:pdf)." },
+        { "id": "C", "text": "Elegir resultados del dominio oficial icetex.gov.co." },
+        { "id": "D", "text": "Navegar: Convocatorias/Créditos → Programa específico → Requisitos/Documentos." },
+        { "id": "E", "text": "Abrir/descargar el documento oficial (PDF/página) con requisitos." },
+        { "id": "F", "text": "Confirmar vigencia 2025, fechas de postulación y actualizaciones." }
+      ]
+    },
+    {
+      "id": "global-generico",
+      "title": "Búsqueda oficial — Convocatoria/Beneficio (genérico)",
+      "description": "Ordena los pasos para encontrar requisitos vigentes de una convocatoria en un sitio oficial.",
+      "criteria": {
+        "countries": ["any"],
+        "genders": ["any"],
+        "ageGroups": ["any"]
+      },
+      "passRule": {
+        "minPctCorrectPairs": 0.7
+      },
+      "steps": [
+        { "id": "A", "text": "Definir la necesidad y palabras clave con el año vigente." },
+        { "id": "B", "text": "Usar operadores para restringir al dominio oficial (site:) y tipo de archivo (filetype:pdf)." },
+        { "id": "C", "text": "Abrir un resultado del dominio institucional." },
+        { "id": "D", "text": "Navegar a la sección de convocatorias/requisitos del programa." },
+        { "id": "E", "text": "Abrir/descargar la convocatoria o los requisitos en formato oficial." },
+        { "id": "F", "text": "Verificar vigencia/fechas y si existe una versión actualizada." }
+      ]
+    }
+  ]
+}

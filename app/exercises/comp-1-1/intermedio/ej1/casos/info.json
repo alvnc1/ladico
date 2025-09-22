@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "pasaporte-cl",
+      "title": "Renovación de pasaporte (Chile)",
+      "need": "Debes renovar tu pasaporte chileno en 2025. Quieres los requisitos actualizados desde el sitio oficial y, si es posible, en un PDF descargable.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["young_adult", "adult", "older_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (pasaporte/renovar)", "alts": ["pasaporte", "renovar", "renovacion", "renovación"], "required": true },
+        { "label": "Dominio oficial (site:registrocivil.cl o site:gob.cl)", "alts": ["site:registrocivil.cl", "site:gob.cl"], "required": true },
+        { "label": "Palabra clave (requisitos)", "alts": ["requisitos", "requisito"] },
+        { "label": "Formato PDF (filetype:pdf)", "alts": ["filetype:pdf", "pdf"] },
+        { "label": "Año (2025)", "alts": ["2025"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "beca-junaeb",
+      "title": "Beca de Alimentación (Chile, JUNAEB)",
+      "need": "Buscas los requisitos 2025 de la Beca de Alimentación para la Educación Superior (JUNAEB), directamente en la web oficial.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["teen", "young_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (beca/BAES)", "alts": ["beca", "baes"], "required": true },
+        { "label": "Alcance (alimentacion)", "alts": ["alimentacion", "alimentación"] },
+        { "label": "Dominio oficial (site:junaeb.cl)", "alts": ["site:junaeb.cl"], "required": true },
+        { "label": "Año (2025)", "alts": ["2025"] },
+        { "label": "Palabra clave (requisitos)", "alts": ["requisitos", "requisito"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "ipc-cl",
+      "title": "IPC de Chile (INE)",
+      "need": "Necesitas el boletín mensual oficial del IPC 2024 de Chile, preferentemente en PDF, desde el Instituto Nacional de Estadísticas.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["any"]
+      },
+      "groups": [
+        { "label": "Concepto (IPC/Inflación)", "alts": ["ipc", "inflacion", "inflación"], "required": true },
+        { "label": "Dominio oficial (site:ine.gob.cl)", "alts": ["site:ine.gob.cl"], "required": true },
+        { "label": "Formato PDF (filetype:pdf)", "alts": ["filetype:pdf", "pdf"] },
+        { "label": "Año (2024)", "alts": ["2024"] },
+        { "label": "Palabra clave (boletín/informe/comunicado)", "alts": ["boletin", "boletín", "informe", "comunicado", "prensa"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "pasaporte-co",
+      "title": "Trámite/renovación de pasaporte (Colombia)",
+      "need": "Debes tramitar o renovar tu pasaporte colombiano en 2025. Quieres requisitos y pasos oficiales, idealmente con documento descargable.",
+      "criteria": {
+        "countries": ["Colombia"],
+        "genders": ["any"],
+        "ageGroups": ["young_adult", "adult", "older_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (pasaporte/renovar)", "alts": ["pasaporte", "renovar", "renovacion", "renovación"], "required": true },
+        { "label": "Dominio oficial (site:cancilleria.gov.co / site:migracioncolombia.gov.co)", "alts": ["site:cancilleria.gov.co", "site:migracioncolombia.gov.co"], "required": true },
+        { "label": "Palabra clave (requisitos)", "alts": ["requisitos", "requisito"] },
+        { "label": "Formato PDF (filetype:pdf)", "alts": ["filetype:pdf", "pdf"] },
+        { "label": "Año (2025)", "alts": ["2025"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "ipc-co-dane",
+      "title": "IPC de Colombia (DANE)",
+      "need": "Necesitas el boletín o informe oficial del IPC 2024/2025 de Colombia desde el DANE, preferiblemente en PDF.",
+      "criteria": {
+        "countries": ["Colombia"],
+        "genders": ["any"],
+        "ageGroups": ["any"]
+      },
+      "groups": [
+        { "label": "Concepto (IPC/Inflación)", "alts": ["ipc", "inflacion", "inflación"], "required": true },
+        { "label": "Dominio oficial (site:dane.gov.co)", "alts": ["site:dane.gov.co"], "required": true },
+        { "label": "Formato PDF (filetype:pdf)", "alts": ["filetype:pdf", "pdf"] },
+        { "label": "Año (2024/2025)", "alts": ["2024", "2025"] },
+        { "label": "Palabra clave (boletín/informe)", "alts": ["boletin", "boletín", "informe", "comunicado", "prensa"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "icetex-becas",
+      "title": "Becas / créditos educativos (ICETEX)",
+      "need": "Buscas información 2025 sobre becas o créditos educativos del ICETEX, requisitos y convocatoria oficial.",
+      "criteria": {
+        "countries": ["Colombia"],
+        "genders": ["any"],
+        "ageGroups": ["teen", "young_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (beca / crédito ICETEX)", "alts": ["beca", "crédito", "icetex"], "required": true },
+        { "label": "Dominio oficial (site:icetex.gov.co)", "alts": ["site:icetex.gov.co"], "required": true },
+        { "label": "Año (2025)", "alts": ["2025"] },
+        { "label": "Palabra clave (convocatoria/requisitos)", "alts": ["convocatoria", "requisitos", "requisito"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "sisben-consulta",
+      "title": "Consulta clasificación Sisbén",
+      "need": "Quieres consultar tu grupo o puntaje del Sisbén en el portal oficial.",
+      "criteria": {
+        "countries": ["Colombia"],
+        "genders": ["any"],
+        "ageGroups": ["any"]
+      },
+      "groups": [
+        { "label": "Concepto (Sisbén consulta / puntaje / grupo)", "alts": ["sisben", "sisbén", "consulta", "puntaje", "grupo"], "required": true },
+        { "label": "Dominio oficial (site:sisben.gov.co)", "alts": ["site:sisben.gov.co"], "required": true },
+        { "label": "Palabra clave (clasificación / categoría)", "alts": ["clasificacion", "clasificación", "categoria", "categoría"] }
+      ],
+      "minGroups": 2
+    },
+    {
+      "id": "adres-certificado",
+      "title": "Certificado de afiliación en salud (ADRES/EPS)",
+      "need": "Necesitas descargar o validar el certificado de afiliación en salud (BDUA/ADRES) para confirmar tu EPS.",
+      "criteria": {
+        "countries": ["Colombia"],
+        "genders": ["any"],
+        "ageGroups": ["young_adult", "adult", "older_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (certificado afiliación / EPS / BDUA)", "alts": ["certificado", "afiliacion", "afiliación", "eps", "bdua"], "required": true },
+        { "label": "Dominio oficial (site:adres.gov.co / site:gov.co)", "alts": ["site:adres.gov.co", "site:gov.co"], "required": true },
+        { "label": "Palabra clave (consultar / descargar)", "alts": ["consultar", "descargar"] }
+      ],
+      "minGroups": 2
+    },
+    {
+      "id": "licencia-runt",
+      "title": "Renovación de licencia de conducción (RUNT/MinTransporte)",
+      "need": "Quieres los requisitos y el proceso oficial para renovar la licencia de conducción en Colombia.",
+      "criteria": {
+        "countries": ["Colombia"],
+        "genders": ["any"],
+        "ageGroups": ["young_adult", "adult", "older_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (licencia / renovar / conducción)", "alts": ["licencia", "renovar", "conduccion", "conducción"], "required": true },
+        { "label": "Dominio oficial (site:runt.com.co / site:mintransporte.gov.co)", "alts": ["site:runt.com.co", "site:mintransporte.gov.co"], "required": true },
+        { "label": "Palabra clave (requisitos / trámite)", "alts": ["requisitos", "requisito", "tramite", "trámite"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "hoja-vida-dafp",
+      "title": "Formato Único de Hoja de Vida (Función Pública)",
+      "need": "Necesitas el Formato Único de Hoja de Vida oficial en PDF para postular a empleos públicos en Colombia.",
+      "criteria": {
+        "countries": ["Colombia"],
+        "genders": ["any"],
+        "ageGroups": ["young_adult", "adult", "older_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (Formato Único Hoja de Vida)", "alts": ["formato unico", "formato único", "hoja de vida"], "required": true },
+        { "label": "Dominio oficial (site:funcionpublica.gov.co / site:dafp.gov.co)", "alts": ["site:funcionpublica.gov.co", "site:dafp.gov.co"], "required": true },
+        { "label": "Formato PDF (filetype:pdf)", "alts": ["filetype:pdf", "pdf"] }
+      ],
+      "minGroups": 3
+    }
+  ]
+}

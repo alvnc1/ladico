@@ -16,84 +16,98 @@ import {
 import { skillsInfo } from "@/components/data/digcompSkills";
 import { useRouter } from "next/navigation";
 
+// ⬇️ IMPORTA JSON (tsconfig: "resolveJsonModule": true)
+import RAW from "./claims/items.json";
 
 /* ========= Config puntaje/sesión (P3) ========= */
 const COMPETENCE = "1.2";
-const LEVEL_LOCAL = "avanzado";   // para levelProgress
-const LEVEL_FS = "Avanzado";      // para Firestore
+const LEVEL_LOCAL = "avanzado";   // levelProgress
+const LEVEL_FS = "Avanzado";      // Firestore
 const TOTAL_QUESTIONS = 3;
 
-const Q_ZERO_BASED = 2;  // P3 (0-based) para Firestore
-const Q_ONE_BASED  = 3;  // P3 (1-based) para levelProgress
+const Q_ZERO_BASED = 2;  // P3 (0-based) Firestore
+const Q_ONE_BASED  = 3;  // P3 (1-based) levelProgress
 
 const SESSION_PREFIX = "session:1.2:Avanzado";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
-/* ========= Dataset (LATAM · Amazonía) =========
-   — Lo que sigue es la “evidencia” a partir de la cual el/la estudiante debe
-     valorar si cada afirmación está SUSTENTADA o NO SUSTENTADA. */
-const META = {
-  fuente: "INPE · PRODES (demo)",
-  ambito: "Amazonía Legal (Brasil)",
-  metodologia: "Teledetección con protocolo público",
-  periodo: "2022 - 2024",
+/* ========= Tipos del JSON ========= */
+type Scenario = {
+  id: string;
+  title: string;
+  description: string;
+  criteria?: {
+    countries?: string[];
+    genders?: string[];
+    ageGroups?: string[];
+  };
+  passRule?: {
+    minCorrect?: number;
+  };
 };
 
-const SERIE = [
-  { anio: 2022, deforestacion_km2: 11.5 },
-  { anio: 2023, deforestacion_km2: 10.0 },
-  { anio: 2024, deforestacion_km2: 8.0 }, // preliminar
-];
+type TableColumn = { key: string; label: string };
+type TableRow = Record<string, string | number>;
+type Claim = { id: number; text: string; supported: boolean; hint?: string };
 
-/* ========= Afirmaciones (verdad según este dataset) =========
-   Marca true si la frase está SUSTENTADA por lo entregado (tabla/metadatos),
-   o false si NO SUSTENTADA. */
-type Claim = {
-  id: number;
-  text: string;
-  supported: boolean;
-  hint?: string;
+type Item = {
+  scenario: Scenario;
+  meta: { fuente: string; ambito: string; metodologia: string; periodo: string };
+  table: { columns: TableColumn[]; rows: TableRow[] };
+  claims: Claim[];
 };
 
-const CLAIMS: Claim[] = [
-  {
-    id: 1,
-    text:
-      "Según la serie, 2024 registra una caída aproximada del 20% respecto de 2023.",
-    supported: true,
-    hint: "8.0 vs 10.0 ≈ -20%.",
-  },
-  {
-    id: 2,
-    text:
-      "El ámbito del dataset es Amazonía Legal (Brasil).",
-    supported: true,
-  },
-  {
-    id: 3,
-    text:
-      "Los datos provienen de un hilo en redes sociales que no publica metodología.",
-    supported: false,
-    hint: "La ficha indica INPE/PRODES y metodología pública.",
-  },
-  {
-    id: 4,
-    text:
-      "La serie incluye resultados para 2019 y 2020.",
-    supported: false,
-    hint: "Solo 2022–2024.",
-  },
-  {
-    id: 5,
-    text:
-      "Se declara un margen de error de ±5% en la ficha metodológica.",
-    supported: false,
-    hint: "No aparece ese margen en la ficha provista.",
-  },
-];
+type ItemsJson = { schemaVersion: number; items: Item[] };
+
+/* ========= Utils de perfil ========= */
+const normalizeGender = (
+  g?: string | null
+): "Masculino" | "Femenino" | "Prefiero no decir" | "any" => {
+  const v = (g || "").toLowerCase();
+  if (v.includes("masc")) return "Masculino";
+  if (v.includes("fem")) return "Femenino";
+  if (v.includes("prefiero") || v.includes("no decir")) return "Prefiero no decir";
+  return "any";
+};
+
+const getAgeGroup = (
+  age?: number | null
+): "teen" | "young_adult" | "adult" | "older_adult" | "any" => {
+  if (typeof age !== "number" || Number.isNaN(age)) return "any";
+  if (age >= 13 && age <= 17) return "teen";
+  if (age >= 18 && age <= 24) return "young_adult";
+  if (age >= 25 && age <= 54) return "adult";
+  if (age >= 55) return "older_adult";
+  return "any";
+};
+
+function matchList(pref: string[] | undefined, val: string) {
+  const list = (pref ?? ["any"]).map((x) => x.toLowerCase());
+  return list.includes("any") || list.includes(val.toLowerCase());
+}
+
+function pickScenarioForProfile(all: Item[], country: string, gender: string, ageGroup: string): Item {
+  // 1) match completo por país, género y edad
+  const exact =
+    all.find((it) => {
+      const c = it.scenario.criteria || {};
+      return matchList(c.countries, country) &&
+             matchList(c.genders, gender) &&
+             matchList(c.ageGroups, ageGroup);
+    }) ||
+    // 2) fallback por país
+    all.find((it) => {
+      const c = it.scenario.criteria || {};
+      return matchList(c.countries, country);
+    }) ||
+    // 3) primero
+    all[0];
+
+  return exact;
+}
 
 /* ============================ Página ============================ */
-export default function ValorarAfirmacionesVsDatos() {
+export default function P3ClaimsFromJson() {
   const [currentIndex] = useState(Q_ZERO_BASED);
   const progress = useMemo(
     () => ((currentIndex + 1) / TOTAL_QUESTIONS) * 100,
@@ -105,25 +119,24 @@ export default function ValorarAfirmacionesVsDatos() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const ensuringRef = useRef(false);
 
-  // Carga sesión cacheada
+  // Perfil usuario
+  const country = (userData?.country as string) || "global";
+  const gender = normalizeGender(userData?.gender);
+  const ageGroup = getAgeGroup(userData?.age);
+
+  // Sesión cacheada
   useEffect(() => {
     if (!user || typeof window === "undefined") return;
     const sid = localStorage.getItem(sessionKeyFor(user.uid));
     if (sid) setSessionId(sid);
   }, [user?.uid]);
 
-  // Asegura/crea sesión por-usuario
+  // Asegura/crea sesión
   useEffect(() => {
-    if (!user) {
-      setSessionId(null);
-      return;
-    }
+    if (!user) { setSessionId(null); return; }
     const LS_KEY = sessionKeyFor(user.uid);
     const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-    if (cached) {
-      if (!sessionId) setSessionId(cached);
-      return;
-    }
+    if (cached) { if (!sessionId) setSessionId(cached); return; }
     if (ensuringRef.current) return;
     ensuringRef.current = true;
 
@@ -145,36 +158,35 @@ export default function ValorarAfirmacionesVsDatos() {
     })();
   }, [user?.uid, sessionId]);
 
+  // Cargar escenario por perfil
+  const { scenario, meta, table, claims } = useMemo(() => {
+    const data = RAW as ItemsJson;
+    const chosen = pickScenarioForProfile(data.items || [], country, gender, ageGroup);
+    return chosen;
+  }, [country, gender, ageGroup]);
+
+  const minCorrect = scenario.passRule?.minCorrect ?? 3;
+
   /* ======= Estado de respuestas ======= */
   // selected[id] = true → SUSTENTADA, false → NO SUSTENTADA, undefined → sin responder
   const [selected, setSelected] = useState<Record<number, boolean | undefined>>({});
-  const [feedback, setFeedback] = useState<React.ReactNode>("");
 
   const setChoice = (id: number, val: boolean) =>
     setSelected((s) => ({ ...s, [id]: val }));
 
-  const answeredCount = useMemo(
-    () => Object.values(selected).filter((v) => v !== undefined).length,
-    [selected]
-  );
-
   const correctCount = useMemo(() => {
-    return CLAIMS.reduce((acc, c) => {
-      const v = selected[c.id];
-      return acc + (v === c.supported ? 1 : 0);
-    }, 0);
-  }, [selected]);
+    return claims.reduce((acc, c) => acc + ((selected[c.id] === c.supported) ? 1 : 0), 0);
+  }, [selected, claims]);
 
   /* ======= Validar + Puntaje ======= */
   const handleValidate = async () => {
-    // ¿Aprueba esta P3?
-    const questionPassed = correctCount >= 3; // ✅ aprueba con 3/5 correctas
+    const questionPassed = correctCount >= minCorrect;
     const point: 0 | 1 = questionPassed ? 1 : 0;
 
     // 1) Progreso local
     setPoint(COMPETENCE, LEVEL_LOCAL, Q_ONE_BASED, point);
 
-    // Recalcular progreso del nivel después de guardar el punto de esta pregunta
+    // Recalcular progreso del nivel
     const prog = getProgress(COMPETENCE, LEVEL_LOCAL);
     const totalPts = levelPoints(prog);
     const levelPassedNow = isLevelPassed(prog);
@@ -183,7 +195,6 @@ export default function ValorarAfirmacionesVsDatos() {
     const q2 = getPoint(prog, 2);
     const q3 = getPoint(prog, 3);
 
-    // Modo profesor (opcional)
     const isTeacher = (userData as any)?.role === "profesor";
     const finalTotalPts = isTeacher ? TOTAL_QUESTIONS : totalPts;
     const finalPassed   = isTeacher ? true : levelPassedNow;
@@ -192,60 +203,50 @@ export default function ValorarAfirmacionesVsDatos() {
     // 2) Firestore
     let sid = sessionId;
     try {
-        if (!sid && user) {
+      if (!sid && user) {
         const LS_KEY = sessionKeyFor(user.uid);
-        const cached =
-            typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-        if (cached) {
-            sid = cached;
-            setSessionId(cached);
-        } else {
-            const { id } = await ensureSession({
+        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+        if (cached) { sid = cached; setSessionId(cached); }
+        else {
+          const { id } = await ensureSession({
             userId: user.uid,
             competence: COMPETENCE,
             level: LEVEL_FS,
             totalQuestions: TOTAL_QUESTIONS,
-            });
-            sid = id;
-            setSessionId(id);
-            if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+          });
+          sid = id; setSessionId(id);
+          if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
         }
-        }
-        if (sid) await markAnswered(sid, Q_ZERO_BASED, questionPassed);
+      }
+      if (sid) await markAnswered(sid, Q_ZERO_BASED, questionPassed);
     } catch (e) {
-        console.warn("No se pudo marcar P3 respondida:", e);
+      console.warn("No se pudo marcar P3 respondida:", e);
     }
 
     try { if (user) localStorage.removeItem(sessionKeyFor(user.uid)); } catch {}
 
-    // 3) Ir a resultados
+    // 3) Resultados universales
     const qs = new URLSearchParams({
-        score: String(finalScore),
-        passed: String(finalPassed),
-        correct: String(finalTotalPts),
-        total: String(TOTAL_QUESTIONS),
-        competence: COMPETENCE,
-        level: LEVEL_LOCAL,
-        q1: String(q1),
-        q2: String(q2),
-        q3: String(q3),
-        sid: sid ?? "",
-        passMin: "2",                       // (opcional) mínimo para aprobar
-        compPath: "comp-1-2",               // <- necesario para rutas de “retry/next level”
-        retryBase: "/exercises/comp-1-2/avanzado", // (opcional) si quieres forzarlo
-        // Etiquetas opcionales
-        ex1Label: "Ejercicio 1: Verificación de artículos en la web",
-        ex2Label: "Ejercicio 2: Valorar la fiabilidad de fuentes",
-        ex3Label: "Ejercicio 3: ¿Qué afirmaciones están sustentadas por los datos?",
-        // Métricas opcionales (si aplica)
-        // pairs: `${correctPairs}/${totalPairs}`,
-        // kscore: String(percent),
-      })
+      score: String(finalScore),
+      passed: String(finalPassed),
+      correct: String(finalTotalPts),
+      total: String(TOTAL_QUESTIONS),
+      competence: COMPETENCE,
+      level: LEVEL_LOCAL,
+      q1: String(q1),
+      q2: String(q2),
+      q3: String(q3),
+      sid: sid ?? "",
+      passMin: "2",
+      compPath: "comp-1-2",
+      retryBase: "/exercises/comp-1-2/avanzado",
+      ex1Label: "Ejercicio 1: Verificación de artículos en la web",
+      ex2Label: "Ejercicio 2: Valorar la fiabilidad de fuentes",
+      ex3Label: "Ejercicio 3: ¿Qué afirmaciones están sustentadas por los datos?"
+    });
 
-      // 2) Empuja SIEMPRE a la misma página:
-      router.push(`/test/results?${qs.toString()}`)
-    };
-
+    router.push(`/test/results?${qs.toString()}`);
+  };
 
   /* ============================ UI ============================ */
   return (
@@ -298,44 +299,50 @@ export default function ValorarAfirmacionesVsDatos() {
       {/* Tarjeta */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
-            <CardContent className="p-4 sm:p-6 lg:p-8">
+          <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Enunciado */}
-            {/* Instrucciones */}
             <div className="mb-8">
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-4 mb-3">
                 <h2 className="text-2xl font-bold text-gray-900">¿Qué afirmaciones están sustentadas por los datos?</h2>
               </div>
               <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
-                  Usa la tabla y la ficha técnica para decidir si cada afirmación está{" "}
-                <b>SUSTENTADA</b> o <b>NO SUSTENTADA</b>.
+                  {scenario.description} Marca <b>Sustentada</b> si la afirmación se sostiene con la
+                  ficha y la tabla; o <b>No sustentada</b> si no se puede sostener con la evidencia.
                 </p>
               </div>
             </div>
-            {/* Ficha técnica + Tabla */}
+
+            {/* Ficha técnica + Tabla dinámica */}
             <div className="grid gap-4">
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 <div className="text-sm text-gray-700">
-                  <div><b>Fuente:</b> {META.fuente}</div>
-                  <div><b>Ámbito:</b> {META.ambito}</div>
-                  <div><b>Metodología:</b> {META.metodologia}</div>
-                  <div><b>Periodo:</b> {META.periodo}</div>
+                  <div><b>Fuente:</b> {meta.fuente}</div>
+                  <div><b>Ámbito:</b> {meta.ambito}</div>
+                  <div><b>Metodología:</b> {meta.metodologia}</div>
+                  <div><b>Periodo:</b> {meta.periodo}</div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200  rounded-xl p-4 overflow-x-auto">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-gray-500 border-b">
-                      <th className="py-2">Año</th>
-                      <th className="py-2">Deforestación (km²)</th>
+                      {table.columns.map((c) => (
+                        <th key={c.key} className="py-2">{c.label}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {SERIE.map((r) => (
-                      <tr key={r.anio} className="border-b last:border-0">
-                        <td className="py-2">{r.anio}</td>
-                        <td className="py-2">{r.deforestacion_km2.toFixed(1)}</td>
+                    {table.rows.map((r, i) => (
+                      <tr key={i} className="border-b last:border-0">
+                        {table.columns.map((c) => (
+                          <td key={c.key} className="py-2">
+                            {typeof r[c.key] === "number"
+                              ? (r[c.key] as number).toString()
+                              : (r[c.key] as string)}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
@@ -343,9 +350,9 @@ export default function ValorarAfirmacionesVsDatos() {
               </div>
             </div>
 
-            {/* Afirmaciones (toggle Sustentada / No sustentada) */}
+            {/* Afirmaciones */}
             <div className="mt-6 space-y-3">
-              {CLAIMS.map((c) => {
+              {claims.map((c) => {
                 const val = selected[c.id];
                 return (
                   <div key={c.id} className="border border-gray-200 rounded-xl p-3 bg-gray-50">

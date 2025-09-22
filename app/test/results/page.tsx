@@ -203,36 +203,32 @@ function ResultsUniversalContent() {
             {/* Acciones */}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               {isTeacher ? (
-                <>
-                  <Button
-                    onClick={handleBack}
-                    variant="outline"
-                    className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
-                  >
-                    Volver al Dashboard
-                  </Button>
-                  <Button
-                    onClick={handleNextLevel}
-                    className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base font-semibold"
-                  >
-                    <ChevronRight className="w-4 h-4 mr-2" />
-                    Siguiente nivel
-                  </Button>
-                </>
-              ) : (
+                  <>
+                    <Button
+                      onClick={handleBack}
+                      variant="outline"
+                      className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
+                    >
+                      Volver al Dashboard
+                    </Button>
+
+                    {level !== "avanzado" && (
+                      <Button
+                        onClick={handleNextLevel}
+                        className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base font-semibold"
+                      >
+                        <ChevronRight className="w-4 h-4 mr-2" />
+                        Siguiente nivel
+                      </Button>
+                    )}
+                  </>
+                ) : (
                 <>
                   <Button
                     onClick={handleBack}
                     className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
                   >
                     Volver al Dashboard
-                  </Button>
-                  <Button
-                    onClick={handleRetry}
-                    variant="outline"
-                    className="flex-1 border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3"
-                  >
-                    Repetir ejercicio
                   </Button>
                 </>
               )}

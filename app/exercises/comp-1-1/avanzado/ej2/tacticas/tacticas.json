@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "scenario": {
+        "id": "convocatorias-mypes-cl-2024",
+        "title": "Convocatorias oficiales 2024 para microempresas",
+        "description": "Localizar convocatorias 2024 de subsidios/fondos para microempresas en Chile, priorizando bases/requisitos en PDF y sitios oficiales.",
+        "criteria": {
+          "countries": ["Chile"],
+          "genders": ["any"],
+          "ageGroups": ["young_adult", "adult", "older_adult"]
+        },
+        "passRule": {
+          "minCorrectPicked": 6,
+          "maxWrongPicked": 1
+        }
+      },
+      "tactics": [
+        { "id": 1,  "text": "Limitar a sitios oficiales: site:gob.cl (y subdominios como sercotec.cl, corfo.cl)", "correct": true },
+        { "id": 2,  "text": "Usar sinónimos con OR: (subsidio OR fondo OR convocatoria) microempresas 2024", "correct": true },
+        { "id": 3,  "text": "Buscar documentos con bases: filetype:pdf (intitle:bases OR “bases de postulación”)", "correct": true },
+        { "id": 4,  "text": "Filtrar por fecha: ‘Último año’ en las herramientas del buscador", "correct": true },
+        { "id": 5,  "text": "Excluir ruido publicitario: -blog -curso -ads -plantillas", "correct": true },
+        { "id": 6,  "text": "Navegar luego a portales oficiales: ChileAtiende, SERCOTEC, CORFO (menús Convocatorias/Programas)", "correct": true },
+        { "id": 7,  "text": "Usar intitle:convocatoria OR intitle:postulación para acotar títulos relevantes", "correct": true },
+        { "id": 8,  "text": "Priorizar TikTok/Instagram porque ‘siempre es lo más actual’", "correct": false },
+        { "id": 9,  "text": "Buscar ‘códigos de descuento’ e ‘influencers’ para acelerar el hallazgo", "correct": false },
+        { "id": 10, "text": "Revisar secciones ‘Transparencia’, ‘Normativa’ o ‘Bases y requisitos’ de los sitios", "correct": true },
+        { "id": 11, "text": "Ordenar por ‘más antiguos primero’ para asegurar legitimidad histórica (2015–2017)", "correct": false },
+        { "id": 12, "text": "Combinar país/idioma en el buscador (Ubicación: Chile / Idioma: Español) para pertinencia", "correct": true }
+      ]
+    },
+    {
+      "scenario": {
+        "id": "convocatorias-mypes-co-2024",
+        "title": "Convocatorias oficiales 2024 para microempresas",
+        "description": "Localizar convocatorias 2024 de apoyos/subsidios/fondos para microempresas en Colombia, priorizando bases/requisitos en PDF y sitios oficiales.",
+        "criteria": {
+          "countries": ["Colombia"],
+          "genders": ["any"],
+          "ageGroups": ["young_adult", "adult", "older_adult"]
+        },
+        "passRule": {
+          "minCorrectPicked": 6,
+          "maxWrongPicked": 1
+        }
+      },
+      "tactics": [
+        { "id": 1,  "text": "Limitar a sitios oficiales: site:gov.co (y subdominios como innpulsa.gov.co, mincomercio.gov.co)", "correct": true },
+        { "id": 2,  "text": "Usar sinónimos con OR: (subsidio OR fondo OR convocatoria) microempresas 2024", "correct": true },
+        { "id": 3,  "text": "Buscar documentos de bases: filetype:pdf (intitle:bases OR “términos de referencia”)", "correct": true },
+        { "id": 4,  "text": "Filtrar por fecha: ‘Último año’ en las herramientas del buscador", "correct": true },
+        { "id": 5,  "text": "Priorizar portales oficiales: iNNpulsa, MinComercio, Colombia Productiva, cámaras de comercio (p. ej., ccb.org.co)", "correct": true },
+        { "id": 6,  "text": "Usar intitle:convocatoria OR intitle:postulación para acotar títulos relevantes", "correct": true },
+        { "id": 7,  "text": "Combinar región/ciudad si aplica (Bogotá, Medellín, Cali) con operadores site:", "correct": true },
+        { "id": 8,  "text": "Excluir ruido publicitario: -blog -curso -ads -plantillas", "correct": true },
+        { "id": 9,  "text": "Buscar primero en redes sociales (TikTok/Instagram) porque ‘siempre es lo más actual’", "correct": false },
+        { "id": 10, "text": "Preferir foros y grupos de Facebook sin verificar la fuente oficial", "correct": false },
+        { "id": 11, "text": "Revisar secciones ‘Convocatorias’, ‘Programas’, ‘Publicaciones’ o ‘Transparencia’ de las entidades", "correct": true },
+        { "id": 12, "text": "Ordenar por ‘más antiguos primero’ para revisar convocatorias históricas (2015–2017)", "correct": false }
+      ]
+    }
+  ]
+}

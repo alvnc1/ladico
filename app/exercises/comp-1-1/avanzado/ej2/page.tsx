@@ -9,6 +9,9 @@ import { useRouter } from "next/navigation";
 import { ensureSession, markAnswered } from "@/lib/testSession";
 import { setPoint } from "@/lib/levelProgress";
 
+// ⬇️ JSON con múltiples escenarios (Chile, Colombia, etc.)
+import RAW from "./tacticas/tacticas.json";
+
 /* ===== Config sesión/puntaje ===== */
 const COMPETENCE = "1.1";
 const LEVEL_FS = "Avanzado";      // Firestore
@@ -20,42 +23,118 @@ const Q_ONE_BASED  = 2; // P2 para levelProgress
 const SESSION_PREFIX = "session:1.1:Avanzado";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
-/* ===== Ítems de estrategia =====
-   Escenario: Debes localizar CONVOCATORIAS OFICIALES 2024 para
-   subsidios o fondos para microempresas en Chile, priorizando
-   bases y requisitos (PDF) y navegando fuentes confiables. */
-type Tactic = { id: number; text: string; correct: boolean; hint?: string };
-const TACTICS: Tactic[] = [
-  { id: 1,  correct: true,  text: "Limitar a sitios oficiales: site:gob.cl (y subdominios como sercotec.cl, corfo.cl)" },
-  { id: 2,  correct: true,  text: "Usar sinónimos con OR: (subsidio OR fondo OR convocatoria) microempresas 2024" },
-  { id: 3,  correct: true,  text: "Buscar documentos con bases: filetype:pdf (intitle:bases OR “bases de postulación”)" },
-  { id: 4,  correct: true,  text: "Filtrar por fecha: ‘Último año’ en las herramientas del buscador" },
-  { id: 5,  correct: true,  text: "Excluir ruido publicitario: -blog -curso -ads -plantillas" },
-  { id: 6,  correct: true,  text: "Navegar luego a portales oficiales: ChileAtiende, SERCOTEC, CORFO (menús Convocatorias/Programas)" },
-  { id: 7,  correct: true,  text: "Usar intitle:convocatoria OR intitle:postulación para acotar títulos relevantes" },
-  { id: 8,  correct: false, text: "Priorizar TikTok/Instagram porque ‘siempre es lo más actual’" },
-  { id: 9,  correct: false, text: "Buscar ‘códigos de descuento’ e ‘influencers’ para acelerar el hallazgo" },
-  { id: 10, correct: true,  text: "Revisar secciones ‘Transparencia’, ‘Normativa’ o ‘Bases y requisitos’ de los sitios" },
-  { id: 11, correct: false, text: "Ordenar por ‘más antiguos primero’ para asegurar legitimidad histórica (2015–2017)" },
-  { id: 12, correct: true,  text: "Combinar país/idioma en el buscador (Ubicación: Chile / Idioma: Español) para pertinencia" },
-];
+/* ===== Tipos del JSON (mínimos) ===== */
+type PassRule = { minCorrectPicked: number; maxWrongPicked: number };
+type Scenario = {
+  id: string;
+  title: string;
+  description?: string;
+  criteria?: {
+    countries?: string[]; // ["Chile"] | ["Colombia"] | ["global"] | ["any"]
+    genders?: string[];   // ["Masculino","Femenino","any",...]
+    ageGroups?: string[]; // ["teen","young_adult","adult","older_adult","any"]
+  };
+  passRule?: PassRule;
+};
+type Tactic = { id: number; text: string; correct: boolean };
+type RawItem = { scenario: Scenario; tactics: Tactic[] };
+type RawShape = { schemaVersion?: number; items?: RawItem[] };
 
+/* ===== Helpers de perfil ===== */
+const normalizeGender = (g?: string | null): "Masculino" | "Femenino" | "Prefiero no decir" | "any" => {
+  const v = (g || "").toLowerCase();
+  if (v.includes("masc")) return "Masculino";
+  if (v.includes("fem")) return "Femenino";
+  if (v.includes("prefiero") || v.includes("no decir")) return "Prefiero no decir";
+  return "any";
+};
+
+const getAgeGroup = (age?: number | null): "teen" | "young_adult" | "adult" | "older_adult" | "any" => {
+  if (typeof age !== "number" || Number.isNaN(age)) return "any";
+  if (age >= 13 && age <= 17) return "teen";
+  if (age >= 18 && age <= 24) return "young_adult";
+  if (age >= 25 && age <= 54) return "adult";
+  if (age >= 55) return "older_adult";
+  return "any";
+};
+
+function profileMatches(s: Scenario, country: string, gender: string, ageGroup: string): boolean {
+  const cc = (s.criteria?.countries ?? ["any"]).map((x) => x.toLowerCase());
+  const gg = (s.criteria?.genders ?? ["any"]).map((x) => x.toLowerCase());
+  const aa = (s.criteria?.ageGroups ?? ["any"]).map((x) => x.toLowerCase());
+
+  const countryOk = cc.includes("any") || cc.includes("global") || cc.includes(country.toLowerCase());
+  const genderOk  = gg.includes("any") || gg.includes(gender.toLowerCase());
+  const ageOk     = aa.includes("any") || aa.includes(ageGroup.toLowerCase());
+
+  return countryOk && genderOk && ageOk;
+}
+
+/* ===== Componente ===== */
 export default function P2EstrategiaBusquedaAvanzado() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
 
-  const [currentIndex] = useState(1); // Ejercicio 1 (0-based)
-    const totalQuestions = 3;
-    const progress = ((currentIndex + 1) / totalQuestions) * 100;
+  const [currentIndex] = useState(1); // P2 (0-based)
+  const totalQuestions = 3;
+  const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const ensuringRef = useRef(false);
 
-  // Estado selección
-  const [picked, setPicked] = useState<number[]>([]);
-  const [feedback, setFeedback] = useState<React.ReactNode>("");
+  // Perfil del usuario
+  const country = userData?.country || "global";
+  const gender = normalizeGender(userData?.gender);
+  const ageGroup = getAgeGroup(userData?.age);
 
-  /* ===== Sesión por-usuario ===== */
+  // ===== Seleccionar escenario/tácticas según perfil =====
+  const { activeScenario, TACTICS, passRule } = useMemo(() => {
+    const data = (RAW as RawShape) || {};
+    const items = Array.isArray(data.items) ? data.items : [];
+
+    // 1) Filtra por perfil
+    const preferred: RawItem[] = items.filter((it) =>
+      profileMatches(it.scenario, country, gender, ageGroup)
+    );
+
+    // 2) Si no hay match, intenta “global” o “any”
+    let chosen: RawItem | undefined = preferred[0];
+    if (!chosen) {
+      chosen = items.find(
+        (it) =>
+          (it.scenario.criteria?.countries ?? []).some((c) =>
+            ["any", "global"].includes(c.toLowerCase())
+          )
+      );
+    }
+
+    // 3) Fallback al primero disponible
+    if (!chosen && items.length > 0) chosen = items[0];
+
+    const activeScenario = chosen?.scenario ?? {
+      id: "default",
+      title: "Estrategia de búsqueda",
+      description:
+        "Selecciona las tácticas de búsqueda más adecuadas para el escenario.",
+      passRule: { minCorrectPicked: 6, maxWrongPicked: 1 },
+    };
+
+    const TACTICS = chosen?.tactics ?? [];
+    const passRule: PassRule = activeScenario.passRule ?? {
+      minCorrectPicked: 6,
+      maxWrongPicked: 1,
+    };
+
+    return { activeScenario, TACTICS, passRule };
+  }, [country, gender, ageGroup]);
+
+  // ===== Estado selección
+  const [picked, setPicked] = useState<number[]>([]);
+  const toggle = (id: number) => {
+    setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  // ===== Sesión por-usuario (igual que tu versión)
   useEffect(() => {
     if (!user || typeof window === "undefined") return;
     const sid = localStorage.getItem(sessionKeyFor(user.uid));
@@ -87,21 +166,23 @@ export default function P2EstrategiaBusquedaAvanzado() {
     })();
   }, [user?.uid, sessionId]);
 
-  /* ===== Lógica de validación =====
-     Regla: aprueba si selecciona ≥6 tácticas correctas y ≤1 incorrecta. */
-  const correctIds = useMemo(() => new Set(TACTICS.filter(t => t.correct).map(t => t.id)), []);
-  const incorrectIds = useMemo(() => new Set(TACTICS.filter(t => !t.correct).map(t => t.id)), []);
+  // ===== Lógica de validación (ahora usando passRule del JSON)
+  const correctIds = useMemo(
+    () => new Set(TACTICS.filter((t) => t.correct).map((t) => t.id)),
+    [TACTICS]
+  );
+  const incorrectIds = useMemo(
+    () => new Set(TACTICS.filter((t) => !t.correct).map((t) => t.id)),
+    [TACTICS]
+  );
 
-  const correctChosen = picked.filter(id => correctIds.has(id)).length;
-  const wrongChosen   = picked.filter(id => incorrectIds.has(id)).length;
-
-  const toggle = (id: number) => {
-    setFeedback("");
-    setPicked(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
+  const correctChosen = picked.filter((id) => correctIds.has(id)).length;
+  const wrongChosen = picked.filter((id) => incorrectIds.has(id)).length;
 
   const validar = async () => {
-    const passed = correctChosen >= 6 && wrongChosen <= 1;
+    const passed =
+      correctChosen >= passRule.minCorrectPicked &&
+      wrongChosen <= passRule.maxWrongPicked;
     const point: 0 | 1 = passed ? 1 : 0;
 
     // Puntaje local
@@ -134,11 +215,10 @@ export default function P2EstrategiaBusquedaAvanzado() {
     } catch (e) {
       console.warn("No se pudo marcar P2 respondida:", e);
     }
-    // Avanzar a P3
     router.push("/exercises/comp-1-1/avanzado/ej3");
   };
 
-  /* ===== UI ===== */
+  // ===== UI
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
@@ -156,7 +236,6 @@ export default function P2EstrategiaBusquedaAvanzado() {
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
                 | {COMPETENCE} Navegar, buscar y filtrar datos, información y contenidos digitales - Nivel {LEVEL_FS}
               </span>
-
             </div>
           </div>
 
@@ -189,28 +268,28 @@ export default function P2EstrategiaBusquedaAvanzado() {
 
       {/* Tarjeta */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
-        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
-            <CardContent className="p-4 sm:p-6 lg:p-8">
+        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duración-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
+          <CardContent className="p-4 sm:p-6 lg:p-8">
+            {/* Enunciado dinámico */}
             <div className="mb-8">
-                <div className="flex items-center gap-4 mb-6">
-                    <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        Estrategia de búsqueda
-                    </h2>
-                    </div>
+              <div className="flex items-center gap-4 mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {activeScenario.title || "Estrategia de búsqueda"}
+                  </h2>
                 </div>
-                {/* Instrucciones */}
-                <div className="mb-6 sm:mb-8">
-                    <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
-                    <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
-                        Necesitas ubicar <b>convocatorias oficiales 2024</b> de
-                        <b> subsidios/fondos para microempresas en Chile</b>, con acceso a
-                        <b> bases y requisitos (PDF)</b>. Selecciona todas las <b>tácticas de búsqueda</b> más adecuadas.
-                    </p>
-                    </div>
+              </div>
+              <div className="mb-6 sm:mb-8">
+                <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
+                  <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
+                    {activeScenario.description ??
+                      "Selecciona todas las tácticas de búsqueda más adecuadas para el escenario propuesto."}
+                  </p>
                 </div>
+              </div>
             </div>
-            {/* Lista de tácticas */}
+
+            {/* Lista de tácticas (del JSON filtrado) */}
             <div className="space-y-2">
               {TACTICS.map((t) => {
                 const checked = picked.includes(t.id);
