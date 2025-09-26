@@ -1,0 +1,316 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "scenario": {
+        "id": "cl-beca-baes-2025",
+        "title": "Beca de Alimentación para la Educación Superior (BAES) 2025 — Chile",
+        "description": "Selecciona 3 fuentes confiables para obtener requisitos y proceso 2025 de la BAES/JUNAEB.",
+        "criteria": { "countries": ["Chile"], "genders": ["any"], "ageGroups": ["teen", "young_adult", "adult", "any"] },
+        "passRule": { "minCorrectPicked": 2, "maxWrongPicked": 1 }
+      },
+      "sources": [
+        {
+          "id": 1,
+          "title": "JUNAEB — BAES (sitio oficial)",
+          "url": "https://www.junaeb.cl",
+          "domain": "junaeb.cl",
+          "kind": "Gobierno",
+          "snippet": "Información oficial de requisitos, calendario y preguntas frecuentes de la BAES.",
+          "badges": [".cl institucional", "Página oficial", "Actualizaciones 2025"],
+          "details": ["Sección específica BAES con requisitos y trámites.", "Contacto y normativa disponible."],
+          "reliable": true
+        },
+        {
+          "id": 2,
+          "title": "ChileAtiende — Beca de Alimentación (BAES)",
+          "url": "https://www.chileatiende.gob.cl",
+          "domain": "chileatiende.gob.cl",
+          "kind": "Gobierno",
+          "snippet": "Ficha de trámite con pasos, requisitos y enlaces a JUNAEB.",
+          "badges": ["Portal de trámites", "Enlaces oficiales", "Resumen claro"],
+          "details": ["Consolida requisitos y dónde realizar el trámite.", "Referencias a normativa."],
+          "reliable": true
+        },
+        {
+          "id": 3,
+          "title": "Gobierno de Chile — Portal de beneficios estudiantiles",
+          "url": "https://www.gob.cl",
+          "domain": "gob.cl",
+          "kind": "Gobierno",
+          "snippet": "Buscador de beneficios y derivaciones a páginas oficiales.",
+          "badges": ["Portal estatal", "Buscador oficial"],
+          "details": ["Deriva a JUNAEB para requisitos específicos.", "Información transversal del Estado."],
+          "reliable": true
+        },
+        {
+          "id": 4,
+          "title": "BlogEstudios — 'Todo sobre la BAES 2025'",
+          "url": "https://blogestudios.example/baes-2025",
+          "domain": "example",
+          "kind": "Blog/Opinión",
+          "snippet": "Resumen no oficial con posible información desactualizada.",
+          "badges": ["No oficial", "Sin fuentes primarias"],
+          "details": ["No enlaza a normativa.", "No indica fecha de actualización."],
+          "reliable": false
+        },
+        {
+          "id": 5,
+          "title": "Prep Academy — Guía BAES",
+          "url": "https://prepacademy.example/guias/baes",
+          "domain": "example",
+          "kind": "Comercial",
+          "snippet": "Guía privada con formularios propios para captar datos.",
+          "badges": ["Conflicto de interés", "No oficial"],
+          "details": ["Puede inducir a trámites fuera de canales oficiales.", "No cita normativas."],
+          "reliable": false
+        },
+        {
+          "id": 6,
+          "title": "TikTok — 'Cómo postular a la BAES en 1 minuto'",
+          "url": "https://www.tiktok.com/@alumno_tip/baes",
+          "domain": "tiktok.com",
+          "kind": "Red social",
+          "snippet": "Video corto sin fuentes oficiales ni normativa.",
+          "badges": ["Formato corto", "Sin referencias"],
+          "details": ["Riesgo de desactualización.", "No es canal institucional."],
+          "reliable": false
+        }
+      ]
+    },
+
+    {
+      "scenario": {
+        "id": "cl-renovar-pasaporte-2025",
+        "title": "Renovación de pasaporte 2025 — Chile",
+        "description": "Selecciona 3 fuentes confiables para requisitos y agendamiento de renovación de pasaporte.",
+        "criteria": { "countries": ["Chile"], "genders": ["any"], "ageGroups": ["young_adult", "adult", "older_adult", "any"] },
+        "passRule": { "minCorrectPicked": 2, "maxWrongPicked": 1 }
+      },
+      "sources": [
+        {
+          "id": 1,
+          "title": "Servicio de Registro Civil e Identificación",
+          "url": "https://www.registrocivil.cl",
+          "domain": "registrocivil.cl",
+          "kind": "Gobierno",
+          "snippet": "Trámite oficial de pasaporte: requisitos, costos y agendamiento.",
+          "badges": ["Página oficial", "Agendamiento", "Requisitos 2025"],
+          "details": ["Información primaria y actualizada.", "Contacto y oficinas."],
+          "reliable": true
+        },
+        {
+          "id": 2,
+          "title": "ChileAtiende — Pasaporte",
+          "url": "https://www.chileatiende.gob.cl",
+          "domain": "chileatiende.gob.cl",
+          "kind": "Gobierno",
+          "snippet": "Guía de trámite con pasos, documentos y plazos.",
+          "badges": ["Portal de trámites", "Resumen oficial"],
+          "details": ["Enlaza a Registro Civil.", "Contiene costos y vigencia."],
+          "reliable": true
+        },
+        {
+          "id": 3,
+          "title": "Gob.cl — Trámites de identificación",
+          "url": "https://www.gob.cl",
+          "domain": "gob.cl",
+          "kind": "Gobierno",
+          "snippet": "Buscador estatal de trámites; deriva a Registro Civil.",
+          "badges": ["Portal estatal", "Derivación oficial"],
+          "details": ["Base común de trámites.", "Verifica vigencias."],
+          "reliable": true
+        },
+        {
+          "id": 4,
+          "title": "ConsejosViajeros — 'Renovar pasaporte sin filas'",
+          "url": "https://consejosviajeros.example/pasaporte-cl",
+          "domain": "example",
+          "kind": "Blog/Opinión",
+          "snippet": "Tips de usuarios sin fuente oficial; desactualizado.",
+          "badges": ["No oficial"],
+          "details": ["No cita normativa.", "Riesgo de errores en requisitos."],
+          "reliable": false
+        },
+        {
+          "id": 5,
+          "title": "AgenciaX — Servicio de renovación express",
+          "url": "https://agenciax.example/pasaporte",
+          "domain": "example",
+          "kind": "Comercial",
+          "snippet": "Servicio privado intermediario, cobra por gestión.",
+          "badges": ["Conflicto de interés"],
+          "details": ["No reemplaza el trámite oficial.", "Costos adicionales."],
+          "reliable": false
+        },
+        {
+          "id": 6,
+          "title": "Redes — 'Hilo con trucos para agendar'",
+          "url": "https://twitter.com/alguien/hilo-pasaporte",
+          "domain": "twitter.com",
+          "kind": "Red social",
+          "snippet": "Experiencias personales; sin respaldo oficial.",
+          "badges": ["Sin fuentes", "Testimonios"],
+          "details": ["No verificable.", "Puede inducir a prácticas no válidas."],
+          "reliable": false
+        }
+      ]
+    },
+
+    {
+      "scenario": {
+        "id": "co-convocatorias-sena-2025",
+        "title": "Convocatorias de formación SENA 2025 — Colombia",
+        "description": "Selecciona 3 fuentes confiables para revisar convocatorias y requisitos de inscripción SENA 2025.",
+        "criteria": { "countries": ["Colombia"], "genders": ["any"], "ageGroups": ["teen", "young_adult", "adult", "any"] },
+        "passRule": { "minCorrectPicked": 2, "maxWrongPicked": 1 }
+      },
+      "sources": [
+        {
+          "id": 1,
+          "title": "SENA — Oferta educativa y convocatorias",
+          "url": "https://www.sena.edu.co",
+          "domain": "sena.edu.co",
+          "kind": "Universidad/Revista",
+          "snippet": "Portal oficial con cronogramas, requisitos y registro.",
+          "badges": [".edu.co institucional", "Convocatorias 2025", "Inscripción"],
+          "details": ["Información primaria; avisos oficiales.", "Calendario y cupos."],
+          "reliable": true
+        },
+        {
+          "id": 2,
+          "title": "GOV.CO — Trámites y servicios",
+          "url": "https://www.gov.co",
+          "domain": "gov.co",
+          "kind": "Gobierno",
+          "snippet": "Buscador oficial de trámites; enlaza a entidades como SENA.",
+          "badges": ["Portal estatal", "Derivación oficial"],
+          "details": ["Valida entidad y vigencias.", "Información transversal del Estado."],
+          "reliable": true
+        },
+        {
+          "id": 3,
+          "title": "MinTrabajo — Empleo y Formación",
+          "url": "https://www.mintrabajo.gov.co",
+          "domain": "mintrabajo.gov.co",
+          "kind": "Gobierno",
+          "snippet": "Políticas laborales y enlaces a programas de formación oficiales.",
+          "badges": [".gov.co", "Referencias oficiales"],
+          "details": ["Publicaciones y noticias del sector.", "Deriva a SENA para oferta."],
+          "reliable": true
+        },
+        {
+          "id": 4,
+          "title": "InstitutoPrivado — 'Cursos rápidos SENA-like'",
+          "url": "https://institutoprivado.example/sena",
+          "domain": "example",
+          "kind": "Comercial",
+          "snippet": "Ofrece cursos pagos no equivalentes a SENA; marketing.",
+          "badges": ["Conflicto de interés", "No oficial"],
+          "details": ["Puede confundir con oferta oficial.", "No otorga certificación SENA."],
+          "reliable": false
+        },
+        {
+          "id": 5,
+          "title": "BlogOportunidades — 'Convocatorias SENA 2025'",
+          "url": "https://blogoportunidades.example/sena-2025",
+          "domain": "example",
+          "kind": "Blog/Opinión",
+          "snippet": "Resumen sin fuentes primarias ni fechas claras.",
+          "badges": ["No oficial", "Sin referencias"],
+          "details": ["No enlaza a gov.co o sena.edu.co.", "Riesgo de desactualización."],
+          "reliable": false
+        },
+        {
+          "id": 6,
+          "title": "Reels — 'Inscríbete ya al SENA'",
+          "url": "https://www.instagram.com/reel/xyz",
+          "domain": "instagram.com",
+          "kind": "Red social",
+          "snippet": "Video con instrucciones incompletas; sin enlaces oficiales.",
+          "badges": ["Formato corto", "Sin fuentes"],
+          "details": ["No verificable.", "Puede inducir a error."],
+          "reliable": false
+        }
+      ]
+    },
+
+    {
+      "scenario": {
+        "id": "co-cedula-duplicado-2025",
+        "title": "Duplicado de cédula y agendamiento 2025 — Colombia",
+        "description": "Selecciona 3 fuentes confiables para consultar requisitos, costos y agendamiento del duplicado de cédula.",
+        "criteria": { "countries": ["Colombia"], "genders": ["any"], "ageGroups": ["young_adult", "adult", "older_adult", "any"] },
+        "passRule": { "minCorrectPicked": 2, "maxWrongPicked": 1 }
+      },
+      "sources": [
+        {
+          "id": 1,
+          "title": "Registraduría Nacional del Estado Civil",
+          "url": "https://www.registraduria.gov.co",
+          "domain": "registraduria.gov.co",
+          "kind": "Gobierno",
+          "snippet": "Trámite oficial de cédula: requisitos, costos y citas.",
+          "badges": [".gov.co", "Página oficial", "Agendamiento"],
+          "details": ["Información primaria y vigente.", "Centros de atención y tarifas."],
+          "reliable": true
+        },
+        {
+          "id": 2,
+          "title": "GOV.CO — Trámites de identificación",
+          "url": "https://www.gov.co",
+          "domain": "gov.co",
+          "kind": "Gobierno",
+          "snippet": "Portal estatal con ficha de trámite y enlaces a Registraduría.",
+          "badges": ["Portal estatal", "Derivación oficial"],
+          "details": ["Centraliza trámites por entidad.", "Vigencias y requisitos."],
+          "reliable": true
+        },
+        {
+          "id": 3,
+          "title": "DANE — Documentos de identificación (información estadística)",
+          "url": "https://www.dane.gov.co",
+          "domain": "dane.gov.co",
+          "kind": "Gobierno",
+          "snippet": "Contexto estadístico; no es canal de trámite.",
+          "badges": [".gov.co", "Estadísticas"],
+          "details": ["No sustituye la información de Registraduría.", "Referencias de población."],
+          "reliable": true
+        },
+        {
+          "id": 4,
+          "title": "TramitexPress — 'Citas sin filas'",
+          "url": "https://tramitespress.example/cedula",
+          "domain": "example",
+          "kind": "Comercial",
+          "snippet": "Intermediario privado; cobra por gestionar citas.",
+          "badges": ["Conflicto de interés", "No oficial"],
+          "details": ["Puede pedir datos sensibles.", "No es entidad del Estado."],
+          "reliable": false
+        },
+        {
+          "id": 5,
+          "title": "ForoUsuarios — 'Mi experiencia con el duplicado'",
+          "url": "https://forousuarios.example/cedula-duplicado",
+          "domain": "example",
+          "kind": "Blog/Opinión",
+          "snippet": "Relato personal sin verificación ni enlaces oficiales.",
+          "badges": ["No oficial", "Testimonios"],
+          "details": ["Desactualizado; no es fuente normativa.", "Riesgo de error."],
+          "reliable": false
+        },
+        {
+          "id": 6,
+          "title": "TikTok — 'Truco para sacar cita'",
+          "url": "https://www.tiktok.com/@tipscol/cedula",
+          "domain": "tiktok.com",
+          "kind": "Red social",
+          "snippet": "Video con trucos no validados; sin fuentes.",
+          "badges": ["Formato corto", "Sin referencias"],
+          "details": ["Puede violar políticas.", "No es canal oficial."],
+          "reliable": false
+        }
+      ]
+    }
+  ]
+}

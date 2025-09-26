@@ -6,7 +6,7 @@ import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useMemo, useState } from "react"
-// Helpers para saber si existe el siguiente nivel
+// Helpers para rutas/niveles
 import {
   firstExerciseRoute,
   type LevelSlug,
@@ -14,7 +14,10 @@ import {
   nextLevel,
 } from "@/lib/firstExerciseRoute"
 import { useAuth } from "@/contexts/AuthContext"
-import { clearTeacherSeenQuestionsAllCountries, hardResetCompetenceSessions } from "@/lib/testSession" // hard reset
+import {
+  clearTeacherSeenQuestionsAllCountries,
+  hardResetCompetenceSessions,
+} from "@/lib/testSession"
 
 interface CompetenceCardProps {
   competence: Competence
@@ -42,7 +45,6 @@ export default function CompetenceCard({
   const isTeacher = userData?.role === "profesor"
 
   const [locallyStarted, setLocallyStarted] = useState(false)
-
   const hasEnoughQuestions = questionCount >= 3
 
   const getCompetenceSpecificColor = () => {
@@ -82,31 +84,34 @@ export default function CompetenceCard({
     return `Nivel ${levelNumber}`
   }, [levelStatus.inProgress, levelStatus.completed, locallyStarted, levelNumber])
 
-  // Helpers
   const levelToSlug = (lvl: "Básico" | "Intermedio" | "Avanzado"): LevelSlug =>
     lvl === "Básico" ? "basico" : lvl === "Intermedio" ? "intermedio" : "avanzado"
 
-  // ===== Reglas de botones =====
+  // ====== REGLAS DE BOTONES ======
   const isLastLevel = levelNumber === 3
-  const canStartCurrent = hasEnoughQuestions && !levelStatus.completed
-  const canAdvanceToNextLevel = levelStatus.completed && !isLastLevel
 
-  // ¿Existe siguiente nivel?
+  // Estudiante: para avanzar al siguiente nivel requiere completar competencia + área —> (tu lógica inicial)
+  // Profesor: SIN modo secuencial -> ignora `areaCompletedAtLevel`
   const currentLevelSlug = levelToSlug(currentAreaLevel)
   const nxt = nextLevel(currentLevelSlug)
   const nextExists = nxt ? hasLevelAvailable(competence.id, nxt) : false
-  const allowNext = canAdvanceToNextLevel && nextExists
 
-  // Mostrar “Volver a intentar” + “Reiniciar nivel” cuando:
-  // - NO hay siguiente nivel
-  // - y el nivel 1 ya fue iniciado (inProgress | completed | inicio local)
-  const showRetryAndReset =
-    currentAreaLevel === "Básico" &&
-    !allowNext &&
-    (levelStatus.inProgress || levelStatus.completed || locallyStarted)
+  // Base (estudiante)
+  let canStartCurrent = hasEnoughQuestions && !levelStatus.completed
+  let canAdvanceToNextLevel = levelStatus.completed && !isLastLevel && areaCompletedAtLevel
+  let allowNext = canAdvanceToNextLevel && nextExists
 
-  // Importante: la rama de “profe” solo aplica si HAY siguiente nivel
-  const showRetryButton = isTeacher && allowNext
+  // ----- OVERRIDES PARA PROFESOR (NO secuencial) -----
+  if (isTeacher) {
+  // Puede comenzar SIEMPRE el nivel actual si hay preguntas
+  canStartCurrent = hasEnoughQuestions
+
+  // Solo habilita el siguiente nivel si ya tocó este nivel (iniciado o completado).
+  // Así, en una cuenta nueva aparece "Comenzar evaluación" y no "Comenzar nivel 2".
+  const alreadyTouched = levelStatus.inProgress || levelStatus.completed || locallyStarted
+  canAdvanceToNextLevel = !isLastLevel && nextExists && alreadyTouched
+  allowNext = canAdvanceToNextLevel
+}
 
   const canStartOrContinue = levelStatus.inProgress || canStartCurrent || allowNext
 
@@ -117,6 +122,23 @@ export default function CompetenceCard({
     if (!allowNext && (levelStatus.inProgress || levelStatus.completed || locallyStarted)) return "Volver a intentar"
     return "Bloqueado"
   })()
+
+  // Mostrar doble botón (reintentar + reset) cuando:
+  // - Nivel Básico
+  // - NO hay siguiente nivel permitido (allowNext == false)
+  // - y el nivel 1 ya fue iniciado / completado / iniciado localmente
+  // SOLO profesor ve "Volver a intentar" + "Reiniciar nivel" en nivel Básico sin siguiente nivel
+  const showRetryAndReset =
+    isTeacher &&
+    currentAreaLevel === "Básico" &&
+    !allowNext &&
+    (levelStatus.inProgress || levelStatus.completed || locallyStarted)
+
+  // Rama especial Avanzado (profe) igual que antes
+  const showTeacherAdvancedReset =
+    isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed
+
+  const showRetryButton = isTeacher && allowNext
 
   // ===== utilidades de navegación y reset =====
   const clearResetFlag = () => {
@@ -142,7 +164,6 @@ export default function CompetenceCard({
     router.push(url)
   }
 
-  // Reintento mismo nivel (para todos)
   const handleRetrySameLevel = () => {
     clearResetFlag()
     const compSlug = competence.id.replace(".", "-")
@@ -158,7 +179,6 @@ export default function CompetenceCard({
     router.push(`/test/${competence.id}?level=${slug}&retry=1`)
   }
 
-  // Reiniciar SOLO el nivel actual (para Nivel 1 sin siguientes) — hard reset como nivel 3
   const handleResetCurrentLevel = async () => {
     try {
       if (typeof window !== "undefined") {
@@ -195,7 +215,6 @@ export default function CompetenceCard({
     }
   }
 
-  // Reinicio duro para NIVEL 3 (tu lógica original)
   const handleResetTeacherLevels = async () => {
     if (currentAreaLevel !== "Avanzado") return
     try {
@@ -265,9 +284,8 @@ export default function CompetenceCard({
             </div>
           </div>
 
-          {/* Botonera */}
+          {/* Botonera (con bypass secuencial para profesor) */}
           {showRetryAndReset ? (
-            // PRIORIDAD 1: Sin siguiente nivel → mostrar Volver a intentar + Reiniciar nivel
             <div className="mt-3 flex gap-2">
               <Button
                 onClick={handleRetrySameLevel}
@@ -283,8 +301,7 @@ export default function CompetenceCard({
                 Reiniciar nivel
               </Button>
             </div>
-          ) : isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed ? (
-            // PRIORIDAD 2: Rama especial Avanzado (profe)
+          ) : showTeacherAdvancedReset ? (
             <div className="mt-3 flex gap-2">
               <Button
                 onClick={handleRetrySameLevel}
@@ -301,7 +318,6 @@ export default function CompetenceCard({
               </Button>
             </div>
           ) : showRetryButton ? (
-            // PRIORIDAD 3: Profe con siguiente nivel disponible
             <div className="mt-3 flex gap-2">
               <Button
                 onClick={handleRetrySameLevel}

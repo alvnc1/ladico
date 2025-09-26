@@ -152,7 +152,6 @@ export default function LadicoKeywordsExercise() {
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
-      {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-3">
           <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
@@ -222,7 +221,6 @@ export default function LadicoKeywordsExercise() {
                 </p>
               </div>
             </div>
-            {/* Respuesta */}
             {/* Respuesta + Finalizar (fuera del desktop, dentro de la tarjeta) */}
             <div className="mt-4 px-0 sm:px-0 pt-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

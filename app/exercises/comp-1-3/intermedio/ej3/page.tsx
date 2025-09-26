@@ -167,8 +167,20 @@ export default function LadicoDeletedListRecoveryExercise() {
       q2: String(q2),
       q3: String(q3),
       sid: sid ?? "",
-    });
-    router.push(`/test/comp-1-3-intermedio/results?${qs.toString()}`);
+      passMin: "2",                       // (opcional) mínimo para aprobar
+      compPath: "comp-1-3",               // <- necesario para rutas de “retry/next level”
+      retryBase: "/exercises/comp-1-3/intermedio", // (opcional) si quieres forzarlo
+      // Etiquetas opcionales
+      ex1Label: "Ejercicio 1: Generar Campos de un formulario",
+      ex2Label: "Ejercicio 2: Explorador de archivos",
+      ex3Label: "Ejercicio 3: Recuperación de archivo borrado",
+      // Métricas opcionales (si aplica)
+      // pairs: `${correctPairs}/${totalPairs}`,
+      // kscore: String(percent),
+    })
+
+    // 2) Empuja SIEMPRE a la misma página:
+    router.push(`/test/results?${qs.toString()}`)
   };
 
   return (
@@ -223,15 +235,27 @@ export default function LadicoDeletedListRecoveryExercise() {
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Instrucciones */}
-            <div className="mb-6">
-              <div className="bg-gray-50 p-4 sm:p-5 rounded-xl border-l-4 border-[#286575]">
-                <div className="text-sm sm:text-base leading-relaxed text-gray-800">
+            {/* Header del ejercicio */}
+            <div className="mb-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    Recuperación de archivo borrado
+                  </h2>
+                </div>
+              </div>
+
+              {/* Instrucciones */}
+              <div className="mb-6 sm:mb-8">
+                <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
+                  <div className="text-sm sm:text-base leading-relaxed text-gray-800">
                   <p>Debes ir de compras, pero accidentalmente borraste tu lista del escritorio.</p>
                   <p className="font-semibold">Recupérala desde la Papelera y revisa su contenido.</p>
                   <p>
                     En la lista aparece un producto marcado como <i>importante</i> que no debes olvidar.
                     Encuéntralo y escríbelo abajo.
                   </p>
+                </div>
                 </div>
               </div>
             </div>

@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { ensureSession, markAnswered } from "@/lib/testSession";
 import { setPoint } from "@/lib/levelProgress";
+import { skillsInfo } from "@/components/data/digcompSkills";
 
 const SESSION_PREFIX = "session:1.1:Avanzado";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
@@ -95,11 +96,6 @@ export default function LadicoFiltersExercise() {
 
     // Feedback UI
     setStatus(ok ? "ok" : "err");
-    setHelper(
-      ok
-        ? "¡Correcto! Se guardó tu resultado."
-        : "Respuesta incorrecta. Asegúrate de escribir el título del primer resultado tal como aparece."
-    );
 
     // Puntaje local
     try {
@@ -137,8 +133,7 @@ export default function LadicoFiltersExercise() {
       console.warn("No se pudo marcar la pregunta respondida:", e);
     }
 
-    // Si quieres navegar después, descomenta y ajusta a tu ruta:
-    // if (ok) router.push("/exercises/comp-1-1/avanzado/ej2");
+    router.push("/exercises/comp-1-1/avanzado/ej2");
   };
 
   return (
@@ -156,7 +151,7 @@ export default function LadicoFiltersExercise() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
-                | {COMPETENCE} Navegar, buscar y filtrar datos, información y contenidos digitales - Nivel {LEVEL_FS}
+                | {COMPETENCE} {skillsInfo[COMPETENCE].title} - Nivel {LEVEL_FS}
               </span>
 
             </div>
@@ -222,7 +217,7 @@ export default function LadicoFiltersExercise() {
                       <b>todos los resultados</b>, solo en <b>Blogs</b> y en <b>Español (LatAm)</b>.
                     </p>
                     <p className="mt-2">
-                      Luego revisa la <b>vista previa</b> y responde: <i>¿Cuál es el primer resultado?</i>
+                      Luego revisa la <b>vista previa</b> y responde: <i>¿Cuál es el título del primer resultado?</i>
                     </p>
                     </div>
                 </div>
@@ -237,7 +232,6 @@ export default function LadicoFiltersExercise() {
                   onChange={(e) => {
                     setAnswer(e.target.value);
                     setStatus("idle");
-                    setHelper("");
                   }}
                   className={`flex-1 px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 text-sm`}
                 />

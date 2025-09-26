@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "scenario": {
+        "id": "cl-ipc-2024",
+        "title": "Chile — IPC anual (variación % interanual)",
+        "description": "Con base en la ficha técnica del INE y la tabla simple con la variación anual del IPC, decide qué afirmaciones están sustentadas.",
+        "criteria": { "countries": ["Chile"], "genders": ["any"], "ageGroups": ["young_adult", "adult", "older_adult", "any"] },
+        "passRule": { "minCorrect": 3 }
+      },
+      "meta": {
+        "fuente": "INE Chile — Boletines IPC (demo)",
+        "ambito": "Chile",
+        "metodologia": "Índice de Precios al Consumidor (base vigente), publicación mensual",
+        "periodo": "2022–2024"
+      },
+      "table": {
+        "columns": [
+          { "key": "anio", "label": "Año" },
+          { "key": "variacion", "label": "Variación anual (%)" }
+        ],
+        "rows": [
+          { "anio": 2022, "variacion": 12.8 },
+          { "anio": 2023, "variacion": 3.9 },
+          { "anio": 2024, "variacion": 4.5 }
+        ]
+      },
+      "claims": [
+        { "id": 1, "text": "La variación anual del IPC en 2023 fue menor que en 2022.", "supported": true,  "hint": "12.8 → 3.9" },
+        { "id": 2, "text": "El ámbito del dataset corresponde a Chile.",                 "supported": true  },
+        { "id": 3, "text": "La serie presentada incluye datos para 2020 y 2021.",         "supported": false, "hint": "Solo 2022–2024" },
+        { "id": 4, "text": "La variación anual 2024 es exactamente 2.0%.",                "supported": false, "hint": "Es 4.5% (demo)" },
+        { "id": 5, "text": "La fuente declarada es el INE Chile.",                         "supported": true  }
+      ]
+    },
+
+    {
+      "scenario": {
+        "id": "co-matricula-media-2021-2024",
+        "title": "Colombia — Tasa neta de matrícula educación media",
+        "description": "Según la ficha MinEducación y la tabla simple, decide qué afirmaciones están sustentadas.",
+        "criteria": { "countries": ["Colombia"], "genders": ["any"], "ageGroups": ["teen", "young_adult", "adult", "any"] },
+        "passRule": { "minCorrect": 3 }
+      },
+      "meta": {
+        "fuente": "MinEducación Colombia — Estadísticas educativas (demo)",
+        "ambito": "Colombia",
+        "metodologia": "Tasa neta de matrícula oficial",
+        "periodo": "2021–2024"
+      },
+      "table": {
+        "columns": [
+          { "key": "anio", "label": "Año" },
+          { "key": "tasa_neta", "label": "Tasa neta (%)" }
+        ],
+        "rows": [
+          { "anio": 2021, "tasa_neta": 54.0 },
+          { "anio": 2022, "tasa_neta": 55.2 },
+          { "anio": 2023, "tasa_neta": 56.1 },
+          { "anio": 2024, "tasa_neta": 56.0 }
+        ]
+      },
+      "claims": [
+        { "id": 1, "text": "La tasa neta en 2023 fue mayor a la de 2022.",         "supported": true,  "hint": "56.1 > 55.2" },
+        { "id": 2, "text": "El ámbito corresponde a Colombia.",                     "supported": true  },
+        { "id": 3, "text": "La serie incluye el año 2020.",                         "supported": false, "hint": "Comienza en 2021" },
+        { "id": 4, "text": "La tasa neta cae entre 2023 y 2024.",                   "supported": true,  "hint": "56.1 → 56.0 (demo)" },
+        { "id": 5, "text": "La fuente declarada es MinEducación Colombia.",        "supported": true  }
+      ]
+    }
+  ]
+}

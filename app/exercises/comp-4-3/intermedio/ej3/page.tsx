@@ -252,11 +252,21 @@ export default function Page() {
       q1: String(q1),
       q2: String(q2),
       q3: String(q3),
+      sid: sid ?? "",
+      passMin: "2",                       // (opcional) mínimo para aprobar
+      compPath: "comp-4-3",               // <- necesario para rutas de “retry/next level”
+      retryBase: "/exercises/comp-4-3/intermedio", // (opcional) si quieres forzarlo
+      // Etiquetas opcionales
+      ex1Label: "Ejercicio 1: Prevención de riesgos para la salud y el bienestar en entornos digitales",
+      ex2Label: "Ejercicio 2: Seleccionar formas sencillas de proteger el bienestar digital",
+      ex3Label: "Ejercicio 3: Tecnologías digitales para el bienestar e inclusión social",
+      // Métricas opcionales (si aplica)
+      // pairs: `${correctPairs}/${totalPairs}`,
+      // kscore: String(percent),
     })
-    // Incluye sid para que la página de resultados pueda reconsolidar si hace falta
-    if (sid) qs.set("sid", sid)
 
-    router.push(`/test/comp-4-3-intermedio/results?${qs.toString()}`)
+    // 2) Empuja SIEMPRE a la misma página:
+    router.push(`/test/results?${qs.toString()}`)
   }
 
   const progressPct = 100

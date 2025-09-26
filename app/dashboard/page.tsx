@@ -58,7 +58,7 @@ export default function Dashboard() {
   }, [router])
 
   const getAreaName = (code: string) => {
-    if (code?.startsWith("1.")) return "Búsqueda y gestión de información"
+    if (code?.startsWith("1.")) return "Búsqueda y gestión de información y datos"
     if (code?.startsWith("2.")) return "Comunicación y colaboración"
     if (code?.startsWith("3.")) return "Creación de contenidos digitales"
     if (code?.startsWith("4.")) return "Seguridad"
@@ -110,7 +110,7 @@ export default function Dashboard() {
   })
 
   const groupedCompetences = {
-    "Búsqueda y gestión de información": filteredCompetences.filter((c) => c?.code?.startsWith("1.")),
+    "Búsqueda y gestión de información y datos": filteredCompetences.filter((c) => c?.code?.startsWith("1.")),
     "Comunicación y colaboración": filteredCompetences.filter((c) => c?.code?.startsWith("2.")),
     "Creación de contenidos digitales": filteredCompetences.filter((c) => c?.code?.startsWith("3.")),
     "Seguridad": filteredCompetences.filter((c) => c?.code?.startsWith("4.")),

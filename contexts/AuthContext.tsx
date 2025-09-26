@@ -16,6 +16,7 @@ import { auth, db } from "@/lib/firebase"
 
 export type UserRole = "admin" | "profesor" | "user"
 
+// 👇 Agregamos "-" como valor válido para currentLevel
 export interface UserData {
   uid: string
   name: string
@@ -25,7 +26,7 @@ export interface UserData {
   gender: string
   LadicoScore: number
   completedCompetences: string[]
-  currentLevel: "basico" | "intermedio" | "avanzado"
+  currentLevel: "basico" | "intermedio" | "avanzado" | "-"   // ← aquí
   role?: UserRole
 }
 
@@ -86,7 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const fromDoc = snap.exists() ? (snap.data() as UserData) : null
                     const email = u.email || ""
 
-                    // Inferir role si no existe en Firestore (puedes reemplazar por custom claims)
+                    // Inferir role si no existe en Firestore (o usa custom claims si tienes)
                     const inferredRole: UserRole =
                       fromDoc?.role ??
                       (email.endsWith("@admin.com")
@@ -104,7 +105,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                       gender: fromDoc?.gender ?? "",
                       LadicoScore: fromDoc?.LadicoScore ?? 0,
                       completedCompetences: fromDoc?.completedCompetences ?? [],
-                      currentLevel: fromDoc?.currentLevel ?? "basico",
+                      // 👇 Mostrar "-" si aún no hay currentLevel en el doc
+                      currentLevel: (fromDoc?.currentLevel as UserData["currentLevel"]) ?? "-",
                       role: inferredRole,
                     }
 
@@ -190,6 +192,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       ? "profesor"
       : "user"
 
+    // 👇 currentLevel inicia como "-"
     const data: UserData = {
       uid: u.uid,
       name,
@@ -199,7 +202,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       gender,
       LadicoScore: 0,
       completedCompetences: [],
-      currentLevel: "basico",
+      currentLevel: "-",    // ← nivel inicial mostrado
       role,
     }
 

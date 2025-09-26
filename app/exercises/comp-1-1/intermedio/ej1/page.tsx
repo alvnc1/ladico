@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { ensureSession, markAnswered } from "@/lib/testSession";
 import { setPoint } from "@/lib/levelProgress";
-import { skillsInfo } from "@/components/data/digcompSkills"
+import { skillsInfo } from "@/components/data/digcompSkills";
 import { useRouter } from "next/navigation";
+
+// ⬇️ IMPORTA EL JSON (asegura tsconfig: "resolveJsonModule": true)
+import RAW_CASES from "./casos/info.json";
 
 /* ================== Config Puntaje/Sesión ================== */
 const COMPETENCE = "1.1";
@@ -22,8 +25,30 @@ const Q_ONE_BASED  = 1;             // P1 (1-based) para levelProgress
 const SESSION_PREFIX = "session:1.1:Intermedio";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
+/* ================== Tipos ================== */
+type GroupRule = {
+  label: string;
+  alts: string[];
+  required?: boolean;
+};
+type CaseSpec = {
+  id: string;
+  title: string;
+  need: string;
+  hint?: string;
+  groups: GroupRule[];
+  minGroups: number;
+};
+type CaseJson = CaseSpec & {
+  criteria?: {
+    countries?: string[]; // ["Chile"] | ["global"] | ["any"]
+    genders?: string[];   // ["Masculino"] | ["Femenino"] | ["Prefiero no decir"] | ["any"]
+    ageGroups?: string[]; // ["teen","young_adult","adult","older_adult","any"]
+  }
+};
+
 /* ================== Utils ================== */
-const normalize = (s: string) =>
+const normalizeText = (s: string) =>
   s
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -31,75 +56,32 @@ const normalize = (s: string) =>
     .trim()
     .replace(/\s+/g, " ");
 
-type GroupRule = {
-  label: string;      // etiqueta visible para feedback
-  alts: string[];     // alternativas aceptadas (normalizadas)
-  required?: boolean; // si esta señal es obligatoria
-};
-type CaseSpec = {
-  id: string;
-  title: string;
-  need: string;
-  hint?: string;
-  groups: GroupRule[];  // señales
-  minGroups: number;    // cuántas señales deben cumplirse
+const normalizeGender = (g?: string | null): "Masculino" | "Femenino" | "Prefiero no decir" | "any" => {
+  const v = (g || "").toLowerCase();
+  if (v.includes("masc")) return "Masculino";
+  if (v.includes("fem")) return "Femenino";
+  if (v.includes("prefiero") || v.includes("no decir")) return "Prefiero no decir";
+  return "any";
 };
 
-/* ================== Casos (LATAM) ================== */
-const CASES: CaseSpec[] = [
-  {
-    id: "pasaporte-mx",
-    title: "Renovación de pasaporte (México)",
-    need:
-      "Debes renovar tu pasaporte mexicano en 2025. Quieres los requisitos actualizados desde el sitio oficial y, si es posible, en un PDF descargable.",
-    groups: [
-      { label: "Concepto (pasaporte/renovar)", alts: ["pasaporte", "renovar"], required: true },
-      { label: "Dominio oficial (site:gob.mx)", alts: ["site:gob.mx"], required: true },
-      { label: "Palabra clave (requisitos)", alts: ["requisitos", "requisito"] },
-      { label: "Formato PDF (filetype:pdf)", alts: ["filetype:pdf", "pdf"] },
-      { label: "Año (2025)", alts: ["2025"] },
-    ],
-    minGroups: 3, // Debe tener: concepto + site + (alguna extra)
-  },
-  {
-    id: "beca-junaeb",
-    title: "Beca de Alimentación (Chile, JUNAEB)",
-    need:
-      "Buscas los requisitos 2025 de la Beca de Alimentación para la Educación Superior (JUNAEB), directamente en la web oficial.",
-    groups: [
-      { label: "Concepto (beca/BAES)", alts: ["beca", "baes"], required: true },
-      { label: "Alcance (alimentacion)", alts: ["alimentacion", "alimentación"] },
-      { label: "Dominio oficial (site:junaeb.cl)", alts: ["site:junaeb.cl"], required: true },
-      { label: "Año (2025)", alts: ["2025"] },
-      { label: "Palabra clave (requisitos)", alts: ["requisitos", "requisito"] },
-    ],
-    minGroups: 3, // concepto + site + (alguna extra)
-  },
-  {
-    id: "ipc-ar",
-    title: "IPC de Argentina (INDEC)",
-    need:
-      "Necesitas el informe mensual oficial del IPC (inflación) 2024 de Argentina, preferentemente en PDF, desde el organismo estadístico nacional.",
-    groups: [
-      { label: "Concepto (IPC/Inflación)", alts: ["ipc", "inflacion", "inflación"], required: true },
-      { label: "Dominio oficial (site:indec.gob.ar)", alts: ["site:indec.gob.ar"], required: true },
-      { label: "Formato PDF (filetype:pdf)", alts: ["filetype:pdf", "pdf"] },
-      { label: "Año (2024)", alts: ["2024"] },
-      { label: "Palabra clave (informe/comunicado)", alts: ["informe", "comunicado", "press", "prensa"] },
-    ],
-    minGroups: 3, // concepto + site + (alguna extra)
-  },
-];
+const getAgeGroup = (age?: number | null): "teen" | "young_adult" | "adult" | "older_adult" | "any" => {
+  if (typeof age !== "number" || Number.isNaN(age)) return "any";
+  if (age >= 13 && age <= 17) return "teen";
+  if (age >= 18 && age <= 24) return "young_adult";
+  if (age >= 25 && age <= 54) return "adult";
+  if (age >= 55) return "older_adult";
+  return "any";
+};
 
 /* ===== Evalúa una consulta contra las señales del caso ===== */
 function evaluateQuery(rawQuery: string, spec: CaseSpec) {
-  const q = normalize(rawQuery);
+  const q = normalizeText(rawQuery);
   const matched: string[] = [];
   const missingRequired: string[] = [];
   let hits = 0;
 
   for (const g of spec.groups) {
-    const ok = g.alts.some((alt) => q.includes(normalize(alt)));
+    const ok = g.alts.some((alt) => q.includes(normalizeText(alt)));
     if (ok) {
       matched.push(g.label);
       hits++;
@@ -121,16 +103,69 @@ function evaluateQuery(rawQuery: string, spec: CaseSpec) {
   };
 }
 
+/* ================== Filtrado por perfil ================== */
+function profileMatches(c: CaseJson, country: string, gender: string, ageGroup: string): boolean {
+  const cc = (c.criteria?.countries ?? ["any"]).map((x) => x.toLowerCase());
+  const gg = (c.criteria?.genders ?? ["any"]).map((x) => x.toLowerCase());
+  const aa = (c.criteria?.ageGroups ?? ["any"]).map((x) => x.toLowerCase());
+
+  const countryOk = cc.includes("any") || cc.includes("global") || cc.includes(country.toLowerCase());
+  const genderOk  = gg.includes("any") || gg.includes(gender.toLowerCase());
+  const ageOk     = aa.includes("any") || aa.includes(ageGroup.toLowerCase());
+
+  return countryOk && genderOk && ageOk;
+}
+
+function pickThreeCasesForProfile(all: CaseJson[], country: string, gender: string, ageGroup: string): CaseSpec[] {
+  const preferred = all.filter((c) => profileMatches(c, country, gender, ageGroup));
+  const globalPool = all.filter((c) => (c.criteria?.countries ?? []).map(s => s.toLowerCase()).includes("global"));
+
+  const out: CaseJson[] = [];
+
+  // 1) Toma preferidos del perfil
+  for (const c of preferred) {
+    if (out.length >= 3) break;
+    out.push(c);
+  }
+
+  // 2) Rellena con globales si faltan
+  if (out.length < 3) {
+    for (const c of globalPool) {
+      if (out.find((x) => x.id === c.id)) continue;
+      out.push(c);
+      if (out.length >= 3) break;
+    }
+  }
+
+  // 3) Si aún faltan, rellena con cualquiera
+  if (out.length < 3) {
+    for (const c of all) {
+      if (out.find((x) => x.id === c.id)) continue;
+      out.push(c);
+      if (out.length >= 3) break;
+    }
+  }
+
+  return out.slice(0, 3).map(({ id, title, need, hint, groups, minGroups }) => ({
+    id, title, need, hint, groups, minGroups
+  }));
+}
+
 /* ================== Página ================== */
 export default function LadicoP1InfoNeedsOpen() {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const totalQuestions = 3;
-    const progress = ((currentIndex + 1) / totalQuestions) * 100;
+  const [currentIndex] = useState(0);
+  const totalQuestions = 3;
+  const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
-    const router = useRouter();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, userData } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const ensuringRef = useRef(false);
+
+  // Perfil del usuario
+  const country = userData?.country || "global";
+  const gender = normalizeGender(userData?.gender);
+  const ageGroup = getAgeGroup(userData?.age);
 
   // Cargar sesión cacheada
   useEffect(() => {
@@ -174,13 +209,18 @@ export default function LadicoP1InfoNeedsOpen() {
     })();
   }, [user?.uid, sessionId]);
 
+  /* ================== Casos desde JSON (filtrados por perfil) ================== */
+  const CASES: CaseSpec[] = useMemo(() => {
+    const all = (RAW_CASES?.cases ?? []) as CaseJson[];
+    return pickThreeCasesForProfile(all, country, gender, ageGroup);
+  }, [country, gender, ageGroup]);
+
   /* ================== Estado del ejercicio ================== */
   const [queries, setQueries] = useState<string[]>(Array(CASES.length).fill(""));
-  const [results, setResults] = useState<
-    Array<ReturnType<typeof evaluateQuery> | null>
-  >(Array(CASES.length).fill(null));
-  const [validated, setValidated] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [results, setResults] = useState<Array<ReturnType<typeof evaluateQuery> | null>>(
+    Array(CASES.length).fill(null)
+  );
+  const [, setValidated] = useState(false);
 
   const setQuery = (idx: number, value: string) => {
     setQueries((prev) => {
@@ -200,8 +240,7 @@ export default function LadicoP1InfoNeedsOpen() {
     const evals = queries.map((q, i) => evaluateQuery(q, CASES[i]));
     setResults(evals);
 
-    const count = evals.reduce((acc, r) => acc + (r.ok ? 1 : 0), 0);
-    setCorrectCount(count);
+    const count = evals.reduce((acc, r) => acc + (r?.ok ? 1 : 0), 0);
     setValidated(true);
 
     const ok = count >= 2; // ✅ aprueba con 2/3
@@ -236,6 +275,7 @@ export default function LadicoP1InfoNeedsOpen() {
     } catch (e) {
       console.warn("No se pudo marcar P1 respondida:", e);
     }
+
     router.push("/exercises/comp-1-1/intermedio/ej2");
   };
 
@@ -250,10 +290,10 @@ export default function LadicoP1InfoNeedsOpen() {
                 <img
                   src="/ladico_green.png"
                   alt="Ladico Logo"
-                  className="w-20 h-20 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                  className="w-24 h-24 object-contain cursor-pointer hover:opacity-80 transition-opacity"
                 />
               </Link>
-              <span className="text-[#2e6372] text-sm opacity-80 bg-white/10 px-3 py-1 rounded-full">
+              <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-2 sm:px-3 py-1 rounded-full text-center">
                 | {COMPETENCE} {skillsInfo[COMPETENCE].title} - Nivel {LEVEL_FS}
               </span>
             </div>
@@ -286,31 +326,30 @@ export default function LadicoP1InfoNeedsOpen() {
         </div>
       </div>
 
-      {/* Tarjeta Ladico */}
+      {/* Tarjeta */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
-            <CardContent className="p-4 sm:p-6 lg:p-8">
+          <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Enunciado */}
             <div className="mb-8">
               <div className="flex items-center gap-4 mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    Escribir Consultas Precisas en Buscadores
-                  </h2>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Consultas Precisas</h2>
                 </div>
               </div>
               {/* Instrucciones */}
               <div className="mb-6 sm:mb-8">
                 <div className="bg-gray-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-l-4 border-[#286575]">
                   <p className="text-gray-700 leading-relaxed font-medium text-sm sm:text-base">
-                    Para cada caso, <b>escribe la consulta</b> que usarías en un buscador. 
+                    Para cada caso, <b>escribe la consulta</b> que usarías en un buscador.
                     Demuestra tu estrategia con operadores como <code>site:</code>,{" "}
                     <code>filetype:</code>, comillas y/o el año.
                   </p>
                 </div>
               </div>
             </div>
-            {/* Casos */}
+
+            {/* Casos (desde JSON filtrado) */}
             <div className="space-y-6">
               {CASES.map((c, idx) => {
                 const res = results[idx];
@@ -331,7 +370,7 @@ export default function LadicoP1InfoNeedsOpen() {
                       <label className="text-sm text-gray-700 block">
                         Tu consulta
                         <input
-                          value={queries[idx]}
+                          value={queries[idx] || ""}
                           onChange={(e) => setQuery(idx, e.target.value)}
                           className="mt-1 w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#286675]"
                         />
