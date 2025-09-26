@@ -1,78 +1,83 @@
 // app/exercises/comp-4-1/intermedio/ej1/page.tsx
 "use client"
 
-import { useMemo, useState, useEffect, useRef} from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import {
-  setPoint,
-} from "@/lib/levelProgress"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
+import { setPoint } from "@/lib/levelProgress"
 
-const COMPETENCE = "4.1" as const
-const LEVEL = "intermedio" as const
-// Clave de sesión por-usuario (aislada para este ejercicio)
-const SESSION_PREFIX = "session:4.1:Intermedio:P1_Order"
+// ===== Config =====
+const COMPETENCE = "4.1"
+const LEVEL = "intermedio"
+const SESSION_PREFIX = "session:4.1:Intermedio"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-// ============ Pasos/tecnologías (mostrar EXACTAMENTE en este orden inicial) ============
-const TECHNOLOGIES = [
-  { id: 1, text: "Instalar un programa antimalware complementario desde una fuente confiable." },
-  { id: 2, text: "Activar el firewall del sistema operativo para bloquear conexiones no autorizadas." },
-  { id: 3, text: "Descargar un antivirus reconocido desde su sitio oficial." },
-  { id: 4, text: "Verificar que el sistema operativo esté actualizado mediante las herramientas oficiales." },
-  { id: 5, text: "Instalar y activar el antivirus, configurando las actualizaciones automáticas." },
-] as const
+type Opt = "auto" | "necesario" | "semanal" | "mensual" | ""
 
-/**
- * Orden correcto (por ID) para la instalación y activación adecuada:
- * 1) Verificar SO actualizado         -> id 4
- * 2) Activar firewall                  -> id 2
- * 3) Descargar antivirus (sitio oficial)-> id 3
- * 4) Instalar y activar antivirus      -> id 5
- * 5) Instalar antimalware complementario-> id 1
- */
-const CORRECT_ORDER: ReadonlyArray<number> = [4, 2, 3, 5, 1]
+const OPTIONS: { value: Opt; label: string }[] = [
+  { value: "auto", label: "Automático" },
+  { value: "necesario", label: "Cuando sea necesario" },
+  { value: "semanal", label: "Semanal" },
+  { value: "mensual", label: "Mensual" },
+]
 
-type Tech = typeof TECHNOLOGIES[number]
-type SlotId = number | null
+const CORRECT = {
+  bloquear: "auto" as Opt,
+  antivirus: "auto" as Opt,
+  backups: "semanal" as Opt,
+  contras: "necesario" as Opt,
+  restaurar: "necesario" as Opt,
+}
 
 export default function Page() {
   const router = useRouter()
   const { user } = useAuth()
 
-  // ====== Sesión Firestore (única y aislada) ======
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const ensuringRef = useRef(false) // evita dobles llamados
+  const ensuringRef = useRef(false)
 
-  // 1) Cargar sesión cacheada por-usuario
+  // Estado de selects
+  const [bloquear, setBloquear] = useState<Opt | "">("")
+  const [antivirus, setAntivirus] = useState<Opt | "">("")
+  const [backups, setBackups] = useState<Opt | "">("")
+  const [contras, setContras] = useState<Opt | "">("")
+  const [restaurar, setRestaurar] = useState<Opt | "">("")
+
+  const correctCount = useMemo(() => {
+    let ok = 0
+    if (bloquear && bloquear === CORRECT.bloquear) ok++
+    if (antivirus && antivirus === CORRECT.antivirus) ok++
+    if (backups && backups === CORRECT.backups) ok++
+    if (contras && contras === CORRECT.contras) ok++
+    if (restaurar && restaurar === CORRECT.restaurar) ok++
+    return ok
+  }, [bloquear, antivirus, backups, contras, restaurar])
+
+  // Carga/asegura sesión
   useEffect(() => {
     if (!user || typeof window === "undefined") return
-    const sid = localStorage.getItem(sessionKeyFor(user.uid))
+    const LS_KEY = sessionKeyFor(user.uid)
+    const sid = localStorage.getItem(LS_KEY)
     if (sid) setSessionId(sid)
   }, [user?.uid])
 
-  // 2) Asegurar/crear sesión por-usuario si no hay cache
   useEffect(() => {
     if (!user) {
       setSessionId(null)
       return
     }
-
     const LS_KEY = sessionKeyFor(user.uid)
     const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
-
     if (cached) {
       if (!sessionId) setSessionId(cached)
       return
     }
-
     if (ensuringRef.current) return
     ensuringRef.current = true
-
     ;(async () => {
       try {
         const { id } = await ensureSession({
@@ -84,144 +89,36 @@ export default function Page() {
         setSessionId(id)
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test (P1_Order 4.1):", e)
+        console.error("No se pudo asegurar la sesión:", e)
       } finally {
         ensuringRef.current = false
       }
     })()
   }, [user?.uid, sessionId])
 
-  // ====== Estado Drag & Drop ======
-  // Pool inicial: EXACTAMENTE en el orden solicitado (sin barajar)
-  const [pool, setPool] = useState<number[]>(TECHNOLOGIES.map(t => t.id))
-  const [slots, setSlots] = useState<SlotId[]>([null, null, null, null, null])
-
-  const techById = (id: number) => TECHNOLOGIES.find(t => t.id === id) as Tech
-
-  const [dragData, setDragData] = useState<{ from: "pool" | "slot"; index: number } | null>(null)
-
-  function onDragStart(from: "pool" | "slot", index: number) {
-    setDragData({ from, index })
-  }
-  function onDragEnd() {
-    setDragData(null)
-  }
-
-  function onDropToSlot(slotIndex: number) {
-    if (!dragData) return
-
-    // Calcular nueva foto de pool/slots de forma atómica
-    let newPool = [...pool]
-    let newSlots = [...slots] as SlotId[]
-
-    if (dragData.from === "pool") {
-      const id = pool[dragData.index]
-      if (id == null) return
-      const target = newSlots[slotIndex]
-      // 1) quitar del pool por índice original
-      newPool.splice(dragData.index, 1)
-      // 2) si había algo en el slot, devolverlo al pool
-      if (target !== null) newPool.push(target)
-      // 3) colocar en slot
-      newSlots[slotIndex] = id
-    } else {
-      // mover entre slots (intercambio)
-      const id = slots[dragData.index]
-      const target = newSlots[slotIndex]
-      newSlots[dragData.index] = target
-      newSlots[slotIndex] = id
-    }
-
-    setPool(newPool)
-    setSlots(newSlots)
-    setDragData(null)
-  }
-
-  function onDropToPool() {
-    if (!dragData || dragData.from !== "slot") return
-    let newPool = [...pool]
-    let newSlots = [...slots] as SlotId[]
-    const id = newSlots[dragData.index]
-    if (id !== null) {
-      newPool.push(id)
-      newSlots[dragData.index] = null
-    }
-    setPool(newPool)
-    setSlots(newSlots)
-    setDragData(null)
-  }
-
-  function allowDrop(e: React.DragEvent) {
-    e.preventDefault()
-  }
-
-  // Quitar un item del slot con “×”
-  function removeFromSlot(slotIndex: number) {
-    let newPool = [...pool]
-    let newSlots = [...slots] as SlotId[]
-    const id = newSlots[slotIndex]
-    if (id !== null) {
-      newPool.push(id)
-      newSlots[slotIndex] = null
-    }
-    setPool(newPool)
-    setSlots(newSlots)
-  }
-
-  // ====== Puntaje: coincidencia exacta del orden ======
-  const point: 0 | 1 = useMemo(() => {
-    const filled = slots.every(s => s !== null)
-    if (!filled) return 0
-    for (let i = 0; i < CORRECT_ORDER.length; i++) {
-      if (slots[i] !== CORRECT_ORDER[i]) return 0
-    }
-    return 1
-  }, [slots])
-
-  // ====== Continuar ======
+  // Envío
   const handleNext = async () => {
-    // Guardar punto local (P1)
+    const point: 0 | 1 = correctCount >= 3 ? 1 : 0
+    // P1 → guarda en índice visible 1
     setPoint(COMPETENCE, LEVEL, 1, point)
 
-    // Registrar respuesta en sesión (índice 0 = P1)
-    try {
-      const LS_KEY = user ? sessionKeyFor(user.uid) : null
+    const sid =
+      sessionId ||
+      (typeof window !== "undefined" && user ? localStorage.getItem(sessionKeyFor(user.uid)) : null)
 
-      let sid =
-        sessionId ||
-        (LS_KEY && typeof window !== "undefined"
-          ? localStorage.getItem(LS_KEY)
-          : null)
-
-      if (!sid && user && !ensuringRef.current) {
-        ensuringRef.current = true
-        try {
-          const created = await ensureSession({
-            userId: user.uid,
-            competence: COMPETENCE,
-            level: "Intermedio",
-            totalQuestions: 3,
-          })
-          sid = created.id
-          setSessionId(created.id)
-          if (typeof window !== "undefined")
-            localStorage.setItem(LS_KEY!, created.id)
-        } finally {
-          ensuringRef.current = false
-        }
+    if (sid) {
+      try {
+        // P1 → índice 0-based = 0
+        await markAnswered(sid, 0, point === 1)
+      } catch (e) {
+        console.warn("No se pudo marcar la respuesta:", e)
       }
-
-      if (sid) {
-        await markAnswered(sid, 0, point === 1) // índice 0 = P1
-      }
-    } catch (e) {
-      console.warn("No se pudo marcar P1 respondida:", e)
     }
-
+    // navega a la P2 del mismo bloque
     router.push("/exercises/comp-4-1/intermedio/ej2")
   }
 
-  const progressPct = (1 / 3) * 100 // Pregunta 1 de 3
+  const progressPct = (1 / 3) * 100
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -252,7 +149,7 @@ export default function Page() {
             Pregunta 1 de 3
           </span>
           <div className="flex space-x-2">
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
+            <div className="w-3 h-3 rounded-full bg-[#286575]" />
             <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
             <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
           </div>
@@ -271,105 +168,49 @@ export default function Page() {
           <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Organizar formas de proteger mis dispositivos y contenidos digitales
+              Organizar configuraciones para proteger dispositivos y contenidos
             </h2>
 
             {/* Contexto */}
             <div className="mb-6">
-              <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575] space-y-3">
-                <p className="text-gray-700 leading-relaxed">
-                  Has adquirido un computador nuevo, con el sistema operativo
-                  recién instalado y sin ninguna medida de protección activa. Para protegerlo
-                  contra virus, malware y accesos no autorizados, dispones de diferentes opciones
-                  de configuración y software.
-                </p>
-                <p className="text-gray-700 leading-relaxed font-medium">
-                  Organiza los pasos según el nivel de prioridad: primero los más vitales para 
-                  la seguridad inmediata del computador, y luego los complementarios.
+              <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
+                <p className="text-gray-700">
+                  Clasifica cada acción según el tipo de configuración más adecuada para proteger tus dispositivos y contenidos digitales.
                 </p>
               </div>
             </div>
 
-            {/* Layout DnD — dos recuadros */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Pool (lista inicial en el ORDEN solicitado) */}
-              <section
-                className="bg-white border-2 border-gray-200 rounded-2xl p-4"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={onDropToPool}
-                aria-label="Pasos disponibles para arrastrar"
-              >
-                <h3 className="font-semibold text-gray-900 mb-3">Pasos disponibles</h3>
-                <div className="space-y-3 min-h-[220px]">
-                  {pool.map((id, idx) => {
-                    const t = techById(id)
-                    return (
-                      <div
-                        key={id}
-                        draggable
-                        onDragStart={() => onDragStart("pool", idx)}
-                        onDragEnd={onDragEnd}
-                        className="relative cursor-grab active:cursor-grabbing bg-white p-3 rounded-2xl border-2 border-gray-200 text-sm transition-all duration-200 hover:border-[#286575] hover:bg-gray-50"
-                        role="button"
-                        tabIndex={0}
-                      >
-                        {t.text}
-                      </div>
-                    )
-                  })}
-                </div>
-              </section>
-
-              {/* Orden final */}
-              <section className="bg-white border border-gray-200 rounded-2xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Orden de mayor a menor prioridad</h3>
-                <div className="space-y-3">
-                  {slots.map((slot, i) => {
-                    const isFilled = !!slot
-                    return (
-                      <div
-                        key={i}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={() => onDropToSlot(i)}
-                        className={`rounded-xl transition relative
-                          ${
-                            isFilled
-                              ? "border-2 border-transparent bg-transparent p-0 min-h-0"
-                              : "min-h-[56px] border-2 border-dashed border-gray-300 bg-white p-3"
-                          }`}
-                        aria-label={`Caja destino ${i + 1}`}
-                      >
-                        {isFilled ? (
-                          <div
-                            draggable
-                            onDragStart={() => onDragStart("slot", i)}
-                            onDragEnd={onDragEnd}
-                            className="cursor-grab active:cursor-grabbing"
-                          >
-                            <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3 text-sm">
-                              <button
-                                onClick={() => removeFromSlot(i)}
-                                className="leading-none text-gray-500 hover:text-gray-700"
-                                aria-label="Quitar"
-                                type="button"
-                                title="Quitar"
-                              >
-                                ×
-                              </button>
-                              <span>{techById(slot!).text}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-400">Suelta aquí</span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </section>
+            {/* Ítems */}
+            <div className="space-y-4">
+              <Item
+                text="Bloquear la pantalla al dejar el dispositivo"
+                value={bloquear}
+                onChange={setBloquear}
+              />
+              <Item
+                text="Actualizar el antivirus"
+                value={antivirus}
+                onChange={setAntivirus}
+              />
+              <Item
+                text="Revisar las copias de seguridad y comprobar que se realizaron correctamente"
+                value={backups}
+                onChange={setBackups}
+              />
+              <Item
+                text="Revisar/cambiar contraseñas en cuentas sensibles"
+                value={contras}
+                onChange={setContras}
+              />
+              <Item
+                text="Restaurar el sistema tras infección de malware"
+                value={restaurar}
+                onChange={setRestaurar}
+              />
             </div>
-            {/* Acciones */}
-            <div className="mt-8 flex items-center justify-end">
+
+            {/* Footer */}
+            <div className="mt-6 flex items-center justify-end">
               <Button
                 onClick={handleNext}
                 className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
@@ -380,6 +221,35 @@ export default function Page() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  )
+}
+
+/* ====== UI pieces ====== */
+function Item({
+  text,
+  value,
+  onChange,
+}: {
+  text: string
+  value: Opt | ""
+  onChange: (v: Opt | "") => void
+}) {
+  return (
+    <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
+      <div className="text-sm text-gray-800 mb-2">{text}</div>
+      <select
+        className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
+        value={value}
+        onChange={(e) => onChange(e.target.value as Opt)}
+      >
+        <option value="">Selecciona una opción…</option>
+        {OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

@@ -296,7 +296,8 @@ export default function Page() {
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Empareja cada medida preventiva con su objetivo.
+                  Arrastra cada objetivo hacia la medida preventiva correspondiente, 
+                  de manera que cada medida tenga solo un objetivo asignado.
                 </p>
               </div>
             </div>
@@ -324,48 +325,51 @@ export default function Page() {
                 </ul>
               </section>
 
-              {/* ACCIONES con slots — derecha (vacío dashed, asignado AZUL) */}
-              <section className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {MEASURES.map((a) => {
-                  const motiveId = assign[a.id]
-                  const motive = motiveId ? motiveMap[motiveId] : null
-                  const assigned = Boolean(motiveId)
+              {/* ACCIONES con slots — derecha (encerradas en un mismo recuadro) */}
+              <section className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-4">
+                <h3 className="font-semibold text-gray-900 mb-3">Medidas preventivas</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {MEASURES.map((a) => {
+                    const motiveId = assign[a.id]
+                    const motive = motiveId ? motiveMap[motiveId] : null
+                    const assigned = Boolean(motiveId)
 
-                  return (
-                    <div
-                      key={a.id}
-                      className={
-                        assigned
-                          ? "rounded-2xl border-2 p-3 bg-blue-50 border-blue-400"
-                          : "rounded-2xl border-2 border-dashed p-3 bg-white border-gray-200"
-                      }
-                      {...droppableProps((mId) => dropToAction(a.id, mId))}
-                    >
-                      <h4 className="font-semibold text-gray-900 mb-2">{a.text}</h4>
-                      <div className="min-h-[72px]">
-                        {!motiveId ? (
-                          <p className="text-xs text-gray-400 italic">Suelta aquí el motivo.</p>
-                        ) : (
-                          <div
-                            className="p-2.5 rounded-xl border text-sm bg-white border-gray-200 flex items-start gap-2"
-                            {...draggableProps(motiveId)}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => unassign(a.id)}
-                              className="rounded-md hover:bg-gray-100 p-1"
-                              aria-label="Quitar motivo"
-                              title="Quitar motivo"
+                    return (
+                      <div
+                        key={a.id}
+                        className={
+                          assigned
+                            ? "rounded-2xl border-2 p-3 bg-blue-50 border-blue-400"
+                            : "rounded-2xl border-2 border-dashed p-3 bg-white border-gray-200"
+                        }
+                        {...droppableProps((mId) => dropToAction(a.id, mId))}
+                      >
+                        <h4 className="font-semibold text-gray-900 mb-2">{a.text}</h4>
+                        <div className="min-h-[72px]">
+                          {!motiveId ? (
+                            <p className="text-xs text-gray-400 italic">Suelta aquí el motivo.</p>
+                          ) : (
+                            <div
+                              className="p-2.5 rounded-xl border text-sm bg-white border-gray-200 flex items-start gap-2"
+                              {...draggableProps(motiveId)}
                             >
-                              <X className="w-4 h-4 text-gray-500" />
-                            </button>
-                            <span className="text-gray-700">{motive?.title}</span>
-                          </div>
-                        )}
+                              <button
+                                type="button"
+                                onClick={() => unassign(a.id)}
+                                className="rounded-md hover:bg-gray-100 p-1"
+                                aria-label="Quitar motivo"
+                                title="Quitar motivo"
+                              >
+                                <X className="w-4 h-4 text-gray-500" />
+                              </button>
+                              <span className="text-gray-700">{motive?.title}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </section>
             </div>
 
@@ -384,3 +388,4 @@ export default function Page() {
     </div>
   )
 }
+

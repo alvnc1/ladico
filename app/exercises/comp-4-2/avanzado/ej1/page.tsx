@@ -178,9 +178,7 @@ export default function Advanced42Ej1Page() {
                 Actúa sobre las configuraciones de tu cuenta para proteger tu privacidad.
               </p>
               <p className="text-gray-700 leading-relaxed">
-                Ingresa al entorno simulado de correo y aplica medidas de seguridad en tu cuenta (por ejemplo:
-                cambiar la contraseña, habilitar la verificación en dos pasos, cerrar sesiones activas y revisar
-                actividad reciente).
+                Ingresa al entorno simulado de correo y aplica medidas de seguridad en tu cuenta.
               </p>
               <p className="text-sm">
                 <Link

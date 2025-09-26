@@ -3,35 +3,62 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
 import { setPoint } from "@/lib/levelProgress"
 
-// ===== Configuración =====
-const COMPETENCE = "4.1"
-const LEVEL = "avanzado"
+// ===== Config =====
+const COMPETENCE = "4.1" as const
+const LEVEL = "avanzado" as const
+const QUESTION_NUM = 3 // P3 de 3 (1-based en setPoint)
 const SESSION_PREFIX = "session:4.1:Avanzado"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
+
+// Opciones para los selects
+type Method = "A" | "B"
+const METHOD_OPTIONS: { value: Method; label: string }[] = [
+  { value: "A", label: "Método A – Cifrado completo del disco duro" },
+  { value: "B", label: "Método B – Nube con cifrado de extremo a extremo" },
+]
+
+// Respuestas esperadas (ajustadas a A/B)
+const EXPECT = {
+  reliability: "B" as Method, // Fiabilidad -> Nube E2E
+  privacy: "A" as Method,     // Privacidad -> Cifrado de disco
+}
+
+// Justificación (1 correcta + 2 distractores)
+type JustKey = "ok" | "same" | "none" | ""
+const JUST_TEXT: Record<Exclude<JustKey, "">, string> = {
+  ok:   "Cada método fortalece un aspecto distinto: uno asegura la fiabilidad con la continuidad del acceso a los datos y el otro asegura la privacidad con la protección frente a accesos no autorizados.",
+  same: "Ambos métodos ofrecen el mismo nivel de protección sin diferencias relevantes.",
+  none: "Ninguno de los métodos contribuye realmente a la fiabilidad ni a la privacidad.",
+}
 
 export default function Page() {
   const router = useRouter()
   const { user } = useAuth()
+
+  // ===== Sesión =====
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
 
-  // Carga sesión cacheada
+  // 1) Cargar sesión cacheada por-usuario
   useEffect(() => {
     if (!user || typeof window === "undefined") return
     const sid = localStorage.getItem(sessionKeyFor(user.uid))
     if (sid) setSessionId(sid)
   }, [user?.uid])
 
-  // Asegura sesión en Firestore
+  // 2) Asegurar/crear sesión por-usuario si no hay cache
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      setSessionId(null)
+      return
+    }
     const LS_KEY = sessionKeyFor(user.uid)
     const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
     if (cached) {
@@ -46,52 +73,75 @@ export default function Page() {
           userId: user.uid,
           competence: COMPETENCE,
           level: "Avanzado",
-          totalQuestions: 3, // ajusta si son más
+          totalQuestions: 3,
         })
         setSessionId(id)
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
       } catch (e) {
-        console.error("No se pudo crear la sesión:", e)
+        console.error("No se pudo asegurar la sesión (4.1 Avanzado P3):", e)
       } finally {
         ensuringRef.current = false
       }
     })()
   }, [user?.uid, sessionId])
 
-  // Envío vacío (por ahora no evalúa)
-  const handleNext = async () => {
-    setPoint(COMPETENCE, LEVEL, 3, 0) // Pregunta 3, punto 0
+  // ===== Estados de respuesta =====
+  const [reliability, setReliability] = useState<Method | "">("")
+  const [privacy, setPrivacy] = useState<Method | "">("")
+  const [justKey, setJustKey] = useState<JustKey>("")
 
-    const sid = sessionId || (user ? localStorage.getItem(sessionKeyFor(user.uid)) : null)
-    if (sid) {
-      try {
-        await markAnswered(sid, 2, false) // índice 2 = P3
-      } catch (e) {
-        console.warn("No se pudo marcar P3:", e)
+  // ===== Puntaje =====
+  const subpoints = useMemo(() => {
+    let s = 0
+    if (reliability && reliability === EXPECT.reliability) s += 1
+    if (privacy && privacy === EXPECT.privacy) s += 1
+    if (justKey === "ok") s += 1
+    return s
+  }, [reliability, privacy, justKey])
+
+  // punto final (≥2 subpuntos)
+  const point: 0 | 1 = subpoints >= 2 ? 1 : 0
+
+  // ===== Continuar =====
+  const handleFinish = async () => {
+    setPoint(COMPETENCE, LEVEL, QUESTION_NUM, point)
+
+    // marcar P3 (índice 2 en markAnswered)
+    try {
+      const LS_KEY = user ? sessionKeyFor(user.uid) : null
+      const sid =
+        sessionId ||
+        (LS_KEY && typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null)
+
+      if (sid) {
+        await markAnswered(sid, 2, point === 1)
       }
+    } catch (e) {
+      console.warn("No se pudo marcar P3 respondida:", e)
     }
 
-    router.push("/dashboard") // o a la página de resultados de este nivel
+    // Redirige al dashboard (ajusta si tienes una página de resultados)
+    router.push("/dashboard")
   }
 
-  const progressPct = 100
+  const progressPct = 100 // P3 de 3
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white">
-            <div className="flex flex-col sm:flex-row items-center sm:space-x-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4">
               <Link href="/dashboard">
                 <img
                   src="/ladico_green.png"
                   alt="Ladico Logo"
-                  className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+                  className="w-16 h-16 sm:w-20 sm:h-20 object-contain cursor-pointer hover:opacity-80 transition-opacity"
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-3 py-1 rounded-full">
-                | 4.1 Protección de dispositivos - Nivel Avanzado
+                | 4.1 Protección de dispositivos — Nivel Avanzado
               </span>
             </div>
           </div>
@@ -101,13 +151,13 @@ export default function Page() {
       {/* Progreso */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-white mb-4">
-          <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 py-1 rounded-full">
+          <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
             Pregunta 3 de 3
           </span>
           <div className="flex space-x-2">
-            <div className="w-3 h-3 rounded-full bg-[#286575]" />
-            <div className="w-3 h-3 rounded-full bg-[#286575]" />
-            <div className="w-3 h-3 rounded-full bg-[#286575]" />
+            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
+            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
+            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
           </div>
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
@@ -118,24 +168,108 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Tarjeta principal vacía */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6">
-        <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575]/20">
-          <CardContent className="p-6 space-y-6">
+      {/* Tarjeta principal */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
+        <Card className="bg-white shadow-2xl sm:rounded-3xl rounded-2xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
+          <CardContent className="p-4 sm:p-6 lg:p-8 space-y-6">
+            {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-              [Título del ejercicio P3]
+              Comparación de métodos de almacenamiento seguro
             </h2>
-            <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
-              <p className="text-gray-700">[Instrucción o contexto pendiente]</p>
-            </div>
-            <div className="space-y-4">
-              {/* Contenido de la P3 por completar */}
+
+            {/* Contexto */}
+            <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575] space-y-3">
+              <p className="text-gray-700 leading-relaxed">
+                Tu organización debe decidir cómo almacenar información sensible de clientes en los dispositivos
+                de trabajo. Se presentan dos métodos y debes evaluarlos considerando fiabilidad y privacidad.
+              </p>
             </div>
 
-            <div className="flex justify-end">
+            {/* Métodos (A y B) — uno debajo del otro, sin hover */}
+            <div className="grid grid-cols-1 gap-6">
+              <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white">
+                <h3 className="font-semibold text-gray-900 mb-2">Método A — Cifrado completo del disco duro</h3>
+                <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                  <li>Todos los datos se procesan con un sistema de cifrado aplicado al disco.</li>
+                  <li>El acceso depende de claves criptográficas configuradas en el arranque.</li>
+                  <li>Puede generar un impacto leve en el rendimiento del sistema.</li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white">
+                <h3 className="font-semibold text-gray-900 mb-2">Método B — Nube con cifrado de extremo a extremo</h3>
+                <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                  <li>Los archivos se cifran antes de salir del dispositivo.</li>
+                  <li>El almacenamiento se distribuye en servidores remotos.</li>
+                  <li>La sincronización se realiza automáticamente cuando hay conexión a internet.</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Selecciones: Fiabilidad y Privacidad */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] transition-colors">
+                <label className="block text-sm text-gray-700 mb-2 font-medium">
+                  ¿Cuál método ofrece mejor <span className="font-semibold">fiabilidad</span>?
+                </label>
+                <select
+                  className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
+                  value={reliability}
+                  onChange={(e) => setReliability(e.target.value as Method)}
+                >
+                  <option value="">Selecciona un método…</option>
+                  {METHOD_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] transition-colors">
+                <label className="block text-sm text-gray-700 mb-2 font-medium">
+                  ¿Cuál método ofrece mejor <span className="font-semibold">privacidad</span>?
+                </label>
+                <select
+                  className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
+                  value={privacy}
+                  onChange={(e) => setPrivacy(e.target.value as Method)}
+                >
+                  <option value="">Selecciona un método…</option>
+                  {METHOD_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Justificación final */}
+            <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] transition-colors">
+              <h3 className="font-semibold text-gray-900 mb-3">Justificación de tu elección</h3>
+              <fieldset className="space-y-3">
+                {(["ok", "same", "none"] as Exclude<JustKey, "">[]).map((k) => (
+                  <label key={k} className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="just"
+                      value={k}
+                      checked={justKey === k}
+                      onChange={() => setJustKey(k)}
+                      className="mt-1"
+                    />
+                    <span className="text-sm text-gray-800">{JUST_TEXT[k]}</span>
+                  </label>
+                ))}
+              </fieldset>
+            </div>
+
+            {/* Acciones */}
+            <div className="flex justify-end pt-2">
               <Button
-                onClick={handleNext}
-                className="w-full sm:w-auto px-8 py-3 bg-[#286675] rounded-xl text-white hover:bg-[#3a7d89]"
+                onClick={handleFinish}
+                className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
               >
                 Finalizar
               </Button>

@@ -1,0 +1,42 @@
+{
+  "id": "4.1-avanzado-ej1",
+  "baseVersion": "v2",
+  "correctOrderIds": [4, 3, 5, 1, 2],
+  "base": {
+    "title": "Priorización de medidas tras un incidente de seguridad",
+    "stem": "Una empresa sufrió accesos no autorizados a varios dispositivos por contraseñas débiles y ausencia de autenticación multifactor (MFA). El área de seguridad propuso varias medidas. Ordena de mayor a menor prioridad y luego justifica tu decisión.",
+    "measures": [
+      { "id": 1, "text": "Establecer políticas que prohíban la instalación de aplicaciones externas no autorizadas." },
+      { "id": 2, "text": "Realizar auditorías de seguridad periódicas para detectar vulnerabilidades." },
+      { "id": 3, "text": "Forzar el cambio inmediato de contraseñas en todos los dispositivos y servicios." },
+      { "id": 4, "text": "Implementar autenticación multifactor (MFA)." },
+      { "id": 5, "text": "Activar el cifrado completo de disco en los equipos." }
+    ]
+  },
+  "variants": {
+    "school": {
+      "stem": "En un colegio se detectaron accesos no autorizados a cuentas institucionales por contraseñas débiles y falta de MFA. El equipo TI propuso varias medidas. Ordena de mayor a menor prioridad y justifica tu decisión.",
+      "measures": [
+        { "id": 3, "text": "Forzar el cambio inmediato de contraseñas del correo institucional y de la plataforma educativa." },
+        { "id": 4, "text": "Activar MFA para estudiantes y docentes en todas las cuentas institucionales." },
+        { "id": 5, "text": "Cifrar los equipos de laboratorio y los dispositivos de préstamo para proteger datos en caso de pérdida." }
+      ]
+    },
+    "university": {
+      "stem": "Una universidad sufrió accesos no autorizados en laboratorios y servicios en línea debido a contraseñas débiles y ausencia de MFA. Ordena de mayor a menor prioridad y justifica tu decisión.",
+      "measures": [
+        { "id": 3, "text": "Forzar el cambio de contraseñas en cuentas de estudiantes y personal (correo, LMS, repositorios)." },
+        { "id": 4, "text": "Implementar MFA en el SSO universitario y en sistemas críticos (VPN, LMS)." },
+        { "id": 2, "text": "Programar auditorías periódicas de seguridad en LMS, repositorios y VPN institucional." }
+      ]
+    },
+    "work": {
+      "stem": "Una empresa detectó accesos no autorizados por contraseñas débiles y falta de MFA en equipos de trabajo. Ordena de mayor a menor prioridad y justifica tu decisión.",
+      "measures": [
+        { "id": 3, "text": "Forzar cambio inmediato de contraseñas en servicios corporativos (correo, VPN, gestión)." },
+        { "id": 4, "text": "Implementar MFA en correo corporativo, VPN y sistemas críticos." },
+        { "id": 1, "text": "Actualizar y aplicar políticas de software no autorizado en estaciones de trabajo." }
+      ]
+    }
+  }
+}

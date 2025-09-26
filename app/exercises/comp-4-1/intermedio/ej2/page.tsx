@@ -1,9 +1,10 @@
 // app/exercises/comp-4-1/intermedio/ej2/page.tsx
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
@@ -16,28 +17,19 @@ const LEVEL = "intermedio"
 const SESSION_PREFIX = "session:4.1:Intermedio"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-type Threat =
-  | "phishing"
-  | "malware"
-  | "estafa-viral"
-  | "falsa-actualizacion"
-  | "suplantacion"
+// Valores normalizados (internos)
+type Threat = "smishing" | "phishing" | "malware" | "virus"
 
+// Etiquetas visibles tal como pediste
 const OPTIONS: { value: Threat; label: string }[] = [
-  { value: "phishing", label: "Phishing" },
-  { value: "malware", label: "Malware" },
-  { value: "estafa-viral", label: "Estafa viral" },
-  { value: "falsa-actualizacion", label: "Falsa actualización" },
-  { value: "suplantacion", label: "Suplantación de identidad" },
+  { value: "smishing", label: "smishing" },
+  { value: "phishing", label: "pishing" },
+  { value: "malware", label: "malware" },
+  { value: "virus", label: "virus" },
 ]
 
-const CORRECT = {
-  s1: "phishing",
-  s2: "malware",
-  s3: "estafa-viral",
-  s4: "falsa-actualizacion",
-  s5: "suplantacion",
-} as const
+// Correcta para esta imagen (SMS falso Netflix)
+const CORRECT: Threat = "smishing"
 
 export default function Page() {
   const router = useRouter()
@@ -46,22 +38,10 @@ export default function Page() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
 
-  // Estado de selects
-  const [s1, setS1] = useState<Threat | "">("")
-  const [s2, setS2] = useState<Threat | "">("")
-  const [s3, setS3] = useState<Threat | "">("")
-  const [s4, setS4] = useState<Threat | "">("")
-  const [s5, setS5] = useState<Threat | "">("")
+  // Estado del select
+  const [answer, setAnswer] = useState<Threat | "">("")
 
-  const correctCount = useMemo(() => {
-    let ok = 0
-    if (s1 && s1 === CORRECT.s1) ok++
-    if (s2 && s2 === CORRECT.s2) ok++
-    if (s3 && s3 === CORRECT.s3) ok++
-    if (s4 && s4 === CORRECT.s4) ok++
-    if (s5 && s5 === CORRECT.s5) ok++
-    return ok
-  }, [s1, s2, s3, s4, s5])
+  const isCorrect = useMemo(() => answer === CORRECT, [answer])
 
   // Carga/asegura sesión
   useEffect(() => {
@@ -104,8 +84,7 @@ export default function Page() {
 
   // Envío
   const handleNext = async () => {
-    const point: 0 | 1 = correctCount >= 3 ? 1 : 0
-    // P2 → guarda en índice visible 2
+    const point: 0 | 1 = isCorrect ? 1 : 0
     setPoint(COMPETENCE, LEVEL, 2, point)
 
     const sid =
@@ -114,13 +93,11 @@ export default function Page() {
 
     if (sid) {
       try {
-        // P2 → índice 0-based = 1
-        await markAnswered(sid, 1, point === 1)
+        await markAnswered(sid, 1, point === 1) // P2 → índice 1
       } catch (e) {
         console.warn("No se pudo marcar la respuesta:", e)
       }
     }
-    // navega a la P3 del mismo bloque
     router.push("/exercises/comp-4-1/intermedio/ej3")
   }
 
@@ -176,53 +153,41 @@ export default function Page() {
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
               Identificación de amenazas digitales
             </h2>
-
-            {/* Contexto */}
+           {/* Contexto */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700">
-                  Lee cada escenario y selecciona en el desplegable la categoría de amenaza que lo describe mejor.
+                  Observa la imagen y selecciona la categoría de amenaza que lo describe mejor.
                 </p>
               </div>
             </div>
+            {/* Imagen pequeña sin recuadro */}
+            <div className="w-full flex justify-center mb-4">
+              <Image
+                src="/Smishing.jpg" // en /public
+                alt="SMS fraudulento de Netflix"
+                width={360}
+                height={270}
+                className="object-contain"
+                priority
+              />
+            </div>
 
-            {/* Escenarios con hover consistente */}
-            <div className="space-y-4">
-              <Scenario
-                emoji=""
-                text="Correo de un banco pidiendo tu contraseña con un enlace sospechoso."
-                value={s1}
-                onChange={setS1}
-                options={OPTIONS}
-              />
-              <Scenario
-                emoji=""
-                text="Aplicación gratuita que solicita acceso a ubicación y contactos."
-                value={s2}
-                onChange={setS2}
-                options={OPTIONS}
-              />
-              <Scenario
-                emoji=""
-                text="Mensaje de WhatsApp: “Gana un iPhone si reenvías este mensaje”."
-                value={s3}
-                onChange={setS3}
-                options={OPTIONS}
-              />
-              <Scenario
-                emoji=""
-                text="Instalador que aparenta ser una actualización de Adobe Flash Player."
-                value={s4}
-                onChange={setS4}
-                options={OPTIONS}
-              />
-              <Scenario
-                emoji=""
-                text="Perfil en redes sociales creado con fotos robadas de otra persona."
-                value={s5}
-                onChange={setS5}
-                options={OPTIONS}
-              />
+            {/* Recuadro solo para el dropdown */}
+            <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
+              
+              <select
+                className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value as Threat)}
+              >
+                <option value="">Selecciona una opción…</option>
+                {OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Footer */}
@@ -237,42 +202,6 @@ export default function Page() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  )
-}
-
-/* ====== UI pieces ====== */
-function Scenario({
-  emoji,
-  text,
-  value,
-  onChange,
-  options,
-}: {
-  emoji: string
-  text: string
-  value: Threat | ""
-  onChange: (v: Threat | "") => void
-  options: { value: Threat; label: string }[]
-}) {
-  return (
-    <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
-      <div className="text-sm text-gray-800 mb-2">
-        <span className="mr-2">{emoji}</span>
-        {text}
-      </div>
-      <select
-        className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
-        value={value}
-        onChange={(e) => onChange(e.target.value as Threat)}
-      >
-        <option value="">Selecciona una categoría…</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
     </div>
   )
 }

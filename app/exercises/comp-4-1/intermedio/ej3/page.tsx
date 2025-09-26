@@ -31,26 +31,20 @@ export default function Page() {
   const ensuringRef = useRef(false)
 
   // ===== Estado =====
-  // Q: Wi-Fi abiertas
   const [wifi, setWifi] = useState<OptId | "">("")
-  // Q: Actualizaciones automáticas
   const [auto, setAuto] = useState<OptId2 | "">("")
-  // Q: Copias en nube sin cifrado
   const [nube, setNube] = useState<OptId3 | "">("")
-  // Clasificación global
   const [nivel, setNivel] = useState<GlobalLevel | "">("")
-  // Justificación (SIEMPRE visible)
   const [justif, setJustif] = useState<JustId | "">("")
 
   // ===== Corrección =====
-  const wifiOk = wifi === "wifi_priv" // ✅ Expone los datos…
-  const autoOk = auto === "auto_seg"  // ✅ Mantiene protegido…
-  const nubeOk = nube === "nube_riesgo" // ✅ Riesgo para la privacidad…
-  const nivelOk = nivel === "bajo" // ✅ por dos vulnerabilidades críticas
-  const justOk = justif === "just_dos_vuln" // ✅ dos configuraciones críticas…
+  const wifiOk = wifi === "wifi_priv"
+  const autoOk = auto === "auto_seg"
+  const nubeOk = nube === "nube_riesgo"
+  const nivelOk = nivel === "bajo"
+  const justOk = justif === "just_dos_vuln"
 
   const point: 0 | 1 = useMemo(() => {
-    // Requisito: tres afirmaciones correctas + clasificación correcta + justificación correcta
     const allAnswered = wifi && auto && nube && nivel && justif
     if (!allAnswered) return 0
     return wifiOk && autoOk && nubeOk && nivelOk && justOk ? 1 : 0
@@ -109,7 +103,7 @@ export default function Page() {
         console.warn("No se pudo marcar la respuesta (P3):", e)
       }
     }
-    router.push("/dashboard") // o la ruta de resultados/siguiente
+    router.push("/dashboard")
   }
 
   const progressPct = 100 // P3 de 3
@@ -173,19 +167,13 @@ export default function Page() {
                   ajustes de seguridad y privacidad activados por defecto. Analiza su impacto, clasifica el nivel global
                   de protección y justifica tu decisión.
                 </p>
-                <ul className="list-disc pl-5 text-gray-700 text-sm">
-                  <li>Conexión automática a redes Wi-Fi abiertas.</li>
-                  <li>Actualización automática del sistema operativo.</li>
-                  <li>Copias de seguridad en nube sin cifrado.</li>
-                </ul>
               </div>
             </div>
 
-            {/* Pregunta: Impacto por configuración */}
+            {/* Preguntas 1-3: ahora con dropdown */}
             <div className="space-y-4 mb-6">
-              <RadioCard
+              <SelectField<OptId>
                 label="Conexión automática a redes Wi-Fi abiertas"
-                name="wifi"
                 value={wifi}
                 onChange={setWifi}
                 options={[
@@ -195,11 +183,10 @@ export default function Page() {
                 ]}
               />
 
-              <RadioCard
+              <SelectField<OptId2>
                 label="Actualización automática del sistema operativo"
-                name="auto"
                 value={auto}
-                onChange={(v) => setAuto(v as OptId2)}
+                onChange={setAuto}
                 options={[
                   { id: "auto_seg", text: "Mantiene el dispositivo protegido contra vulnerabilidades recientes al instalar parches de seguridad." }, // ✅
                   { id: "auto_riesgo", text: "Aumenta la exposición del dispositivo porque se descargan archivos sin control del usuario." },
@@ -207,47 +194,66 @@ export default function Page() {
                 ]}
               />
 
-              <RadioCard
+              <SelectField<OptId3>
                 label="Copias de seguridad en nube sin cifrado"
-                name="nube"
                 value={nube}
-                onChange={(v) => setNube(v as OptId3)}
+                onChange={setNube}
                 options={[
                   { id: "nube_cifra", text: "Garantiza la protección total porque la nube siempre cifra la información por defecto." },
-                  { id: "nube_riesgo", text: "Riesgo para la privacidad, ya que los datos almacenados podrían ser leídos por terceros sin cifrado." }, // ✅
+                  { id: "nube_riesgo", text: "Riesgo para la privacidad, ya que los datos almacenados podrían ser leídos por terceros." }, // ✅
                   { id: "nube_hackers", text: "Aumenta la fiabilidad del sistema porque bloquea el acceso de hackers a la nube." },
                 ]}
               />
             </div>
 
-            {/* Pregunta: Clasificación global */}
-            <div className="space-y-3 mb-6">
-              <h3 className="font-semibold text-gray-900">Clasificación global del nivel de protección</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <SelectCard
-                  label="Selecciona una opción"
-                  value={nivel}
-                  onChange={(v) => setNivel(v as GlobalLevel)}
-                  options={[
-                    { value: "alto", label: "Alto nivel de protección" },
-                    { value: "bajo", label: "Bajo nivel de protección" }, // ✅
-                  ]}
-                />
+            {/* Clasificación + Justificación dentro del MISMO recuadro */}
+            <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
+              <div className="text-sm font-medium text-gray-900 mb-2">
+                Evalúa el nivel de protección y justifica tu elección.
               </div>
-            </div>
 
-            {/* Pregunta: Justificación (siempre visible) */}
-            <div className="space-y-3 mb-2">
-              <RadioCard
-                name="just"
-                value={justif}
-                onChange={(v) => setJustif(v as JustId)}
-                options={[
-                  { id: "just_auto", text: "La información del usuario queda siempre protegida por las actualizaciones automáticas, lo que elimina cualquier riesgo." },
-                  { id: "just_dos_vuln", text: "Dos de las configuraciones activadas implican vulnerabilidades graves: la conexión a Wi-Fi abiertas y las copias en la nube sin cifrado." }, // ✅
-                  { id: "just_apps", text: "El dispositivo solo es vulnerable si el usuario instala aplicaciones sospechosas, no por sus configuraciones iniciales." },
-                ]}
-              />
+              {/* Clasificación (select) */}
+              <div className="mb-4">
+                <select
+                  className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
+                  value={nivel}
+                  onChange={(e) => setNivel(e.target.value as GlobalLevel)}
+                >
+                  <option value="">Selecciona…</option>
+                  <option value="alto">Alto nivel de protección</option>
+                  <option value="bajo">Bajo nivel de protección</option>
+                </select>
+              </div>
+
+              {/* Justificación (radios) */}
+              <div className="space-y-2">
+                {(
+                  [
+                    { id: "just_auto", text: "La información del usuario queda siempre protegida por las actualizaciones automáticas, lo que elimina cualquier riesgo." },
+                    { id: "just_dos_vuln", text: "Hay configuraciones activadas que implican vulnerabilidades graves." }, // ✅
+                    { id: "just_apps", text: "El dispositivo solo es vulnerable si el usuario instala aplicaciones sospechosas, no por sus configuraciones iniciales." },
+                  ] as { id: JustId; text: string }[]
+                ).map((opt) => {
+                  const active = justif === opt.id
+                  return (
+                    <label
+                      key={opt.id}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                        active ? "border-[#286575] bg-[#e6f2f3]" : "border-gray-200 hover:border-[#286575]"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="justificacion"
+                        className="mt-1 accent-[#2e6372]"
+                        checked={active}
+                        onChange={() => setJustif(opt.id)}
+                      />
+                      <span className="text-sm text-gray-800">{opt.text}</span>
+                    </label>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Footer / acciones */}
@@ -266,16 +272,14 @@ export default function Page() {
   )
 }
 
-/* ====== UI pieces (estilo consistente) ====== */
-function RadioCard<T extends string>({
+/* ====== UI pieces ====== */
+function SelectField<T extends string>({
   label,
-  name,
   value,
   onChange,
   options,
 }: {
   label?: string
-  name: string
   value: T | ""
   onChange: (v: T) => void
   options: { id: T; text: string }[]
@@ -283,55 +287,15 @@ function RadioCard<T extends string>({
   return (
     <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
       {label && <div className="text-sm font-medium text-gray-900 mb-2">{label}</div>}
-      <div className="space-y-2">
-        {options.map((opt) => {
-          const active = value === opt.id
-          return (
-            <label
-              key={opt.id}
-              className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
-                active ? "border-[#286575] bg-[#e6f2f3]" : "border-gray-200 hover:border-[#286575]"
-              }`}
-            >
-              <input
-                type="radio"
-                name={name}
-                className="mt-1"
-                checked={active}
-                onChange={() => onChange(opt.id)}
-              />
-              <span className="text-sm text-gray-800">{opt.text}</span>
-            </label>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function SelectCard({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string
-  value: string | ""
-  onChange: (v: string) => void
-  options: { value: string; label: string }[]
-}) {
-  return (
-    <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
-      <div className="text-sm text-gray-800 mb-2">{label}</div>
       <select
         className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value as T)}
       >
         <option value="">Selecciona…</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
+        {options.map((opt) => (
+          <option key={opt.id} value={opt.id}>
+            {opt.text}
           </option>
         ))}
       </select>

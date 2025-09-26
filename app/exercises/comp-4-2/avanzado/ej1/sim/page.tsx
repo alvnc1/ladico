@@ -15,6 +15,15 @@ type PersistedSim = {
     signedOutAllSessions?: boolean
     reviewedRecentActivity?: boolean
     securityAlerts?: boolean
+    /** ⬇️ nuevo: activar preguntas de seguridad (resta 1 punto) */
+    securityQuestionsEnabled?: boolean
+    /** ⬇️ nuevo: palabra de seguridad (solo visible si lo anterior está activo) */
+    securityWord?: string
+    /** ⬇️ nuevos: distractores interactivos en login */
+    savePasswords?: boolean
+    rememberDevice?: boolean
+    /** ⬇️ nuevo: respuestas automáticas de vacaciones (distractor interactivo) */
+    autoVacation?: boolean
   }
 }
 
@@ -112,18 +121,27 @@ export default function SimMailPage() {
   const setFlag = (key: keyof NonNullable<PersistedSim["security"]>, value: boolean) => {
     setPersisted((p) => ({ ...p, security: { ...(p.security || {}), [key]: value } }))
   }
+  const setSecurityWord = (v: string) => {
+    setPersisted((p) => ({ ...p, security: { ...(p.security || {}), securityWord: v } }))
+  }
 
   const changedPassword = !!persisted.security?.changedPassword
   const enabled2FA = !!persisted.security?.enabled2FA
   const signedOutAll = !!persisted.security?.signedOutAllSessions
   const reviewedActivity = !!persisted.security?.reviewedRecentActivity
   const alertsOn = !!persisted.security?.securityAlerts
+  /** ⬇️ nuevos estados */
+  const securityQEnabled = !!persisted.security?.securityQuestionsEnabled
+  const securityWord = persisted.security?.securityWord ?? ""
+  const savePasswords = !!persisted.security?.savePasswords
+  const rememberDevice = !!persisted.security?.rememberDevice
+  const autoVacation = !!persisted.security?.autoVacation
 
   // Estado correo
   const [folder, setFolder] = useState<Folder>("inbox")
   const [openSettings, setOpenSettings] = useState(false)
   const [settingsTab, setSettingsTab] = useState<
-    "security" | "general" | "accounts" | "filters" | "labels" | "themes" | "devices" | "login" | "alerts"
+    "security" | "devices" | "login" | "alerts"
   >("security")
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -176,6 +194,9 @@ export default function SimMailPage() {
     if (selectedId && !list.some((m) => m.id === selectedId)) setSelectedId(null)
   }, [folder]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ⬇️ UI local para que SIEMPRE inicie como Activa y sólo pase a Desactiva tras el click
+  const [signedOutThisView, setSignedOutThisView] = useState(false)
+
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Barra superior (mantener) */}
@@ -187,7 +208,7 @@ export default function SimMailPage() {
                 <ChevronLeft className="w-4 h-4" />
                 <span className="text-sm font-medium">Volver al enunciado</span>
               </Link>
-              <span className="text-sm opacity-70">| 4.3 Avanzado · Entorno simulado</span>
+              <span className="text-sm opacity-70">| 4.2 Avanzado · Entorno simulado</span>
             </div>
 
             {/* Botón SOLO con tuerca */}
@@ -246,12 +267,6 @@ export default function SimMailPage() {
                       )
                     })}
                   </nav>
-
-                  <div className="mt-4 text-xs text-gray-500">My folders</div>
-                  <ul className="mt-1 text-sm space-y-1">
-                    <li className="px-3 py-1 rounded-lg hover:bg-gray-50 cursor-default">Friends</li>
-                    <li className="px-3 py-1 rounded-lg hover:bg-gray-50 cursor-default">Family</li>
-                  </ul>
                 </div>
               </aside>
 
@@ -352,7 +367,7 @@ export default function SimMailPage() {
               </button>
             </div>
 
-            {/* Pestañas (para “distraer”) */}
+            {/* Pestañas (solo las que pediste mantener) */}
             <div className="flex flex-wrap gap-2 mb-4">
               {(
                 [
@@ -360,11 +375,6 @@ export default function SimMailPage() {
                   ["login", "Inicio de sesión y verificación"],
                   ["devices", "Dispositivos y actividad"],
                   ["alerts", "Alertas y notificaciones"],
-                  ["general", "General"],
-                  ["accounts", "Cuentas e importación"],
-                  ["filters", "Filtros"],
-                  ["labels", "Etiquetas"],
-                  ["themes", "Temas"],
                 ] as [typeof settingsTab, string][]
               ).map(([id, label]) => {
                 const active = settingsTab === id
@@ -385,22 +395,48 @@ export default function SimMailPage() {
             {/* 1) Seguridad de la cuenta */}
             {settingsTab === "security" && (
               <div className="space-y-4">
-                {/* Distractores */}
-                <SettingCard title="Preguntas de seguridad para recuperar la contraseña" hint="(No recomendable hoy en día)">
-                  <div className="text-sm text-gray-600">No disponible en esta cuenta.</div>
-                </SettingCard>
-                <SettingCard title="Configurar idioma de la interfaz">
-                  <select className="rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm">
-                    <option>Español (Chile)</option>
-                    <option>Español (México)</option>
-                    <option>English (US)</option>
-                  </select>
-                </SettingCard>
-                <SettingCard title="Activar modo oscuro">
-                  <ToggleSwitch checked={false} onChange={() => {}} label="Modo oscuro" />
+                {/* ✅ Preguntas de seguridad (resta 1 punto si se activa) */}
+                <SettingCard title="Preguntas de seguridad para recuperar la contraseña">
+                  <div className="flex items-center justify-between">
+                    <ToggleSwitch
+                      checked={securityQEnabled}
+                      onChange={(v) => setFlag("securityQuestionsEnabled", v)}
+                      label={securityQEnabled ? "Activadas" : "Desactivadas"}
+                    />
+                  </div>
+                  {securityQEnabled && (
+                    <div className="mt-3">
+                      <label className="text-sm text-gray-700 block mb-1">Palabra de seguridad</label>
+                      <input
+                        type="text"
+                        value={securityWord}
+                        onChange={(e) => setSecurityWord(e.target.value)}
+                        className="w-full rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
+                        placeholder="Escribe tu palabra de seguridad"
+                      />
+                    </div>
+                  )}
+                  {/* Nota para lógica de puntaje (no visible al usuario):
+                      - Si securityQuestionsEnabled === true → resta 1 punto */}
                 </SettingCard>
 
-                {/* ✅ Cambiar contraseña con validación fuerte */}
+                {/* ⛔ Idioma y Modo oscuro ocultos (no se borran del código) */}
+                {false && (
+                  <SettingCard title="Configurar idioma de la interfaz">
+                    <select className="rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm">
+                      <option>Español (Chile)</option>
+                      <option>Español (México)</option>
+                      <option>English (US)</option>
+                    </select>
+                  </SettingCard>
+                )}
+                {false && (
+                  <SettingCard title="Activar modo oscuro">
+                    <ToggleSwitch checked={false} onChange={() => {}} label="Modo oscuro" />
+                  </SettingCard>
+                )}
+
+                {/* ✅ Cambiar contraseña (sin tips ni “Pendiente”) */}
                 <PasswordChanger
                   done={changedPassword}
                   onSuccess={() => setFlag("changedPassword", true)}
@@ -412,25 +448,28 @@ export default function SimMailPage() {
             {settingsTab === "login" && (
               <div className="space-y-4">
                 <SettingCard title="Guardar automáticamente contraseñas en el navegador">
-                  <ToggleSwitch checked={false} onChange={() => {}} label="Guardar contraseñas" />
-                </SettingCard>
-                <SettingCard title="Vincular cuenta con redes sociales para un inicio más rápido">
-                  <Button className="rounded-xl border-2 border-gray-200 bg-white text-[#1f4b57] hover:border-[#286575]">
-                    Conectar Facebook
-                  </Button>
+                  <ToggleSwitch
+                    checked={savePasswords}
+                    onChange={(v) => setFlag("savePasswords" as any, v)}
+                    label={savePasswords ? "Activado" : "Desactivado"}
+                  />
                 </SettingCard>
 
-                {/* ✅ 2FA */}
-                <SettingCard
-                  title="Activar verificación en dos pasos (2FA)"
-                  status={enabled2FA ? "Activado" : "Desactivado"}
-                  done={enabled2FA}
-                >
-                  <ToggleSwitch checked={enabled2FA} onChange={(v) => setFlag("enabled2FA", v)} label={enabled2FA ? "Activado" : "Desactivado"} />
+                {/* ✅ 2FA (sin badge de estado; solo el switch indica el estado) */}
+                <SettingCard title="Activar verificación en dos pasos (2FA)">
+                  <ToggleSwitch
+                    checked={enabled2FA}
+                    onChange={(v) => setFlag("enabled2FA", v)}
+                    label={enabled2FA ? "Activado" : "Desactivado"}
+                  />
                 </SettingCard>
 
                 <SettingCard title="Recordar siempre este dispositivo">
-                  <ToggleSwitch checked={false} onChange={() => {}} label="Recordar dispositivo" />
+                  <ToggleSwitch
+                    checked={rememberDevice}
+                    onChange={(v) => setFlag("rememberDevice" as any, v)}
+                    label={rememberDevice ? "Activado" : "Desactivado"}
+                  />
                 </SettingCard>
               </div>
             )}
@@ -438,37 +477,20 @@ export default function SimMailPage() {
             {/* 3) Dispositivos y actividad */}
             {settingsTab === "devices" && (
               <div className="space-y-4">
-                <SettingCard title="Ver historial de correos enviados">
-                  <div className="text-sm text-gray-600">No hay actividad inusual.</div>
-                </SettingCard>
-                <SettingCard title="Administrar contactos bloqueados">
-                  <div className="text-sm text-gray-600">No tienes contactos bloqueados.</div>
-                </SettingCard>
-                <SettingCard title="Sincronizar calendario con el teléfono">
-                  <ToggleSwitch checked={false} onChange={() => {}} label="Sincronizar calendario" />
-                </SettingCard>
-
-                {/* ✅ Revisar y cerrar sesiones */}
-                <SettingCard
-                  title="Revisar y cerrar sesiones abiertas en otros dispositivos"
-                  status={signedOutAll ? "Sesiones cerradas" : "Sesiones activas"}
-                  done={signedOutAll}
-                >
+                {/* ✅ Administrar sesiones abiertas (ambos Activa al inicio; tras cerrar → Desactiva y suma punto) */}
+                <SettingCard title="Administrar sesiones abiertas">
                   <div className="rounded-2xl border-2 border-gray-200 p-3">
-                    <RowDevice name="Chrome · PC Oficina" meta="Santiago, CL · Hace 2 horas" />
+                    <RowDevice name="Chrome · PC Oficina" meta="Santiago, CL · Hace 2 horas" active={!signedOutThisView} />
                     <hr className="my-3 border-gray-200" />
-                    <RowDevice name="Safari · iPhone 13" meta="Providencia, CL · Hace 1 día" />
+                    <RowDevice name="Safari · iPhone 13" meta="Providencia, CL · Hace 1 día" active={!signedOutThisView} />
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button
-                      className="rounded-xl bg-white text-[#1f4b57] border-2 border-gray-200 hover:border-[#286575]"
-                      onClick={() => setFlag("reviewedRecentActivity", true)}
-                    >
-                      Revisar actividad reciente
-                    </Button>
-                    <Button
                       className="rounded-xl bg-[#286575] hover:bg-[#3a7d89] text-white"
-                      onClick={() => setFlag("signedOutAllSessions", true)}
+                      onClick={() => {
+                        setFlag("signedOutAllSessions", true) // registra el punto
+                        setSignedOutThisView(true)           // cambia UI a Desactiva sólo tras el click
+                      }}
                     >
                       Cerrar todas las sesiones
                     </Button>
@@ -480,9 +502,6 @@ export default function SimMailPage() {
             {/* 4) Alertas y notificaciones */}
             {settingsTab === "alerts" && (
               <div className="space-y-4">
-                <SettingCard title="Activar notificaciones de escritorio para nuevos correos">
-                  <ToggleSwitch checked={false} onChange={() => {}} label="Notificaciones de escritorio" />
-                </SettingCard>
                 <SettingCard title="Cambiar tono de las notificaciones">
                   <select className="rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm">
                     <option>Clásico</option>
@@ -491,27 +510,24 @@ export default function SimMailPage() {
                   </select>
                 </SettingCard>
 
-                {/* ✅ Alertas de seguridad */}
-                <SettingCard
-                  title="Configurar alertas de seguridad"
-                  status={alertsOn ? "Activadas" : "Desactivadas"}
-                  done={alertsOn}
-                >
-                  <ToggleSwitch checked={alertsOn} onChange={(v) => setFlag("securityAlerts", v)} label={alertsOn ? "Activadas" : "Desactivadas"} />
+                {/* ✅ Alertas de seguridad (empieza desactivada; sin texto superior derecho; vale 1 punto) */}
+                <SettingCard title="Alertas de seguridad">
+                  <ToggleSwitch
+                    checked={alertsOn}
+                    onChange={(v) => setFlag("securityAlerts", v)}
+                    label={alertsOn ? "Activadas" : "Desactivadas"}
+                  />
                 </SettingCard>
 
-                <SettingCard title="Configurar respuestas automáticas de vacaciones">
-                  <ToggleSwitch checked={false} onChange={() => {}} label="Respuestas automáticas" />
+                <SettingCard title="Respuestas automáticas de vacaciones">
+                  <ToggleSwitch
+                    checked={autoVacation}
+                    onChange={(v) => setFlag("autoVacation" as any, v)}
+                    label={autoVacation ? "Activadas" : "Desactivadas"}
+                  />
                 </SettingCard>
               </div>
             )}
-
-            {/* Pestañas distractoras “genéricas” */}
-            {settingsTab === "general" && <DummyBox title="General" desc="Firma, respuestas automáticas, idioma, densidad de vista." />}
-            {settingsTab === "accounts" && <DummyBox title="Cuentas e importación" desc="Enviar como, importar mensajes y contactos." />}
-            {settingsTab === "filters" && <DummyBox title="Filtros" desc="Crear filtros, bloquear remitentes." />}
-            {settingsTab === "labels" && <DummyBox title="Etiquetas" desc="Crear/ocultar etiquetas." />}
-            {settingsTab === "themes" && <DummyBox title="Temas" desc="Elige un tema para tu bandeja." />}
           </div>
         </div>
       )}
@@ -523,19 +539,19 @@ function listCount(all: Message[], folder: Folder) {
   return all.filter((m) => m.folder === folder).length
 }
 
-function RowDevice({ name, meta }: { name: string; meta: string }) {
+function RowDevice({ name, meta, active }: { name: string; meta: string; active: boolean }) {
   return (
     <div className="flex items-center justify-between text-sm">
       <div>
         <div className="font-medium text-gray-900">{name}</div>
         <div className="text-gray-500">{meta}</div>
       </div>
-      <span className="text-xs text-gray-500">Activa</span>
+      <span className="text-xs text-gray-500">{active ? "Activa" : "Desactiva"}</span>
     </div>
   )
 }
 
-/** Bloque de “Cambiar contraseña” con validación fuerte */
+/** Bloque de “Cambiar contraseña” con validación fuerte (sin pistas) */
 function PasswordChanger({
   done,
   onSuccess,
@@ -553,12 +569,13 @@ function PasswordChanger({
     const lower = /[a-z]/.test(newPwd)
     const digit = /[0-9]/.test(newPwd)
     const special = /[^A-Za-z0-9]/.test(newPwd)
-    return { len, upper, lower, digit, special, ok: len && upper && lower && digit && special }
+    return { ok: len && upper && lower && digit && special }
   }, [newPwd])
 
   const handleSave = () => {
     if (!strong.ok) {
-      setError("La contraseña debe tener al menos 8 caracteres, incluir mayúscula, minúscula, número y símbolo.")
+      // ❗️error genérico para no dar pistas
+      setError("La contraseña no cumple los requisitos mínimos.")
       return
     }
     if (newPwd !== repPwd) {
@@ -572,8 +589,8 @@ function PasswordChanger({
   return (
     <SettingCard
       title="Cambiar contraseña"
-      hint="Elige una contraseña robusta y única."
-      status={done ? "Hecho" : "Pendiente"}
+      /* sin hint ni estado 'Pendiente' */
+      status={done ? "Hecho" : undefined}
       done={done}
     >
       <div className="grid sm:grid-cols-3 gap-2">
@@ -599,15 +616,7 @@ function PasswordChanger({
         </Button>
       </div>
 
-      {/* Indicadores de fuerza */}
-      <ul className="mt-3 text-xs text-gray-600 space-y-1">
-        <li className={strong.len ? "text-green-700" : ""}>• 8+ caracteres</li>
-        <li className={strong.upper ? "text-green-700" : ""}>• Al menos 1 mayúscula</li>
-        <li className={strong.lower ? "text-green-700" : ""}>• Al menos 1 minúscula</li>
-        <li className={strong.digit ? "text-green-700" : ""}>• Al menos 1 número</li>
-        <li className={strong.special ? "text-green-700" : ""}>• Al menos 1 símbolo</li>
-      </ul>
-
+      {/* ⛔ Se quitaron los indicadores para no dar pistas */}
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </SettingCard>
   )

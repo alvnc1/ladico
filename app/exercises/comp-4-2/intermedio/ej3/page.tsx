@@ -42,7 +42,7 @@ const OPTIONS = [
   },
   {
     key: "E",
-    text: "Ladico comparte datos agregados y anónimos con instituciones asociadas para fines de investigación.",
+    text: "La plataforma comparte datos agregados y anónimos con instituciones asociadas para fines de investigación.",
     correct: true,
   },
 ] as const
@@ -50,8 +50,8 @@ const OPTIONS = [
 type Key = typeof OPTIONS[number]["key"]
 
 // Extracto (ficticio de Ladico)
-const EXCERPT = `“Ladico recopila datos personales como el nombre completo, dirección de correo electrónico institucional, país de residencia y nivel educativo para gestionar el acceso a sus servicios. Además, se almacenan métricas de uso de la plataforma, como resultados de evaluaciones y progreso en las competencias, con el fin de personalizar la experiencia y generar reportes académicos.
-Ladico puede compartir información agregada y anonimizada con instituciones asociadas para fines de investigación educativa y mejora de los servicios. No comercializamos con datos personales ni los transferimos a terceros ajenos a la relación educativa.
+const EXCERPT = `“La plataforma recopila datos personales como el nombre completo, dirección de correo electrónico institucional, país de residencia y nivel educativo para gestionar el acceso a sus servicios. Además, se almacenan métricas de uso de la plataforma, como resultados de evaluaciones y progreso en las competencias, con el fin de personalizar la experiencia y generar reportes académicos.
+La plataforma puede compartir información agregada y anonimizada con instituciones asociadas para fines de investigación educativa y mejora de los servicios. No comercializamos con datos personales ni los transferimos a terceros ajenos a la relación educativa.
 El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración de su cuenta y ejercer sus derechos de protección de datos a través de los canales de contacto habilitados.”`
 
 export default function Page() {
@@ -227,7 +227,8 @@ export default function Page() {
             <div className="mb-4">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Lee el siguiente extracto de la política de privacidad y selecciona todas las afirmaciones correctas. 
+                  Lee el siguiente extracto de la política de privacidad de una suscripción en linea 
+                  y selecciona todas las afirmaciones correctas. 
                 </p>
               </div>
             </div>

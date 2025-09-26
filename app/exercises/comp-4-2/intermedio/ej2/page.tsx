@@ -31,10 +31,40 @@ type PrivacyValue = typeof PRIVACY_OPTS[number]["value"]
 
 // Respuestas correctas según los íconos mostrados en el perfil ficticio
 // ⚠️ "Código postal" no aparece explícito → "Solo yo".
-const CORRECT: Record<"codigoPostal" | "listaAmigos" | "cumpleanos", PrivacyValue> = {
+const CORRECT: Record<"codigoPostal" | "listaAmigos", PrivacyValue> = {
   codigoPostal: "solo-yo",
   listaAmigos: "amigos-de-amigos",
-  cumpleanos: "amigos",
+}
+
+// Clasificación global del perfil (nuevo bloque)
+const CLASSIFICATION_OPTS = [
+  { value: "adecuada", label: "Perfil con protección adecuada" },
+  { value: "insuficiente", label: "Perfil con protección insuficiente" }, // ✅
+] as const
+type ClassValue = typeof CLASSIFICATION_OPTS[number]["value"]
+
+const JUSTIFICATION_OPTS = [
+  {
+    value: "riesgo",
+    label:
+      "Las configuraciones del perfil aumentan el riesgo de suplantación o intentos de fraude en línea.",
+  },
+  {
+    value: "no-sensible",
+    label:
+      "El perfil es seguro porque los datos visibles no son lo suficientemente sensibles para generar riesgos reales.",
+  },
+  {
+    value: "todo-riesgo",
+    label:
+      "La protección es insuficiente porque cualquier dato compartido en internet siempre implica un riesgo.",
+  },
+] as const
+type JustValue = typeof JUSTIFICATION_OPTS[number]["value"]
+
+const CLASS_CORRECT: { classif: ClassValue; reason: JustValue } = {
+  classif: "insuficiente",
+  reason: "riesgo",
 }
 
 export default function Page() {
@@ -45,19 +75,27 @@ export default function Page() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
 
-  // Estado de las tres selecciones
+  // Estado de las selecciones (2 de privacidad)
   const [codigoPostal, setCodigoPostal] = useState<PrivacyValue | "">("")
   const [listaAmigos, setListaAmigos] = useState<PrivacyValue | "">("")
-  const [cumpleanos, setCumpleanos] = useState<PrivacyValue | "">("")
+
+  // Nuevo: clasificación global + justificación
+  const [clasificacion, setClasificacion] = useState<ClassValue | "">("")
+  const [justificacion, setJustificacion] = useState<JustValue | "">("")
 
   // Resultado
   const { correctCount } = useMemo(() => {
     let ok = 0
     if (codigoPostal && codigoPostal === CORRECT.codigoPostal) ok++
     if (listaAmigos && listaAmigos === CORRECT.listaAmigos) ok++
-    if (cumpleanos && cumpleanos === CORRECT.cumpleanos) ok++
+
+    // Tercer punto: SOLO cuenta si ambas (clasificación y justificación) son correctas
+    if (clasificacion === CLASS_CORRECT.classif && justificacion === CLASS_CORRECT.reason) {
+      ok++
+    }
+
     return { correctCount: ok }
-  }, [codigoPostal, listaAmigos, cumpleanos])
+  }, [codigoPostal, listaAmigos, clasificacion, justificacion])
 
   // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
   useEffect(() => {
@@ -246,7 +284,7 @@ export default function Page() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span>🏠 <strong>Av. Los Leones 1234, Providencia</strong></span>
-                        <span className="text-xs text-gray-500">🔒</span>
+                        <span className="text-xs text-gray-500">🌍</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>💍 <strong>En una relación</strong></span>
@@ -336,53 +374,67 @@ export default function Page() {
 
             {/* Preguntas con dropdowns */}
             <div className="space-y-4">
-              {/* Código postal */}
+              {/* Dos tarjetas lado a lado */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Código postal */}
+                <div className="rounded-2xl border-2 border-gray-200 p-3 bg-white hover:border-[#286575] transition-colors">
+                  <div className="text-sm text-gray-700 mb-2">
+                    <strong>¿Quién puede acceder a tu código postal?</strong>
+                  </div>
+                  <select
+                    className="w-full rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
+                    value={codigoPostal}
+                    onChange={(e) => setCodigoPostal(e.target.value as PrivacyValue)}
+                  >
+                    <option value="" disabled>Selecciona una opción</option>
+                    {PRIVACY_OPTS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Lista de amigos */}
+                <div className="rounded-2xl border-2 border-gray-200 p-3 bg-white hover:border-[#286575] transition-colors">
+                  <div className="text-sm text-gray-700 mb-2">
+                    <strong>¿Quién puede acceder a tu red de contactos?</strong>
+                  </div>
+                  <select
+                    className="w-full rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
+                    value={listaAmigos}
+                    onChange={(e) => setListaAmigos(e.target.value as PrivacyValue)}
+                  >
+                    <option value="" disabled>Selecciona una opción</option>
+                    {PRIVACY_OPTS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Nuevo bloque: Clasificación global + justificación */}
               <div className="rounded-2xl border-2 border-gray-200 p-3 bg-white hover:border-[#286575] transition-colors">
                 <div className="text-sm text-gray-700 mb-2">
-                  <strong>¿Quién puede acceder a tu código postal?</strong>
+                  <strong>Clasificación global del perfil</strong>
                 </div>
                 <select
-                  className="w-full rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
-                  value={codigoPostal}
-                  onChange={(e) => setCodigoPostal(e.target.value as PrivacyValue)}
+                  className="w-full rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575] mb-3"
+                  value={clasificacion}
+                  onChange={(e) => setClasificacion(e.target.value as ClassValue)}
                 >
                   <option value="" disabled>Selecciona una opción</option>
-                  {PRIVACY_OPTS.map(opt => (
+                  {CLASSIFICATION_OPTS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
-              </div>
 
-              {/* Lista de amigos */}
-              <div className="rounded-2xl border-2 border-gray-200 p-3 bg-white hover:border-[#286575] transition-colors">
-
-                <div className="text-sm text-gray-700 mb-2">
-                  <strong>¿Quién puede acceder a tu red de contactos?</strong>
-                </div>
+                
                 <select
                   className="w-full rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
-                  value={listaAmigos}
-                  onChange={(e) => setListaAmigos(e.target.value as PrivacyValue)}
+                  value={justificacion}
+                  onChange={(e) => setJustificacion(e.target.value as JustValue)}
                 >
-                  <option value="" disabled>Selecciona una opción</option>
-                  {PRIVACY_OPTS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Cumpleaños */}
-              <div className="rounded-2xl border-2 border-gray-200 p-3 bg-white hover:border-[#286575] transition-colors">
-                <div className="text-sm text-gray-700 mb-2">
-                  <strong>¿Quién puede saber el año de nacimiento?</strong>
-                </div>
-                <select
-                  className="w-full rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
-                  value={cumpleanos}
-                  onChange={(e) => setCumpleanos(e.target.value as PrivacyValue)}
-                >
-                  <option value="" disabled>Selecciona una opción</option>
-                  {PRIVACY_OPTS.map(opt => (
+                  <option value="" disabled>Selecciona la alternativa que mejor justifica tu respuesta</option>
+                  {JUSTIFICATION_OPTS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>

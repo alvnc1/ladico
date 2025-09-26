@@ -43,13 +43,14 @@ const TILES: Tile[] = [
 ] as const
 
 // Selección correcta (exacta): activar SOLO estos
-const CORRECT_SET = new Set<number>([3, 4, 7, 8])
+const CORRECT_SET = new Set<number>([3, 4, 6, 7, 8])
 
 export default function Page() {
   const router = useRouter()
   const { user, userData } = useAuth()
 
   // ====== Sesión Firestore ======
+// ...
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
 
@@ -252,14 +253,11 @@ export default function Page() {
                   En el menú de configuración rápida de un teléfono móvil aparecen iconos que permiten activar o desactivar
                   distintas funciones. 
                 </p>
+                <p className="text-gray-700 leading-relaxed mb-3">
+                  Selecciona todas las configuraciones que ayudan a reducir el consumo energético. 
+                </p>
               </div>
             </div>
-
-            {/* Tipo de pregunta */}
-            <p className="text-xs sm:text-sm text-gray-600 mb-6 bg-blue-50 px-3 py-2 rounded-full inline-block">
-              <b>Selección múltiple</b>
-            </p>
-
             {/* Panel rápido estilo iPhone */}
             <div className="bg-[#f6f7f9] border border-gray-300 rounded-2xl p-4">
               {/* Barra de estado */}
@@ -267,10 +265,11 @@ export default function Page() {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">9:41</span>
                   <span className="hidden sm:inline">|</span>
-                  <span className="hidden sm:inline">Notificaciones</span>
+                  <span className="hidden sm:inline">Centro de control</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span>📶</span>
+                  <span>📍</span>
                   <span>🛜</span>
                   <span>🔋 82%</span>
                 </div>
