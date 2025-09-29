@@ -6,7 +6,7 @@
         "id": "cl-beca-baes-2025",
         "title": "Beca de Alimentación para la Educación Superior (BAES) 2025 — Chile",
         "description": "Selecciona 3 fuentes confiables para obtener requisitos y proceso 2025 de la BAES/JUNAEB.",
-        "criteria": { "countries": ["Chile"], "genders": ["any"], "ageGroups": ["teen", "young_adult", "adult", "any"] },
+        "criteria": { "countries": ["Chile"], "genders": ["any"], "ageGroups": ["teen", "young_adult"] },
         "passRule": { "minCorrectPicked": 2, "maxWrongPicked": 1 }
       },
       "sources": [

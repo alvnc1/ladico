@@ -56,6 +56,57 @@
       "minGroups": 3
     },
     {
+      "id": "cl-fuas-2025",
+      "title": "FUAS — Formulario Único de Acreditación Socioeconómica (Chile)",
+      "need": "Quieres postular a beneficios estudiantiles 2025 completando el FUAS en el portal oficial del Ministerio de Educación.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["teen", "young_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (FUAS / formulario)", "alts": ["fuas", "formulario"], "required": true },
+        { "label": "Dominio oficial (site:beneficiosestudiantiles.cl / site:mineduc.cl)", "alts": ["site:beneficiosestudiantiles.cl", "site:mineduc.cl"], "required": true },
+        { "label": "Palabra clave (postulación / requisitos)", "alts": ["postulacion", "postulación", "requisitos", "requisito"] },
+        { "label": "Año (2025)", "alts": ["2025"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "cl-gratuidad-2025",
+      "title": "Gratuidad en la Educación Superior (Chile)",
+      "need": "Quieres conocer los requisitos 2025 para acceder a la Gratuidad en la Educación Superior en Chile.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["teen", "young_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (gratuidad / educación superior)", "alts": ["gratuidad", "educacion superior", "educación superior"], "required": true },
+        { "label": "Dominio oficial (site:beneficiosestudiantiles.cl)", "alts": ["site:beneficiosestudiantiles.cl"], "required": true },
+        { "label": "Palabra clave (requisitos / inscripción)", "alts": ["requisitos", "requisito", "inscripcion", "inscripción"] },
+        { "label": "Año (2025)", "alts": ["2025"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "cl-tdr-junaeb",
+      "title": "Tarjeta Nacional Estudiantil (TNE / JUNAEB)",
+      "need": "Necesitas los requisitos 2025 para obtener o renovar la Tarjeta Nacional Estudiantil (pase escolar) en el portal JUNAEB.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["teen", "young_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (TNE / pase escolar)", "alts": ["tne", "pase escolar", "tarjeta nacional estudiantil"], "required": true },
+        { "label": "Dominio oficial (site:junaeb.cl)", "alts": ["site:junaeb.cl"], "required": true },
+        { "label": "Palabra clave (requisitos / trámite)", "alts": ["requisitos", "requisito", "tramite", "trámite"] },
+        { "label": "Año (2025)", "alts": ["2025"] }
+      ],
+      "minGroups": 3
+    },
+    {
       "id": "pasaporte-co",
       "title": "Trámite/renovación de pasaporte (Colombia)",
       "need": "Debes tramitar o renovar tu pasaporte colombiano en 2025. Quieres requisitos y pasos oficiales, idealmente con documento descargable.",
@@ -169,6 +220,74 @@
         { "label": "Concepto (Formato Único Hoja de Vida)", "alts": ["formato unico", "formato único", "hoja de vida"], "required": true },
         { "label": "Dominio oficial (site:funcionpublica.gov.co / site:dafp.gov.co)", "alts": ["site:funcionpublica.gov.co", "site:dafp.gov.co"], "required": true },
         { "label": "Formato PDF (filetype:pdf)", "alts": ["filetype:pdf", "pdf"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "cl-pgu-2025",
+      "title": "Pensión Garantizada Universal (Chile)",
+      "need": "Quieres los requisitos 2025 de la PGU directamente desde ChileAtiende o el IPS, en página o PDF oficial.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["older_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (PGU / pensión garantizada universal)", "alts": ["pgu", "pension garantizada", "pensión garantizada"], "required": true },
+        { "label": "Dominio oficial (site:chileatiende.gob.cl / site:ips.gob.cl)", "alts": ["site:chileatiende.gob.cl", "site:ips.gob.cl"], "required": true },
+        { "label": "Palabra clave (requisitos)", "alts": ["requisitos", "requisito"] },
+        { "label": "Año (2025)", "alts": ["2025"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "pe-pension65",
+      "title": "Programa Pensión 65 (Perú, MIDIS)",
+      "need": "Buscas los requisitos oficiales 2025 del programa Pensión 65 en el portal del MIDIS.",
+      "criteria": {
+        "countries": ["Perú"],
+        "genders": ["any"],
+        "ageGroups": ["older_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (Pensión 65 / programa social)", "alts": ["pension 65", "pensión 65"], "required": true },
+        { "label": "Dominio oficial (site:midis.gob.pe)", "alts": ["site:midis.gob.pe"], "required": true },
+        { "label": "Palabra clave (requisitos / inscripción)", "alts": ["requisitos", "requisito", "inscripcion", "inscripción"] },
+        { "label": "Año (2025)", "alts": ["2025"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "ar-auh-anses",
+      "title": "Asignación Universal por Hijo (Argentina, ANSES)",
+      "need": "Necesitas los requisitos actualizados 2025 de la AUH en la web oficial de ANSES.",
+      "criteria": {
+        "countries": ["Argentina"],
+        "genders": ["any"],
+        "ageGroups": ["adult"]
+      },
+      "groups": [
+        { "label": "Concepto (AUH / Asignación Universal por Hijo)", "alts": ["auh", "asignacion universal", "asignación universal"], "required": true },
+        { "label": "Dominio oficial (site:anses.gob.ar)", "alts": ["site:anses.gob.ar"], "required": true },
+        { "label": "Palabra clave (requisitos / trámite)", "alts": ["requisitos", "requisito", "tramite", "trámite"] },
+        { "label": "Año (2025)", "alts": ["2025"] }
+      ],
+      "minGroups": 3
+    },
+    {
+      "id": "uy-bps-jubilacion",
+      "title": "Jubilación (Uruguay, BPS)",
+      "need": "Quieres conocer los requisitos 2025 para jubilarte en Uruguay según el Banco de Previsión Social.",
+      "criteria": {
+        "countries": ["Uruguay"],
+        "genders": ["any"],
+        "ageGroups": ["adult", "older_adult"]
+      },
+      "groups": [
+        { "label": "Concepto (jubilación / retiro)", "alts": ["jubilacion", "jubilación", "retiro"], "required": true },
+        { "label": "Dominio oficial (site:bps.gub.uy)", "alts": ["site:bps.gub.uy"], "required": true },
+        { "label": "Palabra clave (requisitos / trámite)", "alts": ["requisitos", "requisito", "tramite", "trámite"] },
+        { "label": "Año (2025)", "alts": ["2025"] }
       ],
       "minGroups": 3
     }

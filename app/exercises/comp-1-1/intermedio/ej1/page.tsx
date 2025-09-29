@@ -116,40 +116,44 @@ function profileMatches(c: CaseJson, country: string, gender: string, ageGroup: 
   return countryOk && genderOk && ageOk;
 }
 
-function pickThreeCasesForProfile(all: CaseJson[], country: string, gender: string, ageGroup: string): CaseSpec[] {
-  const preferred = all.filter((c) => profileMatches(c, country, gender, ageGroup));
-  const globalPool = all.filter((c) => (c.criteria?.countries ?? []).map(s => s.toLowerCase()).includes("global"));
+function pickThreeCasesForProfile(
+  all: CaseJson[],
+  country: string,
+  gender: string,
+  ageGroup: string
+): CaseSpec[] {
+  const preferred = all.filter((c) => profileMatches(c, country, gender, ageGroup))
+  const globalPool = all.filter((c) =>
+    (c.criteria?.countries ?? []).map((s) => s.toLowerCase()).includes("global")
+  )
 
-  const out: CaseJson[] = [];
+  // 🔄 Combina: perfil → global → todos
+  const pool: CaseJson[] = [...preferred, ...globalPool, ...all]
 
-  // 1) Toma preferidos del perfil
-  for (const c of preferred) {
-    if (out.length >= 3) break;
-    out.push(c);
+  // --- ROTACIÓN con localStorage ---
+  let offset = 0
+  if (typeof window !== "undefined") {
+    const key = `ladico:rotation:${country.toLowerCase()}`
+    const prev = localStorage.getItem(key)
+    offset = prev ? (parseInt(prev) + 1) % pool.length : 0
+    localStorage.setItem(key, String(offset))
   }
 
-  // 2) Rellena con globales si faltan
-  if (out.length < 3) {
-    for (const c of globalPool) {
-      if (out.find((x) => x.id === c.id)) continue;
-      out.push(c);
-      if (out.length >= 3) break;
-    }
-  }
-
-  // 3) Si aún faltan, rellena con cualquiera
-  if (out.length < 3) {
-    for (const c of all) {
-      if (out.find((x) => x.id === c.id)) continue;
-      out.push(c);
-      if (out.length >= 3) break;
+  // --- Selecciona 3 a partir del offset (cíclico) ---
+  const out: CaseJson[] = []
+  for (let i = 0; i < pool.length && out.length < 3; i++) {
+    const idx = (offset + i) % pool.length
+    const c = pool[idx]
+    if (!out.find((x) => x.id === c.id)) {
+      out.push(c)
     }
   }
 
   return out.slice(0, 3).map(({ id, title, need, hint, groups, minGroups }) => ({
     id, title, need, hint, groups, minGroups
-  }));
+  }))
 }
+
 
 /* ================== Página ================== */
 export default function LadicoP1InfoNeedsOpen() {

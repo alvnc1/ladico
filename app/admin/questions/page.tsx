@@ -121,6 +121,26 @@ export default function QuestionsAdminPage() {
     }
   }
 
+  const handleDeleteByCompetence = async (competenceId: string) => {
+    if (!competenceId) return
+    if (!confirm(`¿Estás seguro de que deseas eliminar TODAS las preguntas de la competencia ${competenceId}? Esta acción no se puede deshacer.`)) return
+    
+    try {
+      const toDelete = questions.filter(q => String(q.competence) === competenceId)
+      for (const q of toDelete) {
+        await deleteDoc(doc(db, "questions", q.id))
+      }
+      // Actualizar estados en memoria
+      setQuestions(prev => prev.filter(q => String(q.competence) !== competenceId))
+      setFilteredQuestions(prev => prev.filter(q => String(q.competence) !== competenceId))
+      setSelectedQuestion(null)
+      alert(`Se eliminaron ${toDelete.length} preguntas de la competencia ${competenceId}.`)
+    } catch (error) {
+      console.error("Error eliminando preguntas por competencia:", error)
+      alert("No se pudo eliminar por competencia. Revisa la consola para más detalles.")
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -174,6 +194,14 @@ export default function QuestionsAdminPage() {
                 <option key={idx} value={competence}>{competence}</option>
               ))}
             </select>
+            {filterCompetence && (
+              <Button
+                onClick={() => handleDeleteByCompetence(filterCompetence)}
+                className="mt-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm"
+              >
+                Borrar todas las preguntas de {filterCompetence}
+              </Button>
+            )}
           </div>
         </div>
 

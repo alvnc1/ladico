@@ -78,20 +78,35 @@ function matchList(pref: string[] | undefined, val: string) {
 }
 
 function pickScenarioForProfile(all: Scenario[], country: string, gender: string, ageGroup: string): Scenario {
-  return (
-    all.find((s) => {
-      const c = s.criteria || {};
-      return matchList(c.countries, country) &&
-             matchList(c.genders, gender) &&
-             matchList(c.ageGroups, ageGroup);
-    }) ||
-    all.find((s) => {
-      const c = s.criteria || {};
-      return matchList(c.countries, country);
-    }) ||
-    all[0]
-  );
+  // Filtrar los escenarios que cumplen criterios exactos
+  const preferred = all.filter((s) => {
+    const c = s.criteria || {};
+    return matchList(c.countries, country) &&
+           matchList(c.genders, gender) &&
+           matchList(c.ageGroups, ageGroup);
+  });
+
+  // Fallback: escenarios del mismo país
+  const countryOnly = all.filter((s) => {
+    const c = s.criteria || {};
+    return matchList(c.countries, country);
+  });
+
+  // Si no hay match exacto, usar fallback o todos
+  const pool = preferred.length > 0 ? preferred : (countryOnly.length > 0 ? countryOnly : all);
+
+  // --- ROTACIÓN con localStorage ---
+  let index = 0;
+  if (typeof window !== "undefined") {
+    const key = `ladico:rotation:${country.toLowerCase()}`;
+    const prev = localStorage.getItem(key);
+    index = prev ? (parseInt(prev) + 1) % pool.length : 0;
+    localStorage.setItem(key, String(index));
+  }
+
+  return pool[index];
 }
+
 
 /* ================== Página ================== */
 export default function P3OrdenarEstrategiaBusquedaFromJson() {
