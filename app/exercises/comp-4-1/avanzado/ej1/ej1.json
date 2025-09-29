@@ -4,7 +4,7 @@
   "correctOrderIds": [4, 3, 5, 1, 2],
   "base": {
     "title": "Priorización de medidas tras un incidente de seguridad",
-    "stem": "Una empresa sufrió accesos no autorizados a varios dispositivos por contraseñas débiles y ausencia de autenticación multifactor (MFA). El área de seguridad propuso varias medidas. Ordena de mayor a menor prioridad y luego justifica tu decisión.",
+    "stem": "Una empresa sufrió accesos no autorizados a varios dispositivos por contraseñas débiles y ausencia de autenticación multifactor (MFA). Medidas de seguridad para proteger dispositivos tras un incidente ayudan a contener el daño y prevenir nuevos accesos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
     "measures": [
       { "id": 1, "text": "Establecer políticas que prohíban la instalación de aplicaciones externas no autorizadas." },
       { "id": 2, "text": "Realizar auditorías de seguridad periódicas para detectar vulnerabilidades." },
@@ -15,7 +15,7 @@
   },
   "variants": {
     "school": {
-      "stem": "En un colegio se detectaron accesos no autorizados a cuentas institucionales por contraseñas débiles y falta de MFA. El equipo TI propuso varias medidas. Ordena de mayor a menor prioridad y justifica tu decisión.",
+      "stem": "En un colegio se detectaron accesos no autorizados a cuentas institucionales por contraseñas débiles y falta de MFA. Medidas de seguridad para proteger cuentas y dispositivos institucionales ayudan a evitar nuevos accesos indebidos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
       "measures": [
         { "id": 3, "text": "Forzar el cambio inmediato de contraseñas del correo institucional y de la plataforma educativa." },
         { "id": 4, "text": "Activar MFA para estudiantes y docentes en todas las cuentas institucionales." },
@@ -23,7 +23,7 @@
       ]
     },
     "university": {
-      "stem": "Una universidad sufrió accesos no autorizados en laboratorios y servicios en línea debido a contraseñas débiles y ausencia de MFA. Ordena de mayor a menor prioridad y justifica tu decisión.",
+      "stem": "Una universidad sufrió accesos no autorizados en laboratorios y servicios en línea debido a contraseñas débiles y ausencia de MFA. Medidas de seguridad para proteger dispositivos y servicios académicos ayudan a contener y remediar el incidente. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
       "measures": [
         { "id": 3, "text": "Forzar el cambio de contraseñas en cuentas de estudiantes y personal (correo, LMS, repositorios)." },
         { "id": 4, "text": "Implementar MFA en el SSO universitario y en sistemas críticos (VPN, LMS)." },
@@ -31,12 +31,129 @@
       ]
     },
     "work": {
-      "stem": "Una empresa detectó accesos no autorizados por contraseñas débiles y falta de MFA en equipos de trabajo. Ordena de mayor a menor prioridad y justifica tu decisión.",
+      "stem": "Una empresa detectó accesos no autorizados por contraseñas débiles y falta de MFA en equipos de trabajo. Medidas de seguridad para proteger dispositivos y sistemas corporativos permiten contener el incidente y reducir riesgos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
       "measures": [
         { "id": 3, "text": "Forzar cambio inmediato de contraseñas en servicios corporativos (correo, VPN, gestión)." },
         { "id": 4, "text": "Implementar MFA en correo corporativo, VPN y sistemas críticos." },
         { "id": 1, "text": "Actualizar y aplicar políticas de software no autorizado en estaciones de trabajo." }
       ]
+    }
+  },
+  "variantsByCountry": {
+    "Chile": {
+      "school": {
+        "stem": "En el Colegio San Ignacio se detectaron accesos indebidos a cuentas institucionales por contraseñas débiles y ausencia de MFA. Medidas de seguridad para proteger cuentas y equipos del establecimiento ayudan a evitar nuevos accesos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar el cambio de contraseñas en cuentas del correo institucional y la plataforma EducarChile." },
+          { "id": 4, "text": "Habilitar MFA para docentes y estudiantes en plataformas de aprendizaje." }
+        ]
+      },
+      "university": {
+        "stem": "En la Pontificia Universidad Católica de Chile se detectaron accesos no autorizados en ClaveUC y LMS. Medidas de seguridad para fortalecer el acceso a servicios críticos reducen la posibilidad de nuevos incidentes. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 4, "text": "Implementar MFA en ClaveUC y sistemas críticos como Moodle y VPN." },
+          { "id": 2, "text": "Programar auditorías de seguridad en LMS y servicios de red." }
+        ]
+      },
+      "work": {
+        "stem": "En Falabella se identificaron accesos indebidos a sistemas internos por contraseñas débiles y falta de MFA. Medidas de seguridad para proteger plataformas corporativas y dispositivos de trabajo permiten contener el impacto. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar cambio inmediato de contraseñas en cuentas corporativas de correo y SAP." },
+          { "id": 4, "text": "Activar MFA en cuentas de correo, VPN y sistemas de gestión comercial." }
+        ]
+      }
+    },
+    "Argentina": {
+      "school": {
+        "stem": "En el Colegio Nacional Buenos Aires se detectaron accesos indebidos a plataformas digitales por contraseñas débiles. Medidas de seguridad para proteger cuentas estudiantiles y equipos del colegio ayudan a reducir el riesgo. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar cambio de contraseñas en cuentas del campus educativo." },
+          { "id": 4, "text": "Implementar MFA en el uso de Google Workspace institucional." }
+        ]
+      },
+      "university": {
+        "stem": "En la Universidad de Buenos Aires se reportaron accesos indebidos a repositorios académicos por contraseñas débiles. Medidas de seguridad para proteger servicios académicos y de investigación ayudan a contener el incidente. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar cambio de contraseñas en sistemas académicos y correo UBA." },
+          { "id": 4, "text": "Implementar MFA en el SSO de la UBA y VPN institucional." }
+        ]
+      },
+      "work": {
+        "stem": "En Mercado Libre se detectaron accesos indebidos a servicios corporativos por contraseñas débiles. Medidas de seguridad para proteger cuentas y repositorios internos mitigan el riesgo de nuevas intrusiones. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 4, "text": "Implementar MFA en cuentas de correo y repositorios de código." },
+          { "id": 3, "text": "Forzar cambio inmediato de contraseñas en servicios de gestión y plataformas internas." }
+        ]
+      }
+    },
+    "Uruguay": {
+      "school": {
+        "stem": "En el Liceo Jubilar se detectaron accesos indebidos a cuentas institucionales por contraseñas débiles y falta de MFA. Medidas de seguridad para proteger plataformas educativas y dispositivos del liceo ayudan a evitar nuevos accesos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar el cambio de contraseñas en plataformas de Plan Ceibal." },
+          { "id": 4, "text": "Habilitar MFA en cuentas institucionales del liceo." }
+        ]
+      },
+      "university": {
+        "stem": "En la Universidad de la República se detectaron accesos no autorizados en sistemas de estudiantes y personal. Medidas de seguridad para proteger servicios universitarios críticos ayudan a contener el incidente. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar el cambio de contraseñas en EVA y correo institucional." },
+          { "id": 4, "text": "Implementar MFA en el acceso a EVA y VPN universitaria." }
+        ]
+      },
+      "work": {
+        "stem": "En Antel se identificaron accesos indebidos a sistemas corporativos internos. Medidas de seguridad para proteger cuentas corporativas y equipos de trabajo reducen la superficie de ataque. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 4, "text": "Implementar MFA en sistemas de gestión corporativa y correo de Antel." },
+          { "id": 3, "text": "Forzar cambio inmediato de contraseñas en todos los servicios críticos." }
+        ]
+      }
+    },
+    "Colombia": {
+      "school": {
+        "stem": "En el Colegio Gimnasio Moderno se detectaron accesos indebidos a plataformas digitales por contraseñas débiles. Medidas de seguridad para proteger cuentas estudiantiles y equipos escolares ayudan a prevenir nuevos incidentes. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar cambio inmediato de contraseñas en Google Classroom institucional." },
+          { "id": 4, "text": "Implementar MFA en cuentas de estudiantes y docentes." }
+        ]
+      },
+      "university": {
+        "stem": "En la Universidad de los Andes se identificaron accesos indebidos en su plataforma Sicua Plus y servicios de correo. Medidas de seguridad para proteger servicios académicos críticos reducen la probabilidad de nuevos accesos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 4, "text": "Implementar MFA en Sicua Plus, correo Uniandes y VPN institucional." },
+          { "id": 2, "text": "Programar auditorías periódicas de seguridad en servicios universitarios." }
+        ]
+      },
+      "work": {
+        "stem": "En Bancolombia se identificaron accesos indebidos a sistemas corporativos debido a contraseñas débiles. Medidas de seguridad para proteger cuentas internas y dispositivos de trabajo ayudan a contener el incidente. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar cambio inmediato de contraseñas en cuentas de empleados y banca interna." },
+          { "id": 4, "text": "Implementar MFA en banca corporativa y correo institucional." }
+        ]
+      }
+    },
+    "Perú": {
+      "school": {
+        "stem": "En el Colegio San Agustín de Lima se detectaron accesos indebidos a cuentas digitales de estudiantes y docentes. Medidas de seguridad para proteger cuentas educativas y equipos del colegio ayudan a mitigar el riesgo. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar el cambio de contraseñas en la plataforma educativa del colegio." },
+          { "id": 4, "text": "Habilitar MFA en Google Workspace institucional." }
+        ]
+      },
+      "university": {
+        "stem": "En la Pontificia Universidad Católica del Perú se detectaron accesos indebidos a sistemas académicos. Medidas de seguridad para proteger servicios universitarios críticos ayudan a reducir el impacto del incidente. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 3, "text": "Forzar cambio inmediato de contraseñas en Campus Virtual PUCP y correo." },
+          { "id": 4, "text": "Implementar MFA en Campus Virtual y VPN universitaria." }
+        ]
+      },
+      "work": {
+        "stem": "En Interbank se detectaron accesos indebidos a servicios corporativos internos. Medidas de seguridad para proteger cuentas corporativas y dispositivos de trabajo permiten contener y prevenir nuevos accesos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
+        "measures": [
+          { "id": 4, "text": "Implementar MFA en banca interna y correo corporativo de Interbank." },
+          { "id": 3, "text": "Forzar cambio inmediato de contraseñas en sistemas de empleados." }
+        ]
+      }
     }
   }
 }
