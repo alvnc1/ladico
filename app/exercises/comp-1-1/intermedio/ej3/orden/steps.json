@@ -8,7 +8,7 @@
       "criteria": {
         "countries": ["Chile"],
         "genders": ["any"],
-        "ageGroups": ["young_adult", "adult", "any"]
+        "ageGroups": ["young_adult", "teen"]
       },
       "passRule": {
         "minPctCorrectPairs": 0.7
@@ -20,6 +20,132 @@
         { "id": "D", "text": "Navegar dentro del sitio: Becas → BAES/Alimentación → Requisitos/Convocatoria 2025." },
         { "id": "E", "text": "Abrir o descargar la convocatoria/requisitos (PDF o página oficial)." },
         { "id": "F", "text": "Verificar fecha/vigencia 2025 y si existe versión actualizada." }
+      ]
+    },
+    {
+      "id": "cl-fuas-2025",
+      "title": "Chile — FUAS 2025 (Formulario Único de Acreditación Socioeconómica)",
+      "description": "Ordena los pasos para encontrar y completar el FUAS 2025 en el portal oficial del Ministerio de Educación.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["teen", "young_adult"]
+      },
+      "passRule": {
+        "minPctCorrectPairs": 0.7
+      },
+      "steps": [
+        { "id": "A", "text": "Definir la necesidad y palabras clave (p. ej., “FUAS 2025 inscripción Mineduc”)." },
+        { "id": "B", "text": "Buscar con operadores (site:beneficiosestudiantiles.cl FUAS 2025 inscripción)." },
+        { "id": "C", "text": "Seleccionar el resultado del dominio oficial beneficiosestudiantiles.cl." },
+        { "id": "D", "text": "Ingresar a la sección FUAS → Instrucciones/Inscripción." },
+        { "id": "E", "text": "Abrir el formulario oficial o la guía en PDF." },
+        { "id": "F", "text": "Verificar fechas de postulación y cierre para 2025." }
+      ]
+    },
+    {
+      "id": "cl-gratuidad-2025",
+      "title": "Chile — Gratuidad en la Educación Superior 2025",
+      "description": "Ordena los pasos para ubicar los requisitos de Gratuidad 2025 en el sitio oficial de beneficios estudiantiles.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["teen", "young_adult"]
+      },
+      "passRule": {
+        "minPctCorrectPairs": 0.7
+      },
+      "steps": [
+        { "id": "A", "text": "Definir la necesidad con palabras clave (p. ej., “Gratuidad 2025 requisitos Mineduc”)." },
+        { "id": "B", "text": "Lanzar búsqueda con operadores (site:beneficiosestudiantiles.cl Gratuidad 2025 requisitos)." },
+        { "id": "C", "text": "Seleccionar el dominio oficial beneficiosestudiantiles.cl." },
+        { "id": "D", "text": "Navegar: Becas y beneficios → Gratuidad → Requisitos 2025." },
+        { "id": "E", "text": "Abrir la convocatoria o instructivo oficial (PDF o página web)." },
+        { "id": "F", "text": "Confirmar vigencia 2025 y últimas actualizaciones." }
+      ]
+    },
+    {
+      "id": "cl-credcae-2025",
+      "title": "Chile — Crédito con Aval del Estado (CAE) 2025",
+      "description": "Ordena los pasos para localizar la información oficial sobre requisitos del Crédito con Aval del Estado 2025.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["young_adult", "adult"]
+      },
+      "passRule": {
+        "minPctCorrectPairs": 0.7
+      },
+      "steps": [
+        { "id": "A", "text": "Definir la necesidad con palabras clave (p. ej., “Crédito CAE requisitos 2025 Comisión Ingresa”)." },
+        { "id": "B", "text": "Ejecutar búsqueda con operadores (site:ingresa.cl CAE 2025 requisitos)." },
+        { "id": "C", "text": "Elegir resultados oficiales de ingresa.cl." },
+        { "id": "D", "text": "Navegar: Crédito CAE → Postulación → Requisitos 2025." },
+        { "id": "E", "text": "Abrir o descargar el instructivo oficial (PDF o página)." },
+        { "id": "F", "text": "Verificar fechas de postulación y vigencia 2025." }
+      ]
+    },
+    {
+      "id": "cl-bono-invierno-2025",
+      "title": "Chile — Bono Invierno 2025 (IPS/ChileAtiende)",
+      "description": "Ordena los pasos para encontrar los requisitos del Bono Invierno 2025 en el portal oficial ChileAtiende.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["older_adult"]
+      },
+      "passRule": {
+        "minPctCorrectPairs": 0.7
+      },
+      "steps": [
+        { "id": "A", "text": "Definir palabras clave (p. ej., “Bono Invierno 2025 requisitos ChileAtiende”)." },
+        { "id": "B", "text": "Buscar con operadores (site:chileatiende.gob.cl Bono Invierno 2025 requisitos)." },
+        { "id": "C", "text": "Seleccionar el resultado del dominio oficial chileatiende.gob.cl." },
+        { "id": "D", "text": "Navegar: Beneficios → Personas mayores → Bono Invierno." },
+        { "id": "E", "text": "Abrir la ficha oficial con requisitos y monto 2025." },
+        { "id": "F", "text": "Confirmar vigencia y fecha de pago 2025." }
+      ]
+    },
+    {
+      "id": "cl-seguro-cesantia-2025",
+      "title": "Chile — Seguro de Cesantía (AFC) 2025",
+      "description": "Ordena los pasos para ubicar la información oficial sobre requisitos del Seguro de Cesantía 2025 en el sitio de la AFC.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["adult", "older_adult"]
+      },
+      "passRule": {
+        "minPctCorrectPairs": 0.7
+      },
+      "steps": [
+        { "id": "A", "text": "Definir palabras clave (p. ej., “Seguro de Cesantía requisitos 2025 AFC”)." },
+        { "id": "B", "text": "Ejecutar búsqueda con operadores (site:afc.cl Seguro Cesantía 2025 requisitos)." },
+        { "id": "C", "text": "Seleccionar resultados del dominio oficial afc.cl." },
+        { "id": "D", "text": "Navegar: Afiliados → Beneficios → Requisitos para acceder." },
+        { "id": "E", "text": "Abrir la guía oficial de requisitos o reglamento 2025." },
+        { "id": "F", "text": "Verificar vigencia de la normativa para 2025." }
+      ]
+    },
+    {
+      "id": "cl-pension-garantizada-2025",
+      "title": "Chile — Pensión Garantizada Universal (PGU) 2025",
+      "description": "Ordena los pasos para ubicar los requisitos actualizados de la PGU 2025 en el portal ChileAtiende o IPS.",
+      "criteria": {
+        "countries": ["Chile"],
+        "genders": ["any"],
+        "ageGroups": ["older_adult"]
+      },
+      "passRule": {
+        "minPctCorrectPairs": 0.7
+      },
+      "steps": [
+        { "id": "A", "text": "Definir necesidad y palabras clave (p. ej., “Pensión Garantizada Universal 2025 requisitos ChileAtiende”)." },
+        { "id": "B", "text": "Buscar con operadores (site:chileatiende.gob.cl PGU requisitos 2025)." },
+        { "id": "C", "text": "Seleccionar el resultado oficial de chileatiende.gob.cl o ips.gob.cl." },
+        { "id": "D", "text": "Navegar: Pensiones → Pensión Garantizada Universal." },
+        { "id": "E", "text": "Abrir la ficha oficial de requisitos 2025." },
+        { "id": "F", "text": "Confirmar vigencia y montos actualizados 2025." }
       ]
     },
     {
@@ -62,6 +188,82 @@
         { "id": "D", "text": "Navegar a la sección de convocatorias/requisitos del programa." },
         { "id": "E", "text": "Abrir/descargar la convocatoria o los requisitos en formato oficial." },
         { "id": "F", "text": "Verificar vigencia/fechas y si existe una versión actualizada." }
+      ]
+    },
+     {
+      "id": "co-subsidio-desempleo-2025",
+      "title": "Colombia — Subsidio al Desempleo 2025 (Mecanismo de Protección al Cesante)",
+      "description": "Ordena los pasos para ubicar los requisitos del subsidio al desempleo 2025 en el portal oficial del Ministerio de Trabajo/Prosperidad Social.",
+      "criteria": {
+        "countries": ["Colombia"],
+        "genders": ["any"],
+        "ageGroups": ["adult", "older_adult"]
+      },
+      "passRule": { "minPctCorrectPairs": 0.7 },
+      "steps": [
+        { "id": "A", "text": "Definir palabras clave (p. ej., “Subsidio desempleo 2025 requisitos MinTrabajo”)." },
+        { "id": "B", "text": "Buscar con operadores (site:mintrabajo.gov.co subsidio desempleo 2025 requisitos)." },
+        { "id": "C", "text": "Seleccionar resultados del dominio oficial mintrabajo.gov.co o prosperidadsocial.gov.co." },
+        { "id": "D", "text": "Navegar: Programas sociales → Protección al Cesante." },
+        { "id": "E", "text": "Abrir el documento o ficha oficial con requisitos 2025." },
+        { "id": "F", "text": "Confirmar vigencia y fechas de postulación 2025." }
+      ]
+    },
+    {
+      "id": "uy-pension-vejez-2025",
+      "title": "Uruguay — Pensión a la Vejez 2025 (BPS)",
+      "description": "Ordena los pasos para encontrar los requisitos de la Pensión a la Vejez 2025 en el sitio del Banco de Previsión Social (BPS).",
+      "criteria": {
+        "countries": ["Uruguay"],
+        "genders": ["any"],
+        "ageGroups": ["older_adult"]
+      },
+      "passRule": { "minPctCorrectPairs": 0.7 },
+      "steps": [
+        { "id": "A", "text": "Definir palabras clave (p. ej., “Pensión Vejez requisitos 2025 BPS”)." },
+        { "id": "B", "text": "Ejecutar búsqueda con operadores (site:bps.gub.uy Pensión Vejez requisitos 2025)." },
+        { "id": "C", "text": "Seleccionar resultados oficiales de bps.gub.uy." },
+        { "id": "D", "text": "Navegar: Prestaciones → Pensión a la Vejez." },
+        { "id": "E", "text": "Abrir la ficha oficial de requisitos 2025." },
+        { "id": "F", "text": "Confirmar vigencia normativa 2025." }
+      ]
+    },
+    {
+      "id": "pe-pension65-2025",
+      "title": "Perú — Pensión 65 (Programa Nacional de Apoyo Directo a los Más Pobres) 2025",
+      "description": "Ordena los pasos para encontrar los requisitos del programa Pensión 65 en el portal oficial del MIDIS.",
+      "criteria": {
+        "countries": ["Perú"],
+        "genders": ["any"],
+        "ageGroups": ["older_adult"]
+      },
+      "passRule": { "minPctCorrectPairs": 0.7 },
+      "steps": [
+        { "id": "A", "text": "Definir palabras clave (p. ej., “Pensión 65 requisitos 2025 MIDIS”)." },
+        { "id": "B", "text": "Buscar con operadores (site:midis.gob.pe Pensión 65 requisitos 2025)." },
+        { "id": "C", "text": "Seleccionar el dominio oficial midis.gob.pe." },
+        { "id": "D", "text": "Navegar: Programas sociales → Pensión 65." },
+        { "id": "E", "text": "Abrir la sección oficial con requisitos y cobertura 2025." },
+        { "id": "F", "text": "Verificar vigencia y condiciones actualizadas 2025." }
+      ]
+    },
+    {
+      "id": "ar-auh-2025",
+      "title": "Argentina — Asignación Universal por Hijo (AUH) 2025",
+      "description": "Ordena los pasos para ubicar los requisitos de la AUH 2025 en el portal de ANSES.",
+      "criteria": {
+        "countries": ["Argentina"],
+        "genders": ["any"],
+        "ageGroups": ["adult", "older_adult"]
+      },
+      "passRule": { "minPctCorrectPairs": 0.7 },
+      "steps": [
+        { "id": "A", "text": "Definir palabras clave (p. ej., “AUH requisitos 2025 ANSES”)." },
+        { "id": "B", "text": "Ejecutar búsqueda con operadores (site:anses.gob.ar AUH requisitos 2025)." },
+        { "id": "C", "text": "Seleccionar resultados del dominio oficial anses.gob.ar." },
+        { "id": "D", "text": "Navegar: Asignaciones → Asignación Universal por Hijo." },
+        { "id": "E", "text": "Abrir la ficha oficial de requisitos 2025." },
+        { "id": "F", "text": "Confirmar vigencia y montos actualizados 2025." }
       ]
     }
   ]

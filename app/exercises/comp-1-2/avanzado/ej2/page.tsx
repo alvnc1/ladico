@@ -96,25 +96,35 @@ function matchList(pref: string[] | undefined, val: string) {
 }
 
 function pickScenarioForProfile(all: Item[], country: string, gender: string, ageGroup: string): Item {
-  // 1) intentar match exacto por país, género y edad
-  const exact =
-    all.find((it) => {
-      const c = it.scenario.criteria || {};
-      return (
-        matchList(c.countries, country) &&
-        matchList(c.genders, gender) &&
-        matchList(c.ageGroups, ageGroup)
-      );
-    }) ||
-    // 2) intentar match por país y "any" en lo otro
-    all.find((it) => {
-      const c = it.scenario.criteria || {};
-      return matchList(c.countries, country);
-    }) ||
-    // 3) fallback: primero
-    all[0];
+  // 1) Escenarios que cumplen país, género y edad
+  const exactMatches = all.filter((it) => {
+    const c = it.scenario.criteria || {};
+    return (
+      matchList(c.countries, country) &&
+      matchList(c.genders, gender) &&
+      matchList(c.ageGroups, ageGroup)
+    );
+  });
 
-  return exact;
+  // 2) Fallback: mismos país
+  const countryMatches = all.filter((it) => {
+    const c = it.scenario.criteria || {};
+    return matchList(c.countries, country);
+  });
+
+  // 3) Pool final: exactos, si no país, si no todos
+  const pool = exactMatches.length > 0 ? exactMatches : (countryMatches.length > 0 ? countryMatches : all);
+
+  // --- ROTACIÓN con localStorage ---
+  let index = 0;
+  if (typeof window !== "undefined") {
+    const key = `ladico:rotation:${country.toLowerCase()}:1.2:avanzado`;
+    const prev = localStorage.getItem(key);
+    index = prev ? (parseInt(prev) + 1) % pool.length : 0;
+    localStorage.setItem(key, String(index));
+  }
+
+  return pool[index];
 }
 
 /* ========= Página ========= */

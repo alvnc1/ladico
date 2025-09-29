@@ -33,6 +33,57 @@
     },
     {
       "scenario": {
+        "id": "convocatorias-jovenes-cl-2024",
+        "title": "Convocatorias oficiales 2024 para jóvenes (Chile, INJUV/SENCE)",
+        "description": "Localizar convocatorias 2024 de programas, becas o fondos para jóvenes en Chile, priorizando requisitos oficiales en PDF y portales gubernamentales (INJUV, SENCE, Mineduc).",
+        "criteria": {
+          "countries": ["Chile"],
+          "genders": ["any"],
+          "ageGroups": ["young_adult"]
+        },
+        "passRule": {
+          "minCorrectPicked": 6,
+          "maxWrongPicked": 1
+        }
+      },
+      "tactics": [
+        { "id": 1, "text": "Limitar a sitios oficiales: site:gob.cl (y subdominios como injuv.gob.cl, sence.gob.cl, beneficiosestudiantiles.cl)", "correct": true },
+        { "id": 2, "text": "Usar sinónimos con OR: (beca OR fondo OR programa OR convocatoria) jóvenes 2024", "correct": true },
+        { "id": 3, "text": "Buscar documentos con requisitos: filetype:pdf (intitle:bases OR 'bases de postulación')", "correct": true },
+        { "id": 4, "text": "Filtrar por fecha: ‘Último año’ para asegurar vigencia 2024", "correct": true },
+        { "id": 5, "text": "Priorizar portales oficiales: INJUV, SENCE, Mineduc, ChileAtiende", "correct": true },
+        { "id": 6, "text": "Usar intitle:convocatoria OR intitle:postulación para acotar títulos relevantes", "correct": true },
+        { "id": 7, "text": "Excluir ruido: -blog -ads -cursos -plantillas", "correct": true },
+        { "id": 8, "text": "Revisar secciones ‘Convocatorias’, ‘Programas juveniles’, ‘Beneficios’ en los portales", "correct": true },
+        { "id": 9, "text": "Buscar primero en TikTok o Instagram porque ‘los jóvenes lo usan más’", "correct": false },
+        { "id": 10, "text": "Ordenar por ‘más antiguos primero’ para revisar programas de 2016–2018", "correct": false }
+      ]
+    },
+    {
+      "scenario": {
+        "id": "convocatorias-becas-chile-2024",
+        "title": "Becas y beneficios estudiantiles 2024 (Chile, Mineduc/JUNAEB)",
+        "description": "Localizar convocatorias y requisitos 2024 de becas estudiantiles en Chile (Nuevo Milenio, Bicentenario, Presidente de la República) desde portales oficiales.",
+        "criteria": {
+          "countries": ["Chile"],
+          "genders": ["any"],
+          "ageGroups": ["young_adult"]
+        },
+        "passRule": { "minCorrectPicked": 6, "maxWrongPicked": 1 }
+      },
+      "tactics": [
+        { "id": 1, "text": "Limitar a sitios oficiales: site:beneficiosestudiantiles.cl OR site:junaeb.cl", "correct": true },
+        { "id": 2, "text": "Usar sinónimos con OR: (beca OR beneficio OR convocatoria) 2024", "correct": true },
+        { "id": 3, "text": "Buscar documentos PDF: filetype:pdf (intitle:bases OR 'requisitos')", "correct": true },
+        { "id": 4, "text": "Filtrar por fecha: último año para asegurar vigencia", "correct": true },
+        { "id": 5, "text": "Revisar secciones ‘Becas’, ‘Convocatorias’, ‘Requisitos’ en los sitios oficiales", "correct": true },
+        { "id": 6, "text": "Excluir ruido: -ads -blog -plantillas", "correct": true },
+        { "id": 7, "text": "Ordenar por ‘más antiguos primero’ para ver becas 2010", "correct": false },
+        { "id": 8, "text": "Usar redes sociales no verificadas como fuente principal", "correct": false }
+      ]
+    },
+    {
+      "scenario": {
         "id": "convocatorias-mypes-co-2024",
         "title": "Convocatorias oficiales 2024 para microempresas",
         "description": "Localizar convocatorias 2024 de apoyos/subsidios/fondos para microempresas en Colombia, priorizando bases/requisitos en PDF y sitios oficiales.",
@@ -59,6 +110,90 @@
         { "id": 10, "text": "Preferir foros y grupos de Facebook sin verificar la fuente oficial", "correct": false },
         { "id": 11, "text": "Revisar secciones ‘Convocatorias’, ‘Programas’, ‘Publicaciones’ o ‘Transparencia’ de las entidades", "correct": true },
         { "id": 12, "text": "Ordenar por ‘más antiguos primero’ para revisar convocatorias históricas (2015–2017)", "correct": false }
+      ]
+    },
+    {
+      "scenario": {
+        "id": "convocatorias-mypes-uy-2024",
+        "title": "Convocatorias oficiales 2024 para microempresas",
+        "description": "Localizar convocatorias 2024 de subsidios/fondos para microempresas en Uruguay, priorizando bases/requisitos en PDF y sitios oficiales.",
+        "criteria": {
+          "countries": ["Uruguay"],
+          "genders": ["any"],
+          "ageGroups": ["young_adult", "adult", "older_adult"]
+        },
+        "passRule": {
+          "minCorrectPicked": 6,
+          "maxWrongPicked": 1
+        }
+      },
+      "tactics": [
+        { "id": 1, "text": "Limitar a sitios oficiales: site:gub.uy (y subdominios como anep.gub.uy, miem.gub.uy, bps.gub.uy)", "correct": true },
+        { "id": 2, "text": "Usar sinónimos con OR: (subsidio OR fondo OR convocatoria) microempresas 2024", "correct": true },
+        { "id": 3, "text": "Buscar documentos con bases: filetype:pdf (intitle:bases OR 'bases de postulación')", "correct": true },
+        { "id": 4, "text": "Filtrar por fecha: ‘Último año’ en las herramientas del buscador", "correct": true },
+        { "id": 5, "text": "Priorizar portales oficiales: MIEM, ANDE (Agencia Nacional de Desarrollo), BPS, Uruguay Emprendedor", "correct": true },
+        { "id": 6, "text": "Usar intitle:convocatoria OR intitle:postulación para acotar títulos relevantes", "correct": true },
+        { "id": 7, "text": "Excluir ruido publicitario: -blog -curso -ads -plantillas", "correct": true },
+        { "id": 8, "text": "Ordenar por ‘más antiguos primero’ para revisar convocatorias de 2010", "correct": false },
+        { "id": 9, "text": "Revisar secciones ‘Convocatorias’, ‘Programas’, ‘Fondos concursables’ en sitios oficiales", "correct": true },
+        { "id": 10, "text": "Priorizar TikTok o grupos de Facebook en lugar de sitios oficiales", "correct": false }
+      ]
+    },
+    {
+      "scenario": {
+        "id": "convocatorias-mypes-pe-2024",
+        "title": "Convocatorias oficiales 2024 para microempresas",
+        "description": "Localizar convocatorias 2024 de apoyos/subsidios/fondos para microempresas en Perú, priorizando bases/requisitos en PDF y sitios oficiales.",
+        "criteria": {
+          "countries": ["Perú"],
+          "genders": ["any"],
+          "ageGroups": ["young_adult", "adult", "older_adult"]
+        },
+        "passRule": {
+          "minCorrectPicked": 6,
+          "maxWrongPicked": 1
+        }
+      },
+      "tactics": [
+        { "id": 1, "text": "Limitar a sitios oficiales: site:gob.pe (y subdominios como produce.gob.pe, midis.gob.pe)", "correct": true },
+        { "id": 2, "text": "Usar sinónimos con OR: (subsidio OR fondo OR convocatoria) MYPE 2024", "correct": true },
+        { "id": 3, "text": "Buscar documentos oficiales: filetype:pdf (intitle:bases OR 'términos de referencia')", "correct": true },
+        { "id": 4, "text": "Filtrar por fecha: ‘Último año’ en las herramientas del buscador", "correct": true },
+        { "id": 5, "text": "Priorizar portales oficiales: PRODUCE, FONDEPES, Innóvate Perú, Ministerio de la Producción", "correct": true },
+        { "id": 6, "text": "Usar intitle:convocatoria OR intitle:postulación para filtrar resultados", "correct": true },
+        { "id": 7, "text": "Excluir ruido comercial: -ads -plantillas -blog", "correct": true },
+        { "id": 8, "text": "Buscar primero en redes sociales (TikTok/Instagram) porque ‘es más rápido’", "correct": false },
+        { "id": 9, "text": "Revisar secciones ‘Convocatorias’, ‘Concursos’, ‘Programas’ en los ministerios", "correct": true },
+        { "id": 10, "text": "Ordenar por ‘más antiguos primero’ para ver antecedentes históricos (2010–2015)", "correct": false }
+      ]
+    },
+    {
+      "scenario": {
+        "id": "convocatorias-mypes-ar-2024",
+        "title": "Convocatorias oficiales 2024 para microempresas",
+        "description": "Localizar convocatorias 2024 de subsidios/fondos para microempresas en Argentina, priorizando bases/requisitos en PDF y sitios oficiales.",
+        "criteria": {
+          "countries": ["Argentina"],
+          "genders": ["any"],
+          "ageGroups": ["young_adult", "adult", "older_adult"]
+        },
+        "passRule": {
+          "minCorrectPicked": 6,
+          "maxWrongPicked": 1
+        }
+      },
+      "tactics": [
+        { "id": 1, "text": "Limitar a sitios oficiales: site:argentina.gob.ar (y subdominios como produccion.gob.ar, cultura.gob.ar)", "correct": true },
+        { "id": 2, "text": "Usar sinónimos con OR: (subsidio OR fondo OR convocatoria) pymes 2024", "correct": true },
+        { "id": 3, "text": "Buscar documentos oficiales: filetype:pdf (intitle:bases OR 'bases de postulación')", "correct": true },
+        { "id": 4, "text": "Filtrar por fecha: ‘Último año’ en el buscador", "correct": true },
+        { "id": 5, "text": "Priorizar portales oficiales: Ministerio de Economía, Producción, PyMEs, FONDEP", "correct": true },
+        { "id": 6, "text": "Usar intitle:convocatoria OR intitle:postulación para acotar resultados", "correct": true },
+        { "id": 7, "text": "Excluir ruido publicitario: -blog -ads -cursos", "correct": true },
+        { "id": 8, "text": "Revisar secciones ‘Convocatorias’, ‘Subsidios’, ‘Fondos concursables’ de los ministerios", "correct": true },
+        { "id": 9, "text": "Preferir información en redes sociales o notas de prensa sin fuente oficial", "correct": false },
+        { "id": 10, "text": "Ordenar por ‘más antiguos primero’ para consultar convocatorias 2012–2014", "correct": false }
       ]
     }
   ]
