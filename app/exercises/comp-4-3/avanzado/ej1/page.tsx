@@ -342,7 +342,7 @@ export default function Page() {
                 disabled={!user || isSaving}
                 className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89] disabled:opacity-60"
               >
-                {isSaving ? "Guardando…" : "Siguiente"}
+                {isSaving ? "Siguiente" : "Siguiente"}
               </Button>
             </div>
           </CardContent>

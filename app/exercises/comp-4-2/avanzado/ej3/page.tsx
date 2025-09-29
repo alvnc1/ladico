@@ -55,12 +55,6 @@ const PARAGRAPHS: { id: ParaId; title: string; text: string }[] = [
     text:
       "Puedes solicitar la eliminación de tu cuenta en cualquier momento. Sin embargo, algunos datos podrán mantenerse almacenados por un período indefinido para cumplir con obligaciones administrativas y legales.",
   },
-  {
-    id: 7,
-    title: "Seguridad técnica",
-    text:
-      "Empleamos protocolos de cifrado y sistemas de autenticación para proteger la confidencialidad y seguridad de la información almacenada en nuestros servidores.",
-  },
 ]
 
 // correct: select 4,5,6; classify "bajo"; right justification for "bajo"
@@ -181,7 +175,7 @@ export default function Page() {
         console.warn("No se pudo marcar la respuesta (P1):", e)
       }
     }
-    router.push("/exercises/comp-4-2/avanzado/ej2")
+    router.push("/dashboard")
   }
 
   const progressPct = (3 / 3) * 100
@@ -217,8 +211,8 @@ export default function Page() {
           </span>
           <div className="flex space-x-2">
             <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
-            <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
-            <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
+            <div className="w-3 h-3 rounded-full bg-[#286575]" />
+            <div className="w-3 h-3 rounded-full bg-[#286575]" />
           </div>
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
@@ -246,9 +240,9 @@ export default function Page() {
                   debes abrir los <strong>Términos y condiciones</strong> y revisarlos cuidadosamente.
                 </p>
                 <p className="text-gray-700">
-                  En la ventana emergente encontrarás la política de privacidad en párrafos numerados.
-                  Lee, <strong>marca los párrafos que justifican tu evaluación</strong> y, al final,
-                  <strong> clasifica el nivel de protección</strong>.
+                  En la ventana emergente encontrarás la política de privacidad en párrafos numerados. 
+                  Clasifica el nivel de protección y selecciona los párrafos que justifican tu elección. 
+                  Luego, explica tu elección.
                 </p>
                 {/* Botón con estilo de enlace, abre el modal (igual apariencia que "Ir a panel") */}
                 <button

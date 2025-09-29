@@ -1,4 +1,4 @@
-// app/exercises/comp-4-3/avanzado/ej2/page.tsx
+// app/exercises/comp-4-3/avanzado/ej3/page.tsx
 "use client"
 
 import Link from "next/link"
@@ -10,147 +10,133 @@ import { setPoint } from "@/lib/levelProgress"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
 
-type GroupId = "adultos" | "migrantes" | "visual"
-type Objective = "comunicacion" | "empleo" | "acceso_info"
+const COMPETENCE = "4.3"
+const LEVEL_LOCAL = "avanzado"
+const SESSION_PREFIX = "session:4.3:Avanzado"
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-const GROUPS: GroupId[] = ["adultos", "migrantes", "visual"]
+// ✅ Esta es la Pregunta 2 de 3
+const QUESTION_NUM_LOCAL = 2        // (1-based) para setPoint
+const QUESTION_IDX_SESSION = 1      // (0-based) para markAnswered
 
-const TECH_OPTIONS: Record<GroupId, { id: string; label: string }[]> = {
-  adultos: [
-    { id: "tablet_senior", label: "Tabletas con interfaz senior-friendly" },
-    { id: "videollamadas_asist", label: "Videollamadas con asistencia remota" }, // ✅
-    { id: "podcasts_simples", label: "Podcasts educativos con controles simples" },
-  ],
-  migrantes: [
-    { id: "traductor_rt", label: "Traductor multilingüe en tiempo real" },
-    { id: "empleo_idiomatico", label: "Plataforma de empleo con soporte idiomático" }, // ✅
-    { id: "red_bilingue", label: "Red social comunitaria bilingüe" },
-  ],
-  visual: [
-    { id: "navegador_audiodesc", label: "Navegador con audio-descripción" }, // ✅
-    { id: "asistente_voz", label: "Asistente por voz con comandos personalizados" },
-    { id: "mapa_tactil", label: "Mapa táctil digital de la comunidad" },
-  ],
-}
+// ===== Opciones =====
+type CompKey = "footer" | "form" | "buttons" | "menu" | "notices"
+type ChangeKey = "biggerTextContrast" | "bigButtons" | "colorfulBackground" | "labelsExamples"
 
-const OBJECTIVES: { id: Objective; label: string }[] = [
-  { id: "comunicacion", label: "Mejorar la comunicación cotidiana." },            // ✅ adultos
-  { id: "empleo", label: "Facilitar el acceso a oportunidades laborales." },      // ✅ migrantes
-  { id: "acceso_info", label: "Reducir barreras de acceso a la información." },   // ✅ visual
+const COMPONENTS: { key: CompKey; label: string }[] = [
+  { key: "footer",  label: "Pie de página" },
+  { key: "form",    label: "Formulario" },                     // ✅
+  { key: "buttons", label: "Botones y enlaces interactivos" }, // ✅
+  { key: "menu",    label: "Menú de navegación" },
+  { key: "notices", label: "Avisos (barras de mensajes)" },    // ✅
 ]
 
-const ANSWER_KEY: Record<GroupId, { tech: string; objective: Objective }> = {
-  adultos:  { tech: "videollamadas_asist", objective: "comunicacion" },
-  migrantes:{ tech: "empleo_idiomatico",   objective: "empleo" },
-  visual:   { tech: "navegador_audiodesc", objective: "acceso_info" },
-}
+// ⬇️ "Disminuir..." es INCORRECTA (cambiaste el texto), por lo tanto NO suma punto
+const CHANGES: { key: ChangeKey; label: string }[] = [
+  { key: "biggerTextContrast", label: "Disminuir tamaño y contraste de los textos." }, // ❌ incorrecta
+  { key: "bigButtons",         label: "Hacer botones grandes." },                      // ✅
+  { key: "colorfulBackground", label: "Agregar un fondo de color más vistoso para que la página se vea moderna." }, // ❌
+  { key: "labelsExamples",     label: "Colocar siempre etiquetas visibles en los formularios y dar ejemplos de formato." }, // ✅
+]
 
-const COMPETENCE = "4.3"
-const LEVEL_LOCAL = "avanzado"        // para setPoint (1-based)
-const SESSION_PREFIX = "session:4.3:Avanzado";
-const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;     // para Firestore / ensureSession (title-case)
-const QUESTION_NUM_LOCAL = 2          // Pregunta 2 de 3 (1-based para setPoint)
-const QUESTION_IDX_SESSION = 1        // índice 0-based para markAnswered
+// Claves correctas
+const CORRECT_COMPONENTS = new Set<CompKey>(["form", "buttons", "notices"])
+const CORRECT_CHANGES   = new Set<ChangeKey>(["bigButtons", "labelsExamples"]) // ⬅️ SIN "biggerTextContrast"
 
-export default function AdvancedEj2Page() {
+export default function AdvancedEj3Page() {
   const router = useRouter()
   const { user } = useAuth()
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const ensuringRef = useRef(false);
+  const ensuringRef = useRef(false)
 
-  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
+  // Estado: selecciones (checkboxes)
+  const [selComponents, setSelComponents] = useState<Record<CompKey, boolean>>({
+    footer: false,
+    form: false,
+    buttons: false,
+    menu: false,
+    notices: false,
+  })
+  const [selChanges, setSelChanges] = useState<Record<ChangeKey, boolean>>({
+    biggerTextContrast: false,
+    bigButtons: false,
+    colorfulBackground: false,
+    labelsExamples: false,
+  })
+
+  // Contar respuestas correctas seleccionadas (suma entre los dos bloques)
+  const correctSelectedTotal = useMemo(() => {
+    let total = 0
+    ;(Object.keys(selComponents) as CompKey[]).forEach(k => {
+      if (selComponents[k] && CORRECT_COMPONENTS.has(k)) total++
+    })
+    ;(Object.keys(selChanges) as ChangeKey[]).forEach(k => {
+      if (selChanges[k] && CORRECT_CHANGES.has(k)) total++
+    })
+    return total
+  }, [selComponents, selChanges])
+
+  // ===== Sesión por-usuario =====
   useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    const LS_KEY = sessionKeyFor(user.uid);
-    const sid = localStorage.getItem(LS_KEY);
-    if (sid) setSessionId(sid);
-  }, [user?.uid]);
+    if (!user || typeof window === "undefined") return
+    const LS_KEY = sessionKeyFor(user.uid)
+    const sid = localStorage.getItem(LS_KEY)
+    if (sid) setSessionId(sid)
+  }, [user?.uid])
 
-  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
   useEffect(() => {
     if (!user) {
-      setSessionId(null);
-      return;
+      setSessionId(null)
+      return
     }
 
-    const LS_KEY = sessionKeyFor(user.uid);
-    const cached =
-      typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-
+    const LS_KEY = sessionKeyFor(user.uid)
+    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
     if (cached) {
-      // ya existe para este usuario
-      if (!sessionId) setSessionId(cached);
-      return;
+      if (!sessionId) setSessionId(cached)
+      return
     }
 
-    // Evita que se dispare doble en StrictMode o por renders repetidos
-    if (ensuringRef.current) return;
-    ensuringRef.current = true;
-
-    (async () => {
+    if (ensuringRef.current) return
+    ensuringRef.current = true
+    ;(async () => {
       try {
         const { id } = await ensureSession({
           userId: user.uid,
           competence: COMPETENCE,
           level: "Avanzado",
           totalQuestions: 3,
-        });
-        setSessionId(id);
-        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+        })
+        setSessionId(id)
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test:", e);
+        console.error("No se pudo asegurar la sesión de test:", e)
       } finally {
-        ensuringRef.current = false;
+        ensuringRef.current = false
       }
-    })();
-  }, [user?.uid, sessionId]);
+    })()
+  }, [user?.uid, sessionId])
 
-  const [tech, setTech] = useState<Record<GroupId, string>>({
-    adultos: "",
-    migrantes: "",
-    visual: "",
-  })
-  const [obj, setObj] = useState<Record<GroupId, Objective | "">>({
-    adultos: "",
-    migrantes: "",
-    visual: "",
-  })
-
-  const chosenTechs = useMemo(
-    () => new Set(GROUPS.map((g) => tech[g]).filter(Boolean)),
-    [tech]
-  )
-
-  // 1 punto por grupo si coincide (tecnología ∧ objetivo)
-  const correctCount = useMemo(() => {
-    let s = 0
-    for (const g of GROUPS) {
-      const t = tech[g]
-      const o = obj[g]
-      const key = ANSWER_KEY[g]
-      if (t && o && t === key.tech && o === key.objective) s += 1
-    }
-    return s
-  }, [tech, obj])
-
+  // ===== Navegación / Guardado =====
   const handleNext = async () => {
-    const point: 0 | 1 = correctCount >= 2 ? 1 : 0
-
-    // guarda progreso local (para el anillo del dashboard)
+    // ✅ Punto si hay 3 o más respuestas correctas entre ambos bloques
+    const point: 0 | 1 = correctSelectedTotal >= 3 ? 1 : 0
     setPoint(COMPETENCE, LEVEL_LOCAL, QUESTION_NUM_LOCAL, point)
 
-    // marca la P2 como respondida en la sesión (para que el dashboard te lleve a la P3)
-    const sid = sessionId || localStorage.getItem("session:4.3:Avanzado")
+    const sid = sessionId || (typeof window !== "undefined" ? localStorage.getItem(SESSION_PREFIX) : null)
     if (sid) {
       try {
         await markAnswered(sid, QUESTION_IDX_SESSION, point === 1)
       } catch (e) {
-        console.error("markAnswered P2 fallo:", e)
+        console.error("markAnswered P2 falló:", e)
       }
     }
 
+    // ➡️ Avanza a la P3
     router.push("/exercises/comp-4-3/avanzado/ej3")
   }
+
+  const progressPct = (2 / 3) * 100 // Pregunta 2 de 3
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -183,56 +169,101 @@ export default function AdvancedEj2Page() {
           </div>
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
-          <div className="h-full bg-[#286575] rounded-full transition-all duration-500" style={{ width: `${(2 / 3) * 100}%` }} />
+          <div
+            className="h-full bg-[#286575] rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
       </div>
 
-      {/* Tarjeta Ladico: Enunciado + Tablero + Acción */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575]/20 w-full max-w-[840px] mx-auto">
+      {/* Tarjeta principal */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
+        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8 space-y-6">
-            {/* Enunciado */}
-            <div className="space-y-4">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                Tecnologías para la inclusión social
-              </h2>
-              <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
-                <p className="text-gray-700">
-                  Selecciona la tecnología más adecuada para cada grupo de la comunidad y
-                  vincúlala con el objetivo principal que mejor responda a sus necesidades de inclusión digital.
-                </p>
+            {/* Título */}
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+              Uso de tecnologías digitales inclusivas para adultos mayores
+            </h2>
+
+            {/* Instrucciones */}
+            <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
+              <p className="text-gray-700 leading-relaxed">
+                Observa el sitio web. Identifica los componentes que presentan problemas de accesibilidad para adultos mayores
+                y selecciona las mejoras más adecuadas para que la página sea más inclusiva.
+              </p>
+              <p className="mt-2">
+                <Link
+                  href="/exercises/comp-4-3/avanzado/ej2/web"
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  Ir a sitio web
+                </Link>
+              </p>
+            </div>
+
+            {/* Bloque 1: Componentes con problemas */}
+            <section className="rounded-2xl border-2 border-gray-200 p-4 bg-white">
+              <h3 className="font-semibold text-gray-900 mb-3">
+                ¿Cuáles de los siguientes componentes de la página tienen problemas de accesibilidad para adultos mayores?
+              </h3>
+              <div className="space-y-2">
+                {COMPONENTS.map((c) => {
+                  const active = selComponents[c.key]
+                  return (
+                    <label
+                      key={c.key}
+                      htmlFor={`comp-${c.key}`}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                        active ? "border-[#286575] bg-[#e6f2f3]" : "border-gray-200 hover:border-[#286575]"
+                      }`}
+                    >
+                      <input
+                        id={`comp-${c.key}`}
+                        type="checkbox"
+                        className="mt-1 accent-[#286575]"
+                        checked={active}
+                        onChange={(e) =>
+                          setSelComponents((s) => ({ ...s, [c.key]: e.target.checked }))
+                        }
+                      />
+                      <span className="text-sm text-gray-800">{c.label}</span>
+                    </label>
+                  )
+                })}
               </div>
-            </div>
-            {/* Tablero */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <GroupCard
-                title="Adultos Mayores"
-                techOptions={TECH_OPTIONS.adultos}
-                techValue={tech.adultos}
-                onTechChange={(v) => setTech((s) => ({ ...s, adultos: v }))}
-                objectiveValue={obj.adultos}
-                onObjectiveChange={(v) => setObj((s) => ({ ...s, adultos: v as Objective }))}
-                chosenTechs={chosenTechs}
-              />
-              <GroupCard
-                title="Migrantes"
-                techOptions={TECH_OPTIONS.migrantes}
-                techValue={tech.migrantes}
-                onTechChange={(v) => setTech((s) => ({ ...s, migrantes: v }))}
-                objectiveValue={obj.migrantes}
-                onObjectiveChange={(v) => setObj((s) => ({ ...s, migrantes: v as Objective }))}
-                chosenTechs={chosenTechs}
-              />
-              <GroupCard
-                title="Personas con Discapacidad Visual"
-                techOptions={TECH_OPTIONS.visual}
-                techValue={tech.visual}
-                onTechChange={(v) => setTech((s) => ({ ...s, visual: v }))}
-                objectiveValue={obj.visual}
-                onObjectiveChange={(v) => setObj((s) => ({ ...s, visual: v as Objective }))}
-                chosenTechs={chosenTechs}
-              />
-            </div>
+            </section>
+
+            {/* Bloque 2: Cambios recomendados */}
+            <section className="rounded-2xl border-2 border-gray-200 p-4 bg-white">
+              <h3 className="font-semibold text-gray-900 mb-3">
+                ¿Qué cambios ayudarían a variar el uso de la tecnología para que la página sea más inclusiva con adultos mayores?
+              </h3>
+              <div className="space-y-2">
+                {CHANGES.map((c) => {
+                  const active = selChanges[c.key]
+                  return (
+                    <label
+                      key={c.key}
+                      htmlFor={`chg-${c.key}`}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                        active ? "border-[#286575] bg-[#e6f2f3]" : "border-gray-200 hover:border-[#286575]"
+                      }`}
+                    >
+                      <input
+                        id={`chg-${c.key}`}
+                        type="checkbox"
+                        className="mt-1 accent-[#286575]"
+                        checked={active}
+                        onChange={(e) =>
+                          setSelChanges((s) => ({ ...s, [c.key]: e.target.checked }))
+                        }
+                      />
+                      <span className="text-sm text-gray-800">{c.label}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </section>
 
             {/* Acción */}
             <div className="flex justify-end pt-2">
@@ -247,60 +278,5 @@ export default function AdvancedEj2Page() {
         </Card>
       </div>
     </div>
-  )
-}
-
-function GroupCard(props: {
-  title: string
-  techOptions: { id: string; label: string }[]
-  techValue: string | ""
-  onTechChange: (v: string) => void
-  objectiveValue: Objective | ""
-  onObjectiveChange: (v: Objective) => void
-  chosenTechs: Set<string>
-}) {
-  const { title, techOptions, techValue, onTechChange, objectiveValue, onObjectiveChange, chosenTechs } = props
-
-  return (
-    <Card className="bg-white rounded-2xl border-2 border-gray-200 hover:border-[#286575] transition-colors shadow-sm">
-      <CardContent className="p-5 space-y-4">
-        <div className="text-gray-900 font-semibold">{title}</div>
-
-        <div className="space-y-1">
-          <label className="text-xs text-gray-600">Tecnología</label>
-          <select
-            className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
-            value={techValue}
-            onChange={(e) => onTechChange(e.target.value)}
-          >
-            <option value="">Selecciona una tecnología…</option>
-            {techOptions.map((opt) => {
-              const disabled = chosenTechs.has(opt.id) && techValue !== opt.id
-              return (
-                <option key={opt.id} value={opt.id} disabled={disabled}>
-                  {opt.label}
-                </option>
-              )
-            })}
-          </select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs text-gray-600">Objetivo</label>
-          <select
-            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
-            value={objectiveValue}
-            onChange={(e) => onObjectiveChange(e.target.value as Objective)}
-          >
-            <option value="">Selecciona un objetivo…</option>
-            {OBJECTIVES.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

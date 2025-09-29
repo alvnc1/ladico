@@ -331,8 +331,8 @@ export default function Page() {
                   opciones tecnológicas.
                 </p>
                 <p className="text-gray-700 leading-relaxed font-medium">
-                  Su tarea es ordenarlas de mayor a menor prioridad
-                  según el grado de inclusión que ofrecen a este grupo de usuarios.
+                  Su tarea es ordenarlas de mayor a menor prioridad, considerando el nivel de accesibilidad 
+                  y facilidad de uso que cada opción ofrece a este grupo de usuarios.
                 </p>
               </div>
             </div>

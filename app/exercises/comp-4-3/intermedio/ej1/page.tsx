@@ -272,7 +272,7 @@ export default function Page() {
           <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
             Pregunta 1 de 3
           </span>
-          <div className="flex space-x-2">
+        <div className="flex space-x-2">
             <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
             <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
             <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
@@ -299,7 +299,8 @@ export default function Page() {
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Arrastra la medida preventiva que corresponda a cada amenaza para reducir sus efectos.
+                  Arrastra cada medida preventiva hacia la amenaza correspondiente,
+                  de manera que cada amenaza tenga solo una medida asignada.
                 </p>
               </div>
             </div>
@@ -327,48 +328,51 @@ export default function Page() {
                 </ul>
               </section>
 
-              {/* Amenazas: vacío dashed, asignado con el mismo color que selección múltiple */}
-              <section className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {THREATS.map((t) => {
-                  const mid = assign[t.id]
-                  const m = mid ? measureMap[mid] : null
-                  const assigned = Boolean(mid)
+              {/* Amenazas: envueltas en recuadro con título */}
+              <section className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-4">
+                <h3 className="font-semibold text-gray-900 mb-3">Amenazas</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {THREATS.map((t) => {
+                    const mid = assign[t.id]
+                    const m = mid ? measureMap[mid] : null
+                    const assigned = Boolean(mid)
 
-                  return (
-                    <div
-                      key={t.id}
-                      className={
-                        assigned
-                          ? "rounded-2xl border-2 p-3 bg-[#e6f2f3] border-[#286575] shadow-md"
-                          : "rounded-2xl border-2 border-dashed p-3 bg-white border-gray-200 hover:border-[#286575] transition-colors"
-                      }
-                      {...droppableProps((mm) => dropToThreat(t.id, mm))}
-                    >
-                      <h4 className="font-semibold text-gray-900 mb-2">{t.title}</h4>
-                      <div className="min-h-[72px]">
-                        {!mid ? (
-                          <p className="text-xs text-gray-400 italic">Suelta aquí la medida.</p>
-                        ) : (
-                          <div
-                            className="p-2.5 rounded-2xl border-2 text-sm bg-white border-gray-200 flex items-start gap-2"
-                            {...draggableProps(mid)}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => unassign(t.id)}
-                              className="rounded-md hover:bg-gray-100 p-1"
-                              aria-label="Quitar medida"
-                              title="Quitar medida"
+                    return (
+                      <div
+                        key={t.id}
+                        className={
+                          assigned
+                            ? "rounded-2xl border-2 p-3 bg-[#e6f2f3] border-[#286575] shadow-md"
+                            : "rounded-2xl border-2 border-dashed p-3 bg-white border-gray-200 hover:border-[#286575] transition-colors"
+                        }
+                        {...droppableProps((mm) => dropToThreat(t.id, mm))}
+                      >
+                        <h4 className="font-semibold text-gray-900 mb-2">{t.title}</h4>
+                        <div className="min-h-[72px]">
+                          {!mid ? (
+                            <p className="text-xs text-gray-400 italic">Suelta aquí la medida.</p>
+                          ) : (
+                            <div
+                              className="p-2.5 rounded-2xl border-2 text-sm bg-white border-gray-200 flex items-start gap-2"
+                              {...draggableProps(mid)}
                             >
-                              <X className="w-4 h-4 text-gray-500" />
-                            </button>
-                            <span className="text-gray-700">{m?.text}</span>
-                          </div>
-                        )}
+                              <button
+                                type="button"
+                                onClick={() => unassign(t.id)}
+                                className="rounded-md hover:bg-gray-100 p-1"
+                                aria-label="Quitar medida"
+                                title="Quitar medida"
+                              >
+                                <X className="w-4 h-4 text-gray-500" />
+                              </button>
+                              <span className="text-gray-700">{m?.text}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </section>
             </div>
 
