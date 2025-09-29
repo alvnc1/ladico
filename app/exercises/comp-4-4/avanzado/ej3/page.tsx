@@ -178,10 +178,17 @@ export default function Page() {
       console.warn("Error al finalizar P3:", e)
     }
 
+    // Avisar al dashboard para refrescar el anillo de progreso
+    try {
+      localStorage.setItem("ladico:progress:version", String(Date.now()))
+      window.dispatchEvent(new CustomEvent("ladico:progress:refresh"))
+    } catch {}
+
     try {
       if (user) localStorage.removeItem(sessionKeyFor(user.uid))
     } catch {}
 
+    // → Results universales
     const qs = new URLSearchParams({
       score: String(finalScore),
       passed: String(finalPassed),
@@ -192,9 +199,16 @@ export default function Page() {
       q1: String(q1),
       q2: String(q2),
       q3: String(q3),
+      passMin: "2",
+      compPath: "comp-4-4",
+      retryBase: "/exercises/comp-4-4/avanzado",
+      ex1Label: "Ejercicio 1: Términos y condiciones",
+      ex2Label: "Ejercicio 2: Hábitos y consumo (avanzado)",
+      ex3Label: "Ejercicio 3: Selección sostenible de proveedores",
     })
     if (sid) qs.set("sid", sid)
-    router.push(`/test/comp-4-4-avanzado/results?${qs.toString()}`)
+
+    router.push(`/test/results?${qs.toString()}`)
   }
 
   const progressPct = 100

@@ -4,7 +4,13 @@
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { setPoint } from "@/lib/levelProgress"
+import {
+  setPoint,
+  getProgress,
+  levelPoints,
+  isLevelPassed,
+  getPoint,
+} from "@/lib/levelProgress"
 
 import { useEffect, useMemo, useState, useRef } from "react"
 import { useAuth } from "@/contexts/AuthContext"
@@ -12,8 +18,13 @@ import { ensureSession, markAnswered } from "@/lib/testSession"
 import { useRouter } from "next/navigation"
 
 // ====== Configuración del ejercicio (4.2 Intermedio • P3) ======
-const COMPETENCE = "4.2"
-const LEVEL = "intermedio"
+const COMPETENCE = "4.2" as const
+const LEVEL = "intermedio" as const
+const LEVEL_FS = "Intermedio" as const
+const TOTAL_QUESTIONS = 3
+const Q_ONE_BASED = 3       // P3 -> setPoint
+const Q_ZERO_BASED = 2      // P3 -> markAnswered
+
 /** Clave de sesión por-usuario para evitar duplicados */
 const SESSION_PREFIX = "session:4.2:Intermedio"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
@@ -56,7 +67,7 @@ El usuario puede revisar, actualizar o eliminar parte de su información desde l
 
 export default function Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth()
 
   // Sesión Firestore
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -115,8 +126,8 @@ export default function Page() {
         const { id } = await ensureSession({
           userId: user.uid,
           competence: COMPETENCE,
-          level: "Intermedio",
-          totalQuestions: 3,
+          level: LEVEL_FS,
+          totalQuestions: TOTAL_QUESTIONS,
         })
         setSessionId(id)
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
@@ -128,10 +139,25 @@ export default function Page() {
     })()
   }, [user?.uid, sessionId])
 
-  // Navegación / envío
-  const handleNext = async () => {
-    // P3 de 3 → index visible 3; en markAnswered índice 2
-    setPoint(COMPETENCE, LEVEL, 3, point)
+  // Finalizar → guardar, marcar en FS y enviar a /test/results
+  const handleFinish = async () => {
+    // Guardar puntaje local de la P3
+    setPoint(COMPETENCE, LEVEL, Q_ONE_BASED, point)
+
+    // Calcular progreso y score
+    const prog = getProgress(COMPETENCE, LEVEL)
+    const totalPts = levelPoints(prog)
+    const levelPassed = isLevelPassed(prog)
+    const score = Math.round((totalPts / TOTAL_QUESTIONS) * 100)
+    const q1 = getPoint(prog, 1)
+    const q2 = getPoint(prog, 2)
+    const q3 = getPoint(prog, 3)
+
+    // Modo profesor: override de resultados para pasar el nivel
+    const isTeacher = userData?.role === "profesor"
+    const finalTotalPts = isTeacher ? TOTAL_QUESTIONS : totalPts
+    const finalPassed = isTeacher ? true : levelPassed
+    const finalScore = isTeacher ? 100 : score
 
     try {
       const LS_KEY = user ? sessionKeyFor(user.uid) : null
@@ -148,8 +174,8 @@ export default function Page() {
           const created = await ensureSession({
             userId: user.uid,
             competence: COMPETENCE,
-            level: "Intermedio",
-            totalQuestions: 3,
+            level: LEVEL_FS,
+            totalQuestions: TOTAL_QUESTIONS,
           })
           sid = created.id
           setSessionId(created.id)
@@ -161,13 +187,35 @@ export default function Page() {
       }
 
       if (sid) {
-        await markAnswered(sid, 2, true) // marcamos respondida para avanzar
+        await markAnswered(sid, Q_ZERO_BASED, point === 1)
       }
-    } catch (e) {
-      console.warn("No se pudo marcar P3 respondida:", e)
-    }
 
-    router.push("/dashboard")
+      // Armar querystring para /test/results
+      const qs = new URLSearchParams({
+        score: String(finalScore),
+        passed: String(finalPassed),
+        correct: String(finalTotalPts),
+        total: String(TOTAL_QUESTIONS),
+        competence: COMPETENCE,
+        level: LEVEL,
+        q1: String(q1),
+        q2: String(q2),
+        q3: String(q3),
+        sid: sid ?? "",
+        passMin: "2", // regla: aprobar con 2/3
+        compPath: "comp-4-2",
+        retryBase: "/exercises/comp-4-2/intermedio",
+        ex1Label: "Ejercicio 1: Fundamentos de datos personales",
+        ex2Label: "Ejercicio 2: Configuraciones y permisos",
+        ex3Label: "Ejercicio 3: Comprensión de políticas de privacidad",
+      })
+
+      router.push(`/test/results?${qs.toString()}`)
+    } catch (e) {
+      console.warn("No se pudo marcar P3 respondida o navegar a resultados:", e)
+      // Fallback suave (no ideal, pero evita bloqueo)
+      router.push("/dashboard")
+    }
   }
 
   const progressPct = 100 // Pregunta 3 de 3
@@ -227,8 +275,8 @@ export default function Page() {
             <div className="mb-4">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Lee el siguiente extracto de la política de privacidad de una suscripción en linea 
-                  y selecciona todas las afirmaciones correctas. 
+                  Lee el siguiente extracto de la política de privacidad de una suscripción en línea
+                  y selecciona todas las afirmaciones correctas.
                 </p>
               </div>
             </div>
@@ -292,7 +340,7 @@ export default function Page() {
             {/* Footer / acciones */}
             <div className="mt-6 flex items-center justify-end">
               <Button
-                onClick={handleNext}
+                onClick={handleFinish}
                 className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
               >
                 Finalizar

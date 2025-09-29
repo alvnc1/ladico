@@ -143,12 +143,13 @@ export default function Page() {
       console.warn("Error al finalizar P3:", e)
     }
 
-    // Limpia referencia local a la sesión
+    // Avisar al dashboard para refrescar el anillo
     try {
-      if (user) localStorage.removeItem(sessionKeyFor(user.uid))
+      localStorage.setItem("ladico:progress:version", String(Date.now()))
+      window.dispatchEvent(new CustomEvent("ladico:progress:refresh"))
     } catch {}
 
-    // Redirigir a resultados
+    // Redirigir a resultados universales
     const qs = new URLSearchParams({
       score: String(finalScore),
       passed: String(finalPassed),
@@ -159,9 +160,16 @@ export default function Page() {
       q1: String(q1),
       q2: String(q2),
       q3: String(q3),
+      passMin: "2",
+      compPath: "comp-4-4",
+      retryBase: "/exercises/comp-4-4/intermedio",
+      ex1Label: "Ejercicio 1: Fundamentos ambientales",
+      ex2Label: "Ejercicio 2: Hábitos y consumo",
+      ex3Label: "Ejercicio 3: Apps con impacto positivo",
     })
     if (sid) qs.set("sid", sid)
-    router.push(`/test/comp-4-4-intermedio/results?${qs.toString()}`)
+
+    router.push(`/test/results?${qs.toString()}`)
   }
 
   const progressPct = 100
@@ -202,7 +210,7 @@ export default function Page() {
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
           <div
-            className="h-full bg-[#286575] rounded-full transition-all duration-500"
+            className="h-full bg-[#286575] rounded-full transition-all duración-500"
             style={{ width: `${progressPct}%` }}
           />
         </div>
