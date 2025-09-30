@@ -1,0 +1,51 @@
+{
+  "id": "4.4-intermedio-ej1",
+  "baseVersion": "1.0",
+  "base": {
+    "title": "Indicar el impacto medioambiental de acciones rutinarias en el uso de dispositivos y recursos digitales",
+    "stemHome": "En tu hogar, buscas implementar estrategias sencillas y de bajo costo para disminuir la huella medioambiental. \nA continuación, se presentan cinco acciones digitales comunes. Ordénalas de mayor a menor impacto ambiental positivo de acuerdo con la evidencia sobre ahorro energético y reducción de emisiones de carbono.",
+    "stemOffice": "En tu oficina, el equipo de trabajo busca implementar estrategias sencillas y de bajo costo para disminuir su huella medioambiental.\nA continuación, se presentan cinco acciones digitales comunes. Ordénalas de mayor a menor impacto ambiental positivo de acuerdo con la evidencia sobre ahorro energético y reducción de emisiones de carbono."
+  },
+  "variantsByCountry": {
+    "Chile": {
+      "under30": {
+        "contextNote": "Contexto local: en los hogares chilenos es común el uso intensivo de streaming en televisores inteligentes y teléfonos móviles, además de conexión Wi-Fi domiciliaria y datos móviles en trayectos urbanos."
+      },
+      "over30": {
+        "contextNote": "Contexto local: en oficinas de Santiago y otras ciudades se realizan videollamadas frecuentes y los equipos suelen permanecer encendidos gran parte de la jornada."
+      }
+    },
+    "Argentina": {
+      "under30": {
+        "contextNote": "Contexto local: en los hogares argentinos jóvenes destaca el uso de notebooks y celulares para streaming y redes sociales, muchas veces compartiendo la conexión de Wi-Fi familiar."
+      },
+      "over30": {
+        "contextNote": "Contexto local: en oficinas de Buenos Aires es habitual el uso de múltiples dispositivos en paralelo (PC, notebook y móvil) y sistemas de climatización durante gran parte del año."
+      }
+    },
+    "Perú": {
+      "under30": {
+        "contextNote": "Contexto local: en los hogares peruanos jóvenes es común el uso de cabinas de internet o Wi-Fi compartido para juegos en línea, streaming y redes sociales."
+      },
+      "over30": {
+        "contextNote": "Contexto local: en oficinas de Lima y otras ciudades, el uso constante de plataformas de trabajo colaborativo y la impresión de documentos son prácticas frecuentes."
+      }
+    },
+    "Uruguay": {
+      "under30": {
+        "contextNote": "Contexto local: en los hogares uruguayos jóvenes es común el uso de laptops provistas por el Plan Ceibal junto a servicios de streaming y aplicaciones educativas."
+      },
+      "over30": {
+        "contextNote": "Contexto local: en oficinas de Montevideo es habitual mantener equipos encendidos todo el día y realizar videoconferencias para coordinar con equipos en el exterior."
+      }
+    },
+    "Colombia": {
+      "under30": {
+        "contextNote": "Contexto local: en los hogares colombianos jóvenes predomina el uso de aplicaciones de mensajería y streaming en dispositivos móviles con planes de datos limitados."
+      },
+      "over30": {
+        "contextNote": "Contexto local: en oficinas de Bogotá y Medellín se utilizan intensivamente plataformas de colaboración digital y es habitual el uso de aire acondicionado en salas de trabajo."
+      }
+    }
+  }
+}

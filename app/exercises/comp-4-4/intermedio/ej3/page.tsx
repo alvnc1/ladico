@@ -1,6 +1,7 @@
+// app/exercises/comp-4-4/intermedio/ej3/page.tsx
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,57 +16,107 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered, finalizeSession } from "@/lib/testSession"
 
-const COMPETENCE = "4.4"
-const LEVEL = "intermedio"
-/** ⚠️ CLAVE POR-USUARIO: evita pisar sesiones entre cuentas */
-const SESSION_PREFIX = "session:4.4:Intermedio";
-const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
+// ====== Carga del JSON (país + edad) ======
+import exerciseData from "@/app/exercises/comp-4-4/intermedio/ej3/ej3.json"
 
-// === Opciones (A..E) según tu contexto ===
-const OPTIONS = [
-  { key: "A", text: "App de compra conjunta de alimentos locales.", correct: true },
-  { key: "B", text: "App que recomienda ofertas de supermercados cercanos.", correct: false },
-  { key: "C", text: "App de alquiler de bicicletas compartidas.", correct: true },
-  { key: "D", text: "App de trueque y donaciones comunitarias.", correct: true },
-  { key: "E", text: "App que sugiere rutas de transporte público optimizadas para ahorrar tiempo.", correct: false },
-] as const
+// ====== Tipos del JSON ======
+type Country = "Chile" | "Argentina" | "Perú" | "Uruguay" | "Colombia"
+type AgeVariant = "under20" | "20to40" | "over40"
 
-type Key = typeof OPTIONS[number]["key"]
+type OptionNode = { key: "A" | "B" | "C" | "D" | "E"; text: string; correct: boolean }
+
+type ExerciseJSON = {
+  id: string
+  baseVersion: string
+  base: { title: string; stem: string }
+  variantsByCountry?: Partial<
+    Record<
+      Country,
+      Partial<Record<AgeVariant, { stem?: string; options: OptionNode[] }>>
+    >
+  >
+}
+
+// 👇 Igual que en los otros ejercicios
+const EX = exerciseData as ExerciseJSON
+
+const COMPETENCE = "4.4" as const
+const LEVEL = "intermedio" as const
+const SESSION_PREFIX = "session:4.4:Intermedio"
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
+
+// ===== Helpers país / edad =====
+function ageToVariant(age?: number | null): AgeVariant {
+  if (age == null) return "20to40"
+  if (age < 20) return "under20"
+  if (age <= 40) return "20to40"
+  return "over40"
+}
+
+function normalizeCountry(input?: string | null): Country | null {
+  if (!input) return null
+  const s = input.trim().toLowerCase()
+  if (s.includes("chile")) return "Chile"
+  if (s.includes("argentin")) return "Argentina"
+  if (s.includes("uruguay")) return "Uruguay"
+  if (s.includes("colombia")) return "Colombia"
+  if (s.includes("peru") || s.includes("perú")) return "Perú"
+  return null
+}
+
+type Key = OptionNode["key"]
 
 export default function Page() {
   const router = useRouter()
-  const { user, userData } = useAuth()
+  const { user, userData } = useAuth() as {
+    user: { uid: string } | null
+    userData?: { age?: number; country?: string; role?: string } | null
+  }
+
+  // ===== Derivar país/edad =====
+  const country = useMemo<Country | null>(() => normalizeCountry(userData?.country), [userData])
+  const ageVariant = useMemo<AgeVariant>(() => ageToVariant(userData?.age ?? null), [userData])
+
+  // ===== Copia localizada =====
+  const stem = useMemo(() => {
+    if (!country) return EX.base.stem
+    return EX.variantsByCountry?.[country]?.[ageVariant]?.stem ?? EX.base.stem
+  }, [country, ageVariant])
+
+  const options = useMemo(() => {
+    if (!country) return EX.base ? [] : []
+    return EX.variantsByCountry?.[country]?.[ageVariant]?.options ?? []
+  }, [country, ageVariant])
 
   const [sessionId, setSessionId] = useState<string | null>(null)
 
-  /* ==== Sesión por-usuario (evita mezclar) ==== */
+  /* ==== Sesión por-usuario ==== */
   useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    const sid = localStorage.getItem(sessionKeyFor(user.uid));
-    if (sid) setSessionId(sid);
-  }, [user?.uid]);
+    if (!user || typeof window === "undefined") return
+    const sid = localStorage.getItem(sessionKeyFor(user.uid))
+    if (sid) setSessionId(sid)
+  }, [user?.uid])
 
-  // Si no hay cache, crear/asegurar una sesión y guardarla con clave por-usuario
   useEffect(() => {
-    if (!user) return;
-    if (sessionId) return;
-    (async () => {
+    if (!user) return
+    if (sessionId) return
+    ;(async () => {
       try {
         const { id } = await ensureSession({
-          userId: user.uid,
+          userId: user.uid!,
           competence: COMPETENCE,
           level: "Intermedio",
           totalQuestions: 3,
-        });
-        setSessionId(id);
+        })
+        setSessionId(id)
         if (typeof window !== "undefined") {
-          localStorage.setItem(sessionKeyFor(user.uid), id);
+          localStorage.setItem(sessionKeyFor(user.uid!), id)
         }
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test (P3):", e);
+        console.error("No se pudo asegurar la sesión de test (P3):", e)
       }
-    })();
-  }, [user?.uid, sessionId]);
+    })()
+  }, [user?.uid, sessionId])
 
   const [selected, setSelected] = useState<Set<Key>>(new Set())
 
@@ -78,23 +129,21 @@ export default function Page() {
     })
   }
 
-  // Puntaje local (exacto): A, C y D
+  // ===== Puntaje =====
   const point: 0 | 1 = useMemo(() => {
-    const chosen = Array.from(selected)
-    const correctSet = new Set<Key>(["A", "C", "D"])
-    if (chosen.length !== correctSet.size) return 0
-    for (const c of chosen) if (!correctSet.has(c)) return 0
+    const correctKeys = new Set(options.filter(o => o.correct).map(o => o.key))
+    const chosen = new Set(selected)
+    if (chosen.size !== correctKeys.size) return 0
+    for (const k of chosen) if (!correctKeys.has(k)) return 0
     return 1
-  }, [selected])
+  }, [selected, options])
 
-  // === Finalizar (P3) ===
+  // ===== Finalizar =====
   const handleFinish = async () => {
     const isTeacher = userData?.role === "profesor"
 
-    // Guarda el punto local para P3
     setPoint(COMPETENCE, LEVEL, 3, point)
 
-    // Cálculo de resultado para la pantalla de resultados
     const prog = getProgress(COMPETENCE, LEVEL)
     const totalPts = levelPoints(prog)
     const passed = isLevelPassed(prog)
@@ -107,23 +156,22 @@ export default function Page() {
     const finalPassed = isTeacher ? true : passed
     const finalScore = isTeacher ? 100 : score
 
-    // Asegurar/usar sesión y marcar P3, luego finalizar
     let sid = sessionId
     try {
       if (!sid && user) {
-        const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
+        const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null
         if (cached) {
-          sid = cached;
+          sid = cached
         } else {
           const { id } = await ensureSession({
-            userId: user.uid,
+            userId: user.uid!,
             competence: COMPETENCE,
             level: "Intermedio",
             totalQuestions: 3,
-          });
-          sid = id;
-          setSessionId(id);
-          if (typeof window !== "undefined") localStorage.setItem(sessionKeyFor(user.uid), id);
+          })
+          sid = id
+          setSessionId(id)
+          if (typeof window !== "undefined") localStorage.setItem(sessionKeyFor(user.uid!), id)
         }
       }
 
@@ -143,13 +191,11 @@ export default function Page() {
       console.warn("Error al finalizar P3:", e)
     }
 
-    // Avisar al dashboard para refrescar el anillo
     try {
       localStorage.setItem("ladico:progress:version", String(Date.now()))
       window.dispatchEvent(new CustomEvent("ladico:progress:refresh"))
     } catch {}
 
-    // Redirigir a resultados universales
     const qs = new URLSearchParams({
       score: String(finalScore),
       passed: String(finalPassed),
@@ -210,7 +256,7 @@ export default function Page() {
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
           <div
-            className="h-full bg-[#286575] rounded-full transition-all duración-500"
+            className="h-full bg-[#286575] rounded-full transition-all duration-500"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -221,26 +267,25 @@ export default function Page() {
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Indicar impactos medioambientales positivos de aplicaciones y servicios digitales de uso rutinario
+              {EX.base.title}
             </h2>
 
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
-                <p className="text-gray-700 leading-relaxed">
-                  Una persona quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. Se presentan cinco alternativas.
-                  Seleccione aquellas que representan un impacto ambiental claramente positivo y significativo.
-                </p>
+                <p className="text-gray-700 leading-relaxed">{stem}</p>
               </div>
             </div>
-            {/* Lista de opciones (estructura intacta) */}
+
             <div className="space-y-3 sm:space-y-4">
-              {OPTIONS.map((opt) => {
+              {options.map((opt) => {
                 const active = selected.has(opt.key)
                 return (
                   <label
                     key={opt.key}
                     className={`flex items-start space-x-3 p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
-                      active ? "border-[#286575] bg-[#e6f2f3] shadow-md" : "border-gray-200 hover:border-[#286575] hover:bg-gray-50"
+                      active
+                        ? "border-[#286575] bg-[#e6f2f3] shadow-md"
+                        : "border-gray-200 hover:border-[#286575] hover:bg-gray-50"
                     }`}
                     onClick={() => toggle(opt.key)}
                   >
@@ -252,7 +297,11 @@ export default function Page() {
                         onChange={() => toggle(opt.key)}
                         aria-label={`Opción ${opt.key}`}
                       />
-                      <div className={`w-5 h-5 rounded-md border-2 ${active ? "bg-[#286575] border-[#286575]" : "border-gray-300"}`}>
+                      <div
+                        className={`w-5 h-5 rounded-md border-2 ${
+                          active ? "bg-[#286575] border-[#286575]" : "border-gray-300"
+                        }`}
+                      >
                         {active && (
                           <svg viewBox="0 0 24 24" className="text-white w-4 h-4 m-[2px]">
                             <path
