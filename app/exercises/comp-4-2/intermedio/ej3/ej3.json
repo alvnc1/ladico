@@ -1,0 +1,177 @@
+{
+  "id": "4.2-intermedio-ej3",
+  "baseVersion": "v1",
+  "base": {
+    "title": "Comprensión de políticas de privacidad",
+    "excerpt": "“La plataforma recopila datos personales como el nombre completo, dirección de correo electrónico, país de residencia y edad para gestionar el acceso a sus servicios. Además, se almacenan métricas de uso, como interacciones y preferencias, con el fin de personalizar la experiencia y mejorar la oferta de contenidos. La plataforma puede compartir información agregada y anonimizada con socios para fines de investigación y mejora de servicios. No comercializamos con datos personales ni los transferimos a terceros ajenos a la relación del servicio. El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración de su cuenta y ejercer sus derechos de protección de datos a través de los canales de contacto habilitados.”",
+    "options": [
+      { "key": "A", "text": "El usuario puede decidir si sus resultados o interacciones son visibles para otros usuarios.", "correct": false },
+      { "key": "B", "text": "Los datos se eliminan de inmediato si el usuario cierra su cuenta.", "correct": false },
+      { "key": "C", "text": "La plataforma recopila información personal como nombre, correo y edad del usuario.", "correct": true },
+      { "key": "D", "text": "Los resultados y métricas de uso se utilizan para personalizar la experiencia.", "correct": true },
+      { "key": "E", "text": "La plataforma comparte datos agregados y anónimos con socios para fines de investigación.", "correct": true }
+    ]
+  },
+  "variantsByCountry": {
+    "Chile": {
+      "<20": {
+        "excerpt": "“TikTok recopila datos personales como nombre, correo electrónico, edad y país de residencia para gestionar el acceso a la cuenta. Además, almacena métricas de uso como interacciones y visualizaciones de videos para personalizar la experiencia y recomendar contenido. TikTok puede compartir información agregada y anonimizada con socios para fines de investigación y mejora de sus servicios. El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración de su cuenta.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus videos son visibles para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta de TikTok.", "correct": false },
+          { "key": "C", "text": "TikTok recopila información como nombre, correo y edad del usuario.", "correct": true },
+          { "key": "D", "text": "Las métricas de uso como interacciones y visualizaciones se usan para personalizar la experiencia.", "correct": true },
+          { "key": "E", "text": "TikTok comparte datos agregados y anónimos con socios para investigación y mejora de servicios.", "correct": true }
+        ]
+      },
+      "20-40": {
+        "excerpt": "“Uber recopila datos personales como nombre, correo electrónico, número de teléfono y ubicación para gestionar el acceso y funcionamiento del servicio. Además, almacena métricas de uso como historial de viajes y métodos de pago para personalizar la experiencia y mejorar la seguridad. Uber puede compartir información agregada y anonimizada con socios para fines de investigación y optimización del servicio. El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración de su cuenta.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si su historial de viajes es visible para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al desinstalar la aplicación.", "correct": false },
+          { "key": "C", "text": "Uber recopila información personal como nombre, correo, teléfono y ubicación.", "correct": true },
+          { "key": "D", "text": "El historial de viajes y métodos de pago se utiliza para personalizar la experiencia.", "correct": true },
+          { "key": "E", "text": "Uber comparte datos agregados y anónimos con socios para investigación y mejora de servicios.", "correct": true }
+        ]
+      },
+      "40+": {
+        "excerpt": "“BancoEstado recopila datos personales como nombre completo, correo electrónico, número de cuenta y país de residencia para gestionar el acceso a sus servicios digitales. Además, almacena métricas de uso como historial de transferencias y operaciones en línea para personalizar la experiencia y reforzar la seguridad. BancoEstado puede compartir información agregada y anonimizada con socios para fines de investigación y mejora de servicios financieros. El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración de su cuenta.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus movimientos bancarios son visibles para otros clientes.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta bancaria.", "correct": false },
+          { "key": "C", "text": "BancoEstado recopila datos como nombre, correo y número de cuenta.", "correct": true },
+          { "key": "D", "text": "El historial de transferencias y operaciones se utiliza para personalizar la experiencia.", "correct": true },
+          { "key": "E", "text": "BancoEstado comparte datos agregados y anónimos con socios para investigación y mejora de servicios.", "correct": true }
+        ]
+      }
+    },
+    "Argentina": {
+      "<20": {
+        "excerpt": "“TikTok recopila datos personales como nombre, correo electrónico, edad y país de residencia para administrar el acceso a la cuenta. También registra interacciones y visualizaciones para personalizar recomendaciones. Puede compartir información agregada y anonimizada con socios para investigación y mejora del servicio. El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus videos son visibles para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta de TikTok.", "correct": false },
+          { "key": "C", "text": "TikTok recopila nombre, correo y edad del usuario.", "correct": true },
+          { "key": "D", "text": "Las interacciones y visualizaciones se usan para personalizar recomendaciones.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para investigación.", "correct": true }
+        ]
+      },
+      "20-40": {
+        "excerpt": "“Mercado Pago recopila datos como nombre, correo electrónico, número de teléfono y documentos de identidad para gestionar pagos y seguridad. Registra métricas de uso como historial de transacciones y dispositivos utilizados para personalizar la experiencia y prevenir fraudes. Puede compartir información agregada y anonimizada con socios para mejorar sus servicios. El usuario puede revisar, actualizar o eliminar parte de su información desde su cuenta.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si su historial de pagos es visible para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al desinstalar la app.", "correct": false },
+          { "key": "C", "text": "Se recopilan datos personales como nombre, correo, teléfono y documentos.", "correct": true },
+          { "key": "D", "text": "El historial de transacciones se usa para personalizar y reforzar seguridad.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para mejora de servicios.", "correct": true }
+        ]
+      },
+      "40+": {
+        "excerpt": "“Banco Nación Móvil recopila datos personales como nombre completo, correo electrónico y datos de cuentas para brindar acceso a operaciones digitales. Registra actividad como transferencias y pagos para personalizar la experiencia y fortalecer controles de seguridad. Puede compartir información agregada y anonimizada con socios para investigación y mejora. El usuario puede revisar, actualizar o eliminar parte de su información desde su perfil.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus movimientos son visibles para otros clientes.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta.", "correct": false },
+          { "key": "C", "text": "Se recopilan datos como nombre, correo y cuentas asociadas.", "correct": true },
+          { "key": "D", "text": "La actividad de transferencias y pagos se usa para personalizar y proteger la cuenta.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para investigación y mejora.", "correct": true }
+        ]
+      }
+    },
+    "Perú": {
+      "<20": {
+        "excerpt": "“TikTok recopila datos como nombre, correo, edad y país de residencia para administrar el acceso a la cuenta. También registra interacciones y visualizaciones para personalizar recomendaciones de videos. Puede compartir información agregada y anonimizada con socios para investigación y mejora del servicio. El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus videos son visibles para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta de TikTok.", "correct": false },
+          { "key": "C", "text": "TikTok recopila nombre, correo y edad del usuario.", "correct": true },
+          { "key": "D", "text": "Las interacciones y visualizaciones se usan para personalizar recomendaciones.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para investigación y mejora.", "correct": true }
+        ]
+      },
+      "20-40": {
+        "excerpt": "“Yape recopila datos personales como nombre, correo electrónico, número de teléfono y documento de identidad para habilitar pagos y transferencias. Registra métricas como historial de operaciones y dispositivos vinculados para personalizar la experiencia y reforzar la seguridad. Puede compartir información agregada y anonimizada con socios para mejorar el servicio. El usuario puede revisar, actualizar o eliminar parte de su información desde la aplicación.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si su historial de pagos es visible para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al desinstalar la app.", "correct": false },
+          { "key": "C", "text": "Yape recopila datos como nombre, correo, teléfono y documento de identidad.", "correct": true },
+          { "key": "D", "text": "El historial de operaciones se usa para personalizar la experiencia y prevenir fraudes.", "correct": true },
+          { "key": "E", "text": "Yape comparte datos agregados y anónimos con socios para mejora de servicios.", "correct": true }
+        ]
+      },
+      "40+": {
+        "excerpt": "“BCP Móvil recopila datos personales como nombre completo, correo, número de cuenta y documentos para brindar acceso a operaciones digitales. Registra actividad como transferencias y pagos para personalizar la experiencia y reforzar la seguridad. Puede compartir información agregada y anonimizada con socios para investigación y mejora de servicios financieros. El usuario puede revisar, actualizar o eliminar parte de su información desde su perfil.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus movimientos bancarios son visibles para otros clientes.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta.", "correct": false },
+          { "key": "C", "text": "Se recopilan datos como nombre, correo, cuentas y documentos.", "correct": true },
+          { "key": "D", "text": "La actividad de transferencias y pagos se usa para personalizar y proteger la cuenta.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para investigación y mejora.", "correct": true }
+        ]
+      }
+    },
+    "Colombia": {
+      "<20": {
+        "excerpt": "“Instagram recopila datos personales como nombre, correo electrónico, edad y país de residencia para gestionar el acceso y la seguridad de la cuenta. Registra interacciones, seguidores y preferencias para personalizar el contenido mostrado. Puede compartir información agregada y anonimizada con socios para investigación y mejora de servicios. El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus publicaciones son visibles para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta de Instagram.", "correct": false },
+          { "key": "C", "text": "Instagram recopila datos como nombre, correo y edad del usuario.", "correct": true },
+          { "key": "D", "text": "Las interacciones y preferencias se usan para personalizar el contenido.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para investigación y mejora.", "correct": true }
+        ]
+      },
+      "20-40": {
+        "excerpt": "“Rappi recopila datos personales como nombre, correo, número de teléfono y ubicación para procesar pedidos y entregas. Registra historial de compras, métodos de pago y direcciones para personalizar la experiencia y mejorar la logística. Puede compartir información agregada y anonimizada con socios para optimizar el servicio. El usuario puede revisar, actualizar o eliminar parte de su información desde su cuenta.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si su historial de pedidos es visible para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al desinstalar la app.", "correct": false },
+          { "key": "C", "text": "Se recopilan datos personales como nombre, correo, teléfono y ubicación.", "correct": true },
+          { "key": "D", "text": "El historial de compras y direcciones se usa para personalizar y mejorar entregas.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para optimización del servicio.", "correct": true }
+        ]
+      },
+      "40+": {
+        "excerpt": "“Bancolombia App recopila datos personales como nombre completo, correo, número de cuenta y documentos para permitir operaciones digitales seguras. Registra actividad como transferencias y pagos para personalizar la experiencia y fortalecer controles antifraude. Puede compartir información agregada y anonimizada con socios para investigación y mejora de servicios financieros. El usuario puede revisar, actualizar o eliminar parte de su información desde la aplicación.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus movimientos son visibles para otros clientes.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta.", "correct": false },
+          { "key": "C", "text": "Se recopilan datos como nombre, correo y cuentas asociadas.", "correct": true },
+          { "key": "D", "text": "La actividad de pagos y transferencias se usa para personalizar y proteger la cuenta.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para investigación y mejora.", "correct": true }
+        ]
+      }
+    },
+    "Uruguay": {
+      "<20": {
+        "excerpt": "“TikTok recopila datos como nombre, correo electrónico, edad y país de residencia para gestionar el acceso a la cuenta. Registra interacciones y visualizaciones para personalizar recomendaciones de videos. Puede compartir información agregada y anonimizada con socios para investigación y mejora de sus servicios. El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus videos son visibles para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta de TikTok.", "correct": false },
+          { "key": "C", "text": "TikTok recopila nombre, correo y edad del usuario.", "correct": true },
+          { "key": "D", "text": "Las interacciones y visualizaciones se usan para personalizar recomendaciones.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para investigación y mejora.", "correct": true }
+        ]
+      },
+      "20-40": {
+        "excerpt": "“PedidosYa recopila datos personales como nombre, correo, teléfono y ubicación para gestionar pedidos y entregas. Registra historial de compras, direcciones y métodos de pago para personalizar la experiencia y optimizar la logística. Puede compartir información agregada y anonimizada con socios para mejorar el servicio. El usuario puede revisar, actualizar o eliminar parte de su información desde su cuenta.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si su historial de pedidos es visible para otros usuarios.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al desinstalar la app.", "correct": false },
+          { "key": "C", "text": "Se recopilan datos como nombre, correo, teléfono y ubicación.", "correct": true },
+          { "key": "D", "text": "El historial de compras y direcciones se usa para personalizar y optimizar entregas.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para mejora de servicios.", "correct": true }
+        ]
+      },
+      "40+": {
+        "excerpt": "“BROU (Banco de la República Oriental del Uruguay) recopila datos personales como nombre completo, correo, número de cuenta y documentos para brindar acceso seguro a operaciones digitales. Registra actividad como transferencias y pagos para personalizar la experiencia y reforzar la seguridad. Puede compartir información agregada y anonimizada con socios para investigación y mejora de servicios financieros. El usuario puede revisar, actualizar o eliminar parte de su información desde su perfil.”",
+        "options": [
+          { "key": "A", "text": "El usuario puede decidir si sus movimientos bancarios son visibles para otros clientes.", "correct": false },
+          { "key": "B", "text": "Los datos se eliminan automáticamente al cerrar la cuenta.", "correct": false },
+          { "key": "C", "text": "Se recopilan datos como nombre, correo y número de cuenta.", "correct": true },
+          { "key": "D", "text": "La actividad de pagos y transferencias se usa para personalizar y proteger la cuenta.", "correct": true },
+          { "key": "E", "text": "Se comparten datos agregados y anónimos con socios para investigación y mejora.", "correct": true }
+        ]
+      }
+    }
+  }
+}

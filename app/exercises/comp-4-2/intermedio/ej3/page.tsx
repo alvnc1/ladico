@@ -17,6 +17,9 @@ import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
 import { useRouter } from "next/navigation"
 
+// ==== Carga de configuración desde JSON ====
+import exerciseData from "@/app/exercises/comp-4-2/intermedio/ej3/ej3.json"
+
 // ====== Configuración del ejercicio (4.2 Intermedio • P3) ======
 const COMPETENCE = "4.2" as const
 const LEVEL = "intermedio" as const
@@ -29,54 +32,112 @@ const Q_ZERO_BASED = 2      // P3 -> markAnswered
 const SESSION_PREFIX = "session:4.2:Intermedio"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-// Afirmaciones (en el orden solicitado)
-const OPTIONS = [
-  {
-    key: "A",
-    text: "El usuario puede decidir si sus resultados de evaluación son visibles para otros compañeros.",
-    correct: false, // distractor (no se deduce)
-  },
-  {
-    key: "B",
-    text: "Los datos se eliminan si el usuario elimina su cuenta.",
-    correct: false, // distractor (no se deduce)
-  },
-  {
-    key: "C",
-    text: "La plataforma recopila información personal como nombre, correo institucional y nivel educativo.",
-    correct: true,
-  },
-  {
-    key: "D",
-    text: "Los resultados de evaluaciones se utilizan para personalizar la experiencia del usuario.",
-    correct: true,
-  },
-  {
-    key: "E",
-    text: "La plataforma comparte datos agregados y anónimos con instituciones asociadas para fines de investigación.",
-    correct: true,
-  },
-] as const
+// ===== Tipos (coherentes con el JSON final) =====
+type OptionKey = "A" | "B" | "C" | "D" | "E"
+type AgeKey = "<20" | "20-40" | "40+"
+type Country = "Chile" | "Argentina" | "Uruguay" | "Colombia" | "Perú"
 
-type Key = typeof OPTIONS[number]["key"]
+type OptionItem = { key: OptionKey; text: string; correct: boolean }
 
-// Extracto (ficticio de Ladico)
-const EXCERPT = `“La plataforma recopila datos personales como el nombre completo, dirección de correo electrónico institucional, país de residencia y nivel educativo para gestionar el acceso a sus servicios. Además, se almacenan métricas de uso de la plataforma, como resultados de evaluaciones y progreso en las competencias, con el fin de personalizar la experiencia y generar reportes académicos.
-La plataforma puede compartir información agregada y anonimizada con instituciones asociadas para fines de investigación educativa y mejora de los servicios. No comercializamos con datos personales ni los transferimos a terceros ajenos a la relación educativa.
-El usuario puede revisar, actualizar o eliminar parte de su información desde la configuración de su cuenta y ejercer sus derechos de protección de datos a través de los canales de contacto habilitados.”`
+type VariantPayload = {
+  stem?: string
+  excerpt?: string
+  /** En las variantes se envía el arreglo completo de opciones personalizadas */
+  options?: OptionItem[]
+}
+
+type ExerciseJSON = {
+  id: string
+  baseVersion: string
+  base: {
+    title: string
+    /** stem es opcional en el JSON que enviamos */
+    stem?: string
+    excerpt: string
+    options: OptionItem[]
+  }
+  variantsByCountry?: Partial<Record<Country, Partial<Record<AgeKey, VariantPayload>>>>
+}
+
+const EXERCISE = exerciseData as ExerciseJSON
+
+// ===== Helpers de personalización =====
+function ageToKey(age?: number | null): AgeKey {
+  if (age == null) return "20-40"
+  if (age < 20) return "<20"
+  if (age <= 40) return "20-40"
+  return "40+"
+}
+
+function normalizeCountry(input?: string | null): Country | null {
+  if (!input) return null
+  const s = input.trim().toLowerCase()
+  if (s.includes("chile")) return "Chile"
+  if (s.includes("argentin")) return "Argentina"
+  if (s.includes("uruguay")) return "Uruguay"
+  if (s.includes("colombia")) return "Colombia"
+  if (s.includes("peru") || s.includes("perú")) return "Perú"
+  return null
+}
+
+const DEFAULT_STEM =
+  "Lee el siguiente extracto de la política de privacidad y selecciona todas las afirmaciones correctas."
+
+function pickStem(country: Country | null, age: AgeKey): string {
+  const baseStem = EXERCISE.base.stem ?? DEFAULT_STEM
+  if (!country) return baseStem
+  const v = EXERCISE.variantsByCountry?.[country]?.[age]
+  return v?.stem ?? baseStem
+}
+
+function pickExcerpt(country: Country | null, age: AgeKey): string {
+  const baseEx = EXERCISE.base.excerpt
+  if (!country) return baseEx
+  const v = EXERCISE.variantsByCountry?.[country]?.[age]
+  return v?.excerpt ?? baseEx
+}
+
+/** Si la variante trae opciones completas, se usan; si no, se usan las base */
+function pickOptions(country: Country | null, age: AgeKey): OptionItem[] {
+  const baseOpts = EXERCISE.base.options
+  if (!country) return baseOpts
+  const v = EXERCISE.variantsByCountry?.[country]?.[age]
+  return v?.options && v.options.length > 0 ? v.options : baseOpts
+}
 
 export default function Page() {
   const router = useRouter()
   const { user, userData } = useAuth()
 
+  // Personalización (país + edad)
+  const country = useMemo<Country | null>(
+    () => normalizeCountry((userData as any)?.country),
+    [userData]
+  )
+  const ageKey = useMemo<AgeKey>(
+    () => ageToKey((userData as any)?.age),
+    [userData]
+  )
+  const personalizedStem = useMemo(
+    () => pickStem(country, ageKey),
+    [country, ageKey]
+  )
+  const personalizedExcerpt = useMemo(
+    () => pickExcerpt(country, ageKey),
+    [country, ageKey]
+  )
+  const OPTIONS = useMemo(
+    () => pickOptions(country, ageKey),
+    [country, ageKey]
+  )
+
   // Sesión Firestore
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
 
-  // === Estado con Set (igual que el ejercicio de referencia) ===
-  const [selected, setSelected] = useState<Set<Key>>(new Set())
-
-  const toggle = (k: Key) => {
+  // Estado selección
+  const [selected, setSelected] = useState<Set<OptionKey>>(new Set())
+  const toggle = (k: OptionKey) => {
     setSelected((prev) => {
       const next = new Set(prev)
       if (next.has(k)) next.delete(k)
@@ -85,16 +146,16 @@ export default function Page() {
     })
   }
 
-  // Puntaje: 1 solo si C, D, E exactamente; 0 en cualquier otro caso
+  // Puntaje según opciones correctas de la variante
   const point: 0 | 1 = useMemo(() => {
     const chosen = Array.from(selected)
-    const correctSet = new Set<Key>(["C", "D", "E"])
+    const correctSet = new Set<OptionKey>(OPTIONS.filter(o => o.correct).map(o => o.key))
     if (chosen.length !== correctSet.size) return 0
     for (const c of chosen) if (!correctSet.has(c)) return 0
     return 1
-  }, [selected])
+  }, [selected, OPTIONS])
 
-  // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
+  // 1) Carga sesión cacheada
   useEffect(() => {
     if (!user || typeof window === "undefined") return
     const LS_KEY = sessionKeyFor(user.uid)
@@ -102,25 +163,21 @@ export default function Page() {
     if (sid) setSessionId(sid)
   }, [user?.uid])
 
-  // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
+  // 2) Asegurar sesión una vez
   useEffect(() => {
     if (!user) {
       setSessionId(null)
       return
     }
-
     const LS_KEY = sessionKeyFor(user.uid)
     const cached =
       typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
-
     if (cached) {
       if (!sessionId) setSessionId(cached)
       return
     }
-
     if (ensuringRef.current) return
     ensuringRef.current = true
-
     ;(async () => {
       try {
         const { id } = await ensureSession({
@@ -139,12 +196,10 @@ export default function Page() {
     })()
   }, [user?.uid, sessionId])
 
-  // Finalizar → guardar, marcar en FS y enviar a /test/results
+  // Finalizar → guardar, marcar y navegar a resultados
   const handleFinish = async () => {
-    // Guardar puntaje local de la P3
     setPoint(COMPETENCE, LEVEL, Q_ONE_BASED, point)
 
-    // Calcular progreso y score
     const prog = getProgress(COMPETENCE, LEVEL)
     const totalPts = levelPoints(prog)
     const levelPassed = isLevelPassed(prog)
@@ -153,15 +208,13 @@ export default function Page() {
     const q2 = getPoint(prog, 2)
     const q3 = getPoint(prog, 3)
 
-    // Modo profesor: override de resultados para pasar el nivel
-    const isTeacher = userData?.role === "profesor"
+    const isTeacher = (userData as any)?.role === "profesor"
     const finalTotalPts = isTeacher ? TOTAL_QUESTIONS : totalPts
     const finalPassed = isTeacher ? true : levelPassed
     const finalScore = isTeacher ? 100 : score
 
     try {
       const LS_KEY = user ? sessionKeyFor(user.uid) : null
-
       let sid =
         sessionId ||
         (LS_KEY && typeof window !== "undefined"
@@ -190,7 +243,6 @@ export default function Page() {
         await markAnswered(sid, Q_ZERO_BASED, point === 1)
       }
 
-      // Armar querystring para /test/results
       const qs = new URLSearchParams({
         score: String(finalScore),
         passed: String(finalPassed),
@@ -202,23 +254,21 @@ export default function Page() {
         q2: String(q2),
         q3: String(q3),
         sid: sid ?? "",
-        passMin: "2", // regla: aprobar con 2/3
+        passMin: "2",
         compPath: "comp-4-2",
         retryBase: "/exercises/comp-4-2/intermedio",
         ex1Label: "Ejercicio 1: Fundamentos de datos personales",
         ex2Label: "Ejercicio 2: Configuraciones y permisos",
         ex3Label: "Ejercicio 3: Comprensión de políticas de privacidad",
       })
-
       router.push(`/test/results?${qs.toString()}`)
     } catch (e) {
       console.warn("No se pudo marcar P3 respondida o navegar a resultados:", e)
-      // Fallback suave (no ideal, pero evita bloqueo)
       router.push("/dashboard")
     }
   }
 
-  const progressPct = 100 // Pregunta 3 de 3
+  const progressPct = 100
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -268,29 +318,28 @@ export default function Page() {
           <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Comprensión de políticas de privacidad
+              {EXERCISE.base.title}
             </h2>
 
-            {/* Contexto (más específico) */}
+            {/* Contexto personalizado */}
             <div className="mb-4">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Lee el siguiente extracto de la política de privacidad de una suscripción en línea
-                  y selecciona todas las afirmaciones correctas.
+                  {personalizedStem}
                 </p>
               </div>
             </div>
 
-            {/* Extracto */}
+            {/* Extracto (puede ser personalizado) */}
             <div className="mb-6">
               <div className="rounded-2xl border border-gray-200 bg-white p-4">
                 <div className="text-base text-gray-700 whitespace-pre-line">
-                  {EXCERPT}
+                  {personalizedExcerpt}
                 </div>
               </div>
             </div>
 
-            {/* Afirmaciones — mismo look & feel del ejercicio de referencia */}
+            {/* Afirmaciones personalizadas */}
             <div className="space-y-3 sm:space-y-4">
               {OPTIONS.map((opt) => {
                 const active = selected.has(opt.key)
@@ -304,7 +353,6 @@ export default function Page() {
                     }`}
                     onClick={() => toggle(opt.key)}
                   >
-                    {/* Checkbox oculto + recuadro con check (igual al patrón) */}
                     <div className="relative mt-0.5">
                       <input
                         type="checkbox"

@@ -10,97 +10,148 @@ import { setPoint } from "@/lib/levelProgress"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
 
-const COMPETENCE = "4.3"
-const LEVEL = "intermedio"
-/** ⚠️ CLAVE POR-USUARIO: evita pisar sesiones entre cuentas */
-const SESSION_PREFIX = "session:4.3:Intermedio";
-const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
+// ====== Carga del JSON con variantes por país y edad ======
+import exerciseData from "@/app/exercises/comp-4-3/intermedio/ej2/ej2.json"
 
-const OPTIONS = [
-  {
-    key: "A",
-    text: "Instalar un bloqueador de anuncios o ventanas emergentes en el navegador.",
-    correct: true,
-  },
-  {
-    key: "B",
-    text: "Configurar horarios para navegar y respetar pausas digitales.",
-    correct: true,
-  },
-  {
-    key: "C",
-    text: "Bajar el volumen de las notificaciones para que molesten menos.",
-    correct: false,
-  },
-  {
-    key: "D",
-    text: "Dejar abierta la página en segundo plano.",
-    correct: false,
-  },
-  {
-    key: "E",
-    text: "Diversificar actividades fuera de la web para reducir la dependencia.",
-    correct: true,
-  },
-] as const
+// ====== Constantes del ejercicio ======
+const COMPETENCE = "4.3" as const
+const LEVEL = "intermedio" as const
+const SESSION_PREFIX = "session:4.3:Intermedio"
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-type Key = typeof OPTIONS[number]["key"]
+// ====== Tipos (alineados al JSON) ======
+type Key = "A" | "B" | "C" | "D" | "E"
+type Country = "Chile" | "Argentina" | "Uruguay" | "Colombia" | "Perú"
+type AgeVariant = "under20" | "20to40" | "over40"
 
+type OptionItem = { key: Key; text: string; correct: boolean }
+
+type ExerciseJSON = {
+  id: string
+  baseVersion: string
+  base: {
+    title: string
+    stem: string
+    options: OptionItem[]
+  }
+  variantsByCountry?: Partial<
+    Record<
+      Country,
+      Partial<
+        Record<
+          AgeVariant,
+          {
+            stem?: string
+          }
+        >
+      >
+    >
+  >
+}
+
+const EXERCISE = exerciseData as ExerciseJSON
+
+// ====== Helpers de personalización ======
+function ageToVariant(age?: number | null): AgeVariant {
+  if (age == null) return "20to40"
+  if (age < 20) return "under20"
+  if (age <= 40) return "20to40"
+  return "over40"
+}
+
+function normalizeCountry(input?: string | null): Country | null {
+  if (!input) return null
+  const s = input.trim().toLowerCase()
+  if (s.includes("chile")) return "Chile"
+  if (s.includes("argentin")) return "Argentina"
+  if (s.includes("uruguay")) return "Uruguay"
+  if (s.includes("colombia")) return "Colombia"
+  if (s.includes("peru") || s.includes("perú")) return "Perú"
+  return null
+}
+
+function pickStem(country: Country | null, variant: AgeVariant): string {
+  const baseStem = EXERCISE.base.stem
+  if (!country) return baseStem
+  const v = EXERCISE.variantsByCountry?.[country]?.[variant]
+  return v?.stem ?? baseStem
+}
+
+// ====== Página ======
 export default function Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth() as {
+    user: { uid: string } | null
+    userData?: { age?: number; country?: string } | null
+  }
 
+  // Personalización (país + edad)
+  const country = useMemo<Country | null>(
+    () => normalizeCountry(userData?.country),
+    [userData?.country]
+  )
+  const ageVariant = useMemo<AgeVariant>(
+    () => ageToVariant(userData?.age ?? null),
+    [userData?.age]
+  )
+  const personalizedStem = useMemo(
+    () => pickStem(country, ageVariant),
+    [country, ageVariant]
+  )
+
+  // Opciones (desde base JSON; no varían por país/edad en esta pregunta)
+  const OPTIONS = EXERCISE.base.options
+
+  // ==== Sesión por-usuario (evita mezclar) ====
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const ensuringRef = useRef(false);
+  const ensuringRef = useRef(false)
 
-  /* ==== Sesión por-usuario (evita mezclar) ==== */
   // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
-    useEffect(() => {
-      if (!user || typeof window === "undefined") return;
-      const LS_KEY = sessionKeyFor(user.uid);
-      const sid = localStorage.getItem(LS_KEY);
-      if (sid) setSessionId(sid);
-    }, [user?.uid]);
+  useEffect(() => {
+    if (!user || typeof window === "undefined") return
+    const LS_KEY = sessionKeyFor(user.uid)
+    const sid = localStorage.getItem(LS_KEY)
+    if (sid) setSessionId(sid)
+  }, [user?.uid])
 
   // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
-    useEffect(() => {
-      if (!user) {
-        setSessionId(null);
-        return;
-      }
-  
-      const LS_KEY = sessionKeyFor(user.uid);
-      const cached =
-        typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-  
-      if (cached) {
-        // ya existe para este usuario
-        if (!sessionId) setSessionId(cached);
-        return;
-      }
-  
-      // Evita que se dispare doble en StrictMode o por renders repetidos
-      if (ensuringRef.current) return;
-      ensuringRef.current = true;
-  
-      (async () => {
-        try {
-          const { id } = await ensureSession({
-            userId: user.uid,
-            competence: COMPETENCE,
-            level: "Intermedio",
-            totalQuestions: 3,
-          });
-          setSessionId(id);
-          if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
-        } catch (e) {
-          console.error("No se pudo asegurar la sesión de test:", e);
-        } finally {
-          ensuringRef.current = false;
-        }
-      })();
-    }, [user?.uid, sessionId]);
+  useEffect(() => {
+    if (!user) {
+      setSessionId(null)
+      return
+    }
 
+    const LS_KEY = sessionKeyFor(user.uid)
+    const cached =
+      typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
+
+    if (cached) {
+      if (!sessionId) setSessionId(cached)
+      return
+    }
+
+    if (ensuringRef.current) return
+    ensuringRef.current = true
+
+    ;(async () => {
+      try {
+        const { id } = await ensureSession({
+          userId: user.uid,
+          competence: COMPETENCE,
+          level: "Intermedio",
+          totalQuestions: 3,
+        })
+        setSessionId(id)
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
+      } catch (e) {
+        console.error("No se pudo asegurar la sesión de test:", e)
+      } finally {
+        ensuringRef.current = false
+      }
+    })()
+  }, [user?.uid, sessionId])
+
+  // ====== Estado de selección ======
   const [selected, setSelected] = useState<Set<Key>>(new Set())
 
   const toggle = (k: Key) => {
@@ -125,35 +176,36 @@ export default function Page() {
     // Guarda el punto local (para anillo/resultados)
     setPoint(COMPETENCE, LEVEL, 2, point)
 
-    // Asegura tener sesión fresca SIEMPRE en este clic (evita carreras)
+    // Asegura tener sesión y marca respondida
     let sid = sessionId
     try {
       if (!sid && user) {
-        // intenta recuperar de LS por-usuario
-        const cached = typeof window !== "undefined" ? localStorage.getItem(sessionKeyFor(user.uid)) : null;
+        const cached =
+          typeof window !== "undefined"
+            ? localStorage.getItem(sessionKeyFor(user.uid))
+            : null
         if (cached) {
-          sid = cached;
+          sid = cached
         } else {
-          // crear si no existe todavía
           const { id } = await ensureSession({
             userId: user.uid,
             competence: COMPETENCE,
             level: "Intermedio",
             totalQuestions: 3,
-          });
-          sid = id;
-          setSessionId(id);
-          if (typeof window !== "undefined") localStorage.setItem(sessionKeyFor(user.uid), id);
+          })
+          sid = id
+          setSessionId(id)
+          if (typeof window !== "undefined")
+            localStorage.setItem(sessionKeyFor(user.uid), id)
         }
       }
     } catch (e) {
-      console.error("No se pudo (re)asegurar la sesión al guardar P2:", e);
+      console.error("No se pudo (re)asegurar la sesión al guardar P2:", e)
     }
 
-    // Marcamos siempre como respondida para avanzar a P3
     try {
       if (sid) {
-        await markAnswered(sid, 1, true)
+        await markAnswered(sid, 1, true) // P2
       }
     } catch (e) {
       console.warn("No se pudo marcar P2 respondida:", e)
@@ -164,6 +216,7 @@ export default function Page() {
 
   const progressPct = (2 / 3) * 100
 
+  // ====== UI ======
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
@@ -211,23 +264,19 @@ export default function Page() {
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Seleccionar formas sencillas de proteger el bienestar digital
+              {EXERCISE.base.title}
             </h2>
 
+            {/* Contexto personalizado por país + edad */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Mientras navega en un sitio web, aparecen constantemente ventanas emergentes 
-                  con ofertas limitadas y mensajes de que “otros usuarios ya aprovecharon la promoción”. 
-                  Nota que estas 
-                  notificaciones generan distracción y aumentan la sensación de presión 
-                  por no perder oportunidades.
-                </p>
-                <p className="text-gray-700 leading-relaxed font-medium">
-                ¿Cuáles de las siguientes acciones son formas adecuadas de protegerse frente a este tipo de estrategias?
+                  {personalizedStem}
                 </p>
               </div>
             </div>
+
+            {/* Opciones */}
             <div className="space-y-3 sm:space-y-4">
               {OPTIONS.map((opt) => {
                 const active = selected.has(opt.key)
@@ -235,7 +284,9 @@ export default function Page() {
                   <label
                     key={opt.key}
                     className={`flex items-start space-x-3 p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
-                      active ? "border-[#286575] bg-[#e6f2f3] shadow-md" : "border-gray-200 hover:border-[#286575] hover:bg-gray-50"
+                      active
+                        ? "border-[#286575] bg-[#e6f2f3] shadow-md"
+                        : "border-gray-200 hover:border-[#286575] hover:bg-gray-50"
                     }`}
                     onClick={() => toggle(opt.key)}
                   >
@@ -245,9 +296,13 @@ export default function Page() {
                         className="sr-only"
                         checked={active}
                         onChange={() => toggle(opt.key)}
-                        aria-label={`Opción`}
+                        aria-label="Opción"
                       />
-                      <div className={`w-5 h-5 rounded-md border-2 ${active ? "bg-[#286575] border-[#286575]" : "border-gray-300"}`}>
+                      <div
+                        className={`w-5 h-5 rounded-md border-2 ${
+                          active ? "bg-[#286575] border-[#286575]" : "border-gray-300"
+                        }`}
+                      >
                         {active && (
                           <svg viewBox="0 0 24 24" className="text-white w-4 h-4 m-[2px]">
                             <path
@@ -266,6 +321,7 @@ export default function Page() {
               })}
             </div>
 
+            {/* Acciones */}
             <div className="mt-6 flex items-center justify-end">
               <Button
                 onClick={handleNext}
