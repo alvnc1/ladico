@@ -87,6 +87,8 @@ export default function TestPage() {
         // (C) Cargar preguntas priorizando país, excluyendo vistas y barajando con semilla
         const loadedQuestions = await loadQuestionsByCompetence(competenceId, levelName, 3, {
           country,
+          gender: userData?.gender ?? null,
+          age: userData?.age ?? null,
           excludeIds,
           shuffleSeed: Date.now(),
         })

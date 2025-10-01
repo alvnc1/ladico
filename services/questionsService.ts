@@ -160,9 +160,30 @@ function getCompetenceColor(code: string): string {
 
 type LoadOpts = {
   country?: string | null
+  gender?: string | null
+  age?: number | null
   excludeIds?: string[]
   shuffleSeed?: number
 }
+
+function normalizeGender(g?: string | null): "Masculino" | "Femenino" | "any" {
+  if (!g) return "any"
+  const v = g.toLowerCase()
+  if (v.includes("masc")) return "Masculino"
+  if (v.includes("fem")) return "Femenino"
+  return "any"
+}
+
+function getAgeGroup(age?: number | null): "teen" | "young_adult" | "adult" | "older_adult" | "any" {
+  if (typeof age !== "number") return "any"
+  if (age >= 13 && age <= 17) return "teen"
+  if (age >= 18 && age <= 24) return "young_adult"
+  if (age >= 25 && age <= 54) return "adult"
+  if (age >= 55) return "older_adult"
+  return "any"
+}
+
+
 
 export async function loadQuestionsByCompetence(
   competenceId: string,
@@ -175,6 +196,8 @@ export async function loadQuestionsByCompetence(
   // Estricto: usamos el valor tal cual llega (e.g. "Chile" | "Colombia")
   const countryValue = (opts.country ?? "").trim() || null
   const seed = typeof opts.shuffleSeed === "number" ? opts.shuffleSeed : Date.now()
+  const genderValue = normalizeGender(opts.gender)
+  const ageGroup = getAgeGroup(opts.age)
 
   console.log(
     `[Questions #${callId}] ${competenceId}/${level} x${count} country=${countryValue || "-"} exclude=${opts.excludeIds?.length ?? 0}`
@@ -184,8 +207,6 @@ export async function loadQuestionsByCompetence(
     console.error("Firestore no está inicializado")
     return []
   }
-
-  const exclude = new Set<string>(opts.excludeIds ?? [])
 
   try {
     const baseConstraints = [
@@ -218,11 +239,28 @@ export async function loadQuestionsByCompetence(
       limit(Math.max(count * 8, 24))
     )
     const snapCountry = await getDocs(qByCountry)
-    const pool = snapCountry.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Question[]
+    let pool = snapCountry.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Question[]
+
+    // Filtrar en memoria por edad y género (basado en campos simples de Firestore)
+    pool = pool.filter((q) => {
+      const qGender = normalizeGender((q as any).gender || "any")
+      const qAge = typeof (q as any).age === "number" ? (q as any).age : null
+      const qAgeGroup = getAgeGroup(qAge)
+
+      const matchesGender = qGender === "any" || qGender === genderValue
+      const matchesAge = qAgeGroup === "any" || qAgeGroup === ageGroup
+
+      return matchesGender && matchesAge
+    })
+
+
+    // aplicar exclusiones y selección aleatoria
+    const exclude = new Set<string>(opts.excludeIds ?? [])
+    pool = pool.filter((q) => !exclude.has(q.id))
 
     const filtered = filterOutExcluded(ensureUniqueById(pool))
     if (filtered.length < count) {
-      const msg = `No hay suficientes preguntas para ${competenceId}/${level} en ${countryValue}. Req: ${count}, disp: ${filtered.length}.`
+      const msg = `No hay suficientes preguntas para ${competenceId}/${level} en ${countryValue}, género=${genderValue}, edad=${ageGroup}. Req: ${count}, disp: ${filtered.length}.`
       console.warn(msg)
       throw new Error(msg)
     }
