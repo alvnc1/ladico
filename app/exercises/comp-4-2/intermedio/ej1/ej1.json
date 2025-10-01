@@ -1,0 +1,182 @@
+{
+  "id": "4.2-intermedio-ej1",
+  "baseVersion": "v2",
+  "base": {
+    "title": "Medidas básicas para proteger tus datos personales",
+    "stem": "En el uso cotidiano de dispositivos y servicios digitales se exponen datos personales que deben resguardarse. Necesitas aplicar medidas básicas para proteger tus datos personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+    "motives": [
+      { "id": "A1", "text": "Garantizar que un atacante no pueda entrar aunque tenga tu contraseña." },
+      { "id": "A2", "text": "Evitar que aplicaciones con acceso innecesario recopilen datos adicionales." },
+      { "id": "A3", "text": "Evitar que otros accedan a tu información desde equipos públicos o compartidos." },
+      { "id": "A4", "text": "Crear y recordar contraseñas seguras sin anotarlas físicamente." },
+      { "id": "A5", "text": "Mantener el software protegido contra vulnerabilidades recientes." },
+      { "id": "A6", "text": "Ahorrar espacio en el dispositivo eliminando permisos y accesos innecesarios." },
+      { "id": "A7", "text": "Evitar que la batería se consuma rápidamente al mantener el sistema actualizado." }
+    ],
+    "measures": [
+      { "id": "M1", "text": "Usar un gestor de contraseñas para almacenar credenciales.", "correctFor": ["A4"] },
+      { "id": "M2", "text": "Cerrar sesión en dispositivos compartidos después de usarlos.", "correctFor": ["A3"] },
+      { "id": "M3", "text": "Actualizar el sistema operativo y las aplicaciones regularmente.", "correctFor": ["A5"] },
+      { "id": "M4", "text": "Activar la verificación en dos pasos en todas las cuentas críticas.", "correctFor": ["A1"] },
+      { "id": "M5", "text": "Revisar los permisos de aplicaciones móviles cada tres meses.", "correctFor": ["A2"] }
+    ]
+  },
+  "variants": {
+    "school": {
+      "stem": "En un entorno escolar con cuentas estudiantiles y equipos de laboratorio, los estudiantes manejan tareas y apps personales. Necesitas aplicar medidas básicas para proteger tus datos personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+      "motives": [],
+      "measures": [
+        { "id": "M2", "text": "Cerrar sesión y borrar datos de navegación al terminar en computadores del laboratorio." },
+        { "id": "M5", "text": "Revisar permisos de apps de mensajería y cámara en el teléfono estudiantil." }
+      ]
+    },
+    "university": {
+      "stem": "En un entorno universitario con correo institucional, LMS y acceso por Wi-Fi público, se exponen datos académicos y personales. Necesitas aplicar medidas básicas para proteger esa información. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+      "motives": [],
+      "measures": [
+        { "id": "M4", "text": "Activar 2FA en correo institucional y LMS." },
+        { "id": "M3", "text": "Mantener actualizado el sistema y clientes de correo/VPN." }
+      ]
+    },
+    "work": {
+      "stem": "En un entorno corporativo con correo, VPN y herramientas de colaboración, se gestionan datos personales y laborales sensibles. Necesitas aplicar medidas básicas para proteger tus datos. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+      "motives": [],
+      "measures": [
+        { "id": "M4", "text": "Habilitar 2FA en correo corporativo y acceso VPN." },
+        { "id": "M1", "text": "Usar un gestor de contraseñas para credenciales de trabajo." }
+      ]
+    }
+  },
+  "variantsByCountry": {
+    "Chile": {
+      "school": {
+        "stem": "En un colegio se usa EducarChile y laboratorios de computación para acceder a cuentas estudiantiles y tareas. Los estudiantes también utilizan apps de mensajería en sus teléfonos. Necesitas aplicar medidas básicas para proteger tus datos personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M2", "text": "Cerrar sesión y borrar datos en equipos de la sala de computación." },
+          { "id": "M5", "text": "Revisar permisos de apps de mensajería y cámara en el teléfono estudiantil." }
+        ]
+      },
+      "university": {
+        "stem": "En un entorno universitario se accede al correo institucional, al LMS y a la red por Wi-Fi público, lo que expone información académica y personal. Necesitas aplicar medidas básicas para proteger esa información. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M4", "text": "Activar 2FA en correo institucional y LMS." },
+          { "id": "M3", "text": "Actualizar sistema y clientes de correo/LMS para mitigar vulnerabilidades." }
+        ]
+      },
+      "work": {
+        "stem": "En un entorno corporativo se utilizan dispositivos de trabajo para acceder a correo, sistemas internos y servicios digitales del Estado como ClaveÚnica. Estos accesos manejan datos personales y laborales sensibles. Necesitas aplicar medidas básicas para proteger tus datos. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M1", "text": "Usar un gestor de contraseñas para credenciales laborales y servicios digitales." },
+          { "id": "M4", "text": "Habilitar 2FA en correo corporativo y aplicaciones críticas." }
+        ]
+      }
+    },
+    "Argentina": {
+      "school": {
+        "stem": "En un colegio se utilizan cuentas de Google Workspace for Education y equipos compartidos del aula de informática. El alumnado también usa apps de mensajería en sus teléfonos. Necesitas aplicar medidas básicas para proteger tus datos personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M5", "text": "Revisar permisos de apps de comunicación y cámara en el teléfono del alumno." },
+          { "id": "M2", "text": "Cerrar sesión y limpiar datos al terminar en computadoras compartidas." }
+        ]
+      },
+      "university": {
+        "stem": "En un entorno universitario se accede a correo institucional, campus virtual y VPN académica; el uso de Wi-Fi público puede exponer datos. Necesitas aplicar medidas básicas para proteger esa información. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M4", "text": "Activar 2FA en correo institucional y campus virtual." },
+          { "id": "M3", "text": "Actualizar sistema y clientes de correo/VPN." }
+        ]
+      },
+      "work": {
+        "stem": "En un entorno corporativo con correo, VPN y herramientas de productividad también se accede a servicios ciudadanos digitales como Mi Argentina. Se manejan datos personales y laborales sensibles. Necesitas aplicar medidas básicas para proteger tus datos. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M1", "text": "Gestionar credenciales con un gestor de contraseñas." },
+          { "id": "M4", "text": "Habilitar 2FA en correo corporativo y cuentas críticas." }
+        ]
+      }
+    },
+    "Uruguay": {
+      "school": {
+        "stem": "En un liceo se usan plataformas del Plan Ceibal (CREA) y equipos compartidos del laboratorio para actividades y tareas. El estudiantado también utiliza apps móviles personales. Necesitas aplicar medidas básicas para proteger tus datos personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M2", "text": "Cerrar sesión y borrar datos tras usar equipos del liceo." },
+          { "id": "M5", "text": "Revisar permisos de apps en tablets y teléfonos de estudiantes." }
+        ]
+      },
+      "university": {
+        "stem": "En un entorno universitario se accede a correo institucional, a un entorno virtual de aprendizaje (EVA) y a la red por VPN. Parte del acceso ocurre desde Wi-Fi público. Necesitas aplicar medidas básicas para proteger datos académicos y personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M4", "text": "Activar 2FA en correo institucional y EVA." },
+          { "id": "M3", "text": "Mantener actualizado el sistema y clientes de acceso académico/VPN." }
+        ]
+      },
+      "work": {
+        "stem": "En un entorno corporativo con correo, VPN y sistemas internos también se utilizan servicios del Estado con identificación digital en gub.uy. Se gestionan datos sensibles. Necesitas aplicar medidas básicas para proteger tus datos. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M1", "text": "Usar un gestor de contraseñas para cuentas laborales y estatales." },
+          { "id": "M4", "text": "Habilitar 2FA en correo y sistemas internos." }
+        ]
+      }
+    },
+    "Colombia": {
+      "school": {
+        "stem": "En un colegio se usan Google Classroom y laboratorios de computación para tareas y cuentas estudiantiles. El alumnado también utiliza apps de mensajería y redes en sus teléfonos. Necesitas aplicar medidas básicas para proteger tus datos personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M2", "text": "Cerrar sesión y borrar datos al terminar en los equipos del colegio." },
+          { "id": "M5", "text": "Revisar permisos de apps frecuentes (cámara, ubicación) en el móvil del estudiante." }
+        ]
+      },
+      "university": {
+        "stem": "En un entorno universitario se accede a correo institucional, LMS y servicios por VPN; parte del uso ocurre desde redes Wi-Fi públicas. Necesitas aplicar medidas básicas para proteger datos académicos y personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M4", "text": "Activar 2FA en correo institucional y LMS/VPN." },
+          { "id": "M3", "text": "Mantener actualizado el sistema y clientes de correo/LMS." }
+        ]
+      },
+      "work": {
+        "stem": "En un entorno corporativo con sistemas internos y correo de trabajo también se realizan trámites en portales estatales de GOV.CO. Se manejan datos personales y laborales sensibles. Necesitas aplicar medidas básicas para proteger tus datos. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M4", "text": "Habilitar 2FA en correo corporativo y cuentas críticas." },
+          { "id": "M1", "text": "Usar un gestor de contraseñas para cuentas de trabajo y trámites digitales." }
+        ]
+      }
+    },
+    "Perú": {
+      "school": {
+        "stem": "En un colegio se utilizan plataformas educativas como PerúEduca y equipos compartidos del aula de informática. El estudiantado también usa apps de mensajería en sus teléfonos. Necesitas aplicar medidas básicas para proteger tus datos personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M5", "text": "Revisar permisos de apps educativas y de comunicación." },
+          { "id": "M2", "text": "Cerrar sesión y limpiar datos en equipos compartidos del colegio." }
+        ]
+      },
+      "university": {
+        "stem": "En un entorno universitario se accede a correo institucional, campus virtual y servicios por VPN; parte del acceso ocurre desde Wi-Fi público. Necesitas aplicar medidas básicas para proteger datos académicos y personales. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M4", "text": "Activar 2FA en correo institucional y campus virtual." },
+          { "id": "M3", "text": "Actualizar sistema y apps de acceso universitario." }
+        ]
+      },
+      "work": {
+        "stem": "En un entorno corporativo con correo, VPN y colaboración en la nube también se accede a servicios del Estado mediante DNIe y RENIEC. Se gestionan datos personales y laborales sensibles. Necesitas aplicar medidas básicas para proteger tus datos. Arrastra cada objetivo hacia la medida correspondiente; cada medida admite un solo objetivo.",
+        "motives": [],
+        "measures": [
+          { "id": "M1", "text": "Utilizar un gestor de contraseñas para credenciales laborales y estatales." },
+          { "id": "M4", "text": "Habilitar 2FA en correo y aplicaciones internas." }
+        ]
+      }
+    }
+  }
+}

@@ -10,6 +10,9 @@ import { setPoint } from "@/lib/levelProgress"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
 
+// ====== Carga del JSON (base + variantes por país y edad) ======
+import exerciseData from "@/app/exercises/comp-4-2/avanzado/ej2/ej2.json"
+
 // ===== Config =====
 const COMPETENCE = "4.2" as const
 const LEVEL = "avanzado" as const
@@ -23,11 +26,114 @@ type TwoFA = "si" | "no" | ""
 type Consent = "todo" | "nada" | "personalizo" | ""
 
 // Justificación (multi-select)
-type JustKey = "ctrl_acceso_proposito" | "todo_publico" | "seguridad_total" | "evitar_sensibles" | "utile_2fa"
+type JustKey =
+  | "ctrl_acceso_proposito"
+  | "todo_publico"
+  | "seguridad_total"
+  | "evitar_sensibles"
+  | "utile_2fa"
+
+// ===== Tipos JSON (nueva estructura por edad/red social) =====
+type Country = "Argentina" | "Perú" | "Uruguay" | "Colombia" | "Chile"
+type AgeVariant = "under20" | "20to40" | "over40"
+
+type UiHints = {
+  visibilityLabel?: string
+  infoShareLabel?: string
+  twofaNote?: string
+}
+
+type VariantNode = {
+  platform?: string
+  stem?: string
+  uiHints?: UiHints
+}
+
+type ExerciseJSON = {
+  id: string
+  baseVersion: string
+  base: {
+    title: string
+    stem: string
+  }
+  variantsByCountry?: Partial<
+    Record<Country, Partial<Record<AgeVariant, VariantNode>>>
+  >
+}
+
+const EXERCISE = exerciseData as ExerciseJSON
+
+// ===== Helpers país/edad =====
+function ageToVariant(age?: number | null): AgeVariant {
+  if (age == null) return "20to40"
+  if (age < 20) return "under20"
+  if (age <= 40) return "20to40"
+  return "over40"
+}
+
+function normalizeCountry(input?: string | null): Country | null {
+  if (!input) return null
+  const s = input.trim().toLowerCase()
+  if (s.includes("chile")) return "Chile"
+  if (s.includes("argentin")) return "Argentina"
+  if (s.includes("uruguay")) return "Uruguay"
+  if (s.includes("colombia")) return "Colombia"
+  if (s.includes("peru") || s.includes("perú")) return "Perú"
+  return null
+}
+
+type SelectedCopy = {
+  title: string
+  stem: string
+  uiHints: Required<UiHints>
+  platform?: string
+}
+
+/** Toma base y aplica overrides por país->edad. */
+function pickLocalizedCopy(
+  data: ExerciseJSON,
+  ageVariant: AgeVariant,
+  country: Country | null
+): SelectedCopy {
+  const baseHints: Required<UiHints> = {
+    visibilityLabel: "¿Quién puede ver tu perfil?",
+    infoShareLabel: "¿Qué información decides compartir al registrarte?",
+    twofaNote: "",
+  }
+
+  const node =
+    (country && data.variantsByCountry?.[country]?.[ageVariant]) || undefined
+
+  return {
+    title: data.base.title,
+    stem: node?.stem ?? data.base.stem,
+    uiHints: { ...baseHints, ...(node?.uiHints ?? {}) },
+    platform: node?.platform,
+  }
+}
 
 export default function Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth() as {
+    user: { uid: string } | null
+    userData?: { age?: number; country?: string } | null
+  }
+
+  // ===== Derivar país y variante de edad =====
+  const country = useMemo(
+    () => normalizeCountry(userData?.country),
+    [userData?.country]
+  )
+  const ageVariant = useMemo(
+    () => ageToVariant(userData?.age ?? null),
+    [userData?.age]
+  )
+
+  // ===== Copia localizada =====
+  const copy = useMemo(
+    () => pickLocalizedCopy(EXERCISE, ageVariant, country),
+    [ageVariant, country]
+  )
 
   // ===== Sesión =====
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -45,7 +151,8 @@ export default function Page() {
       return
     }
     const LS_KEY = sessionKeyFor(user.uid)
-    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
+    const cached =
+      typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
     if (cached) {
       if (!sessionId) setSessionId(cached)
       return
@@ -55,7 +162,7 @@ export default function Page() {
     ;(async () => {
       try {
         const { id } = await ensureSession({
-          userId: user.uid,
+          userId: user.uid!,
           competence: COMPETENCE,
           level: "Avanzado",
           totalQuestions: 3,
@@ -78,17 +185,15 @@ export default function Page() {
   const [justifs, setJustifs] = useState<JustKey[]>([])
 
   // ===== Corrección =====
-  // Buenas elecciones (4 primeras preguntas → 1 punto c/u)
-  const goodVisibility = visibility === "contactos" // (privacidad alta manteniendo interacción académica)
+  const goodVisibility = visibility === "contactos" // privacidad alta con interacción
   const goodInfoShare = infoShare === "nombre_correo"
   const goodTwofa = twofa === "si"
   const goodConsent = consent === "personalizo"
 
-  // Justificaciones correctas (puede marcar varias) → 3 puntos posibles
   const GOOD_JUSTS: JustKey[] = [
-    "ctrl_acceso_proposito", // ✅ Prefiero controlar quién accede a mis datos y con qué propósito.
-    "evitar_sensibles",      // ✅ Evité entregar datos sensibles que podrían usarse para suplantación de identidad.
-    "utile_2fa",             // ✅ Es útil si alguien obtiene mi contraseña por error o engaño. (relacionado a 2FA)
+    "ctrl_acceso_proposito",
+    "evitar_sensibles",
+    "utile_2fa",
   ]
 
   const goodJustCount = useMemo(
@@ -107,15 +212,18 @@ export default function Page() {
 
   // ===== Handlers =====
   const toggleJust = (k: JustKey) => {
-    setJustifs(prev => (prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]))
+    setJustifs(prev =>
+      prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]
+    )
   }
 
   const handleNext = async () => {
-    // Guardar punto de la P2
     setPoint(COMPETENCE, LEVEL, 2, point)
     const sid =
       sessionId ||
-      (typeof window !== "undefined" && user ? localStorage.getItem(sessionKeyFor(user.uid)) : null)
+      (typeof window !== "undefined" && user
+        ? localStorage.getItem(sessionKeyFor(user.uid))
+        : null)
 
     if (sid) {
       try {
@@ -178,23 +286,23 @@ export default function Page() {
           <CardContent className="p-4 sm:p-6 lg:p-8 space-y-6">
             {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-              Configuración de privacidad y uso de datos personales
+              {copy.title}
             </h2>
 
             {/* Contexto */}
             <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
               <p className="text-gray-700 leading-relaxed">
-                Estás configurando tu perfil en una plataforma educativa. Define tus ajustes de privacidad y seguridad
-                y luego selecciona las afirmaciones que justifican mejor tus decisiones.
+                {copy.stem}
               </p>
+              {/* Nota: no mostramos twofaNote aquí para mantener la evaluación imparcial */}
             </div>
 
-            {/* Preguntas 1 a 4 (dropdowns) */}
+            {/* Preguntas 1 a 4 (sin nombre de red social en labels) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* 1. Quién puede ver tu perfil */}
+              {/* 1. Visibilidad */}
               <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:bg-gray-50 transition-colors">
                 <div className="text-sm font-medium text-gray-900 mb-2">
-                  ¿Quién puede ver tu perfil?
+                  {copy.uiHints.visibilityLabel || "¿Quién puede ver tu perfil?"}
                 </div>
                 <select
                   className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
@@ -209,10 +317,10 @@ export default function Page() {
                 </select>
               </div>
 
-              {/* 2. Qué información compartes */}
+              {/* 2. Datos compartidos */}
               <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:bg-gray-50 transition-colors">
                 <div className="text-sm font-medium text-gray-900 mb-2">
-                  ¿Qué información decides compartir al registrarte?
+                  {copy.uiHints.infoShareLabel || "¿Qué información decides compartir al registrarte?"}
                 </div>
                 <select
                   className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
@@ -242,7 +350,7 @@ export default function Page() {
                 </select>
               </div>
 
-              {/* 4. Gestión del consentimiento */}
+              {/* 4. Consentimiento */}
               <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:bg-gray-50 transition-colors">
                 <div className="text-sm font-medium text-gray-900 mb-2">
                   ¿Cómo gestionas el consentimiento para el uso de tus datos?
@@ -260,7 +368,7 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Pregunta de justificación final (multi-select) */}
+            {/* Justificación */}
             <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
               <h3 className="font-semibold text-gray-900 mb-3">Justificación de tus elecciones</h3>
               <fieldset className="space-y-2">
@@ -270,7 +378,7 @@ export default function Page() {
                   { key: "seguridad_total", text: "No importa la información compartida porque la plataforma siempre garantiza la seguridad." },
                   { key: "evitar_sensibles", text: "Evité entregar datos sensibles que podrían usarse para suplantación de identidad." },
                   { key: "utile_2fa", text: "Es útil si alguien obtiene mi contraseña por error o engaño." },
-                ].map(opt => {
+                ].map((opt) => {
                   const checked = justifs.includes(opt.key as JustKey)
                   return (
                     <label

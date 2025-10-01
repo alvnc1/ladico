@@ -13,37 +13,99 @@ import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
 import { useRouter } from "next/navigation"
 
+// 👉 Carga de datos (base + variantes) desde JSON
+import exerciseData from "@/app/exercises/comp-4-2/intermedio/ej1/ej1.json"
+
 // ====== Configuración del ejercicio (4.2 Intermedio) ======
-type MotiveId = "A1" | "A2" | "A3" | "A4" | "A5" | "A6" | "A7"
-type ActionId = "M1" | "M2" | "M3" | "M4" | "M5"
+type MotiveId = string
+type ActionId = string
 
-// Motivos (arrastrables en el pool a la IZQUIERDA; A6 y A7 son distractores)
-const THREATS: { id: MotiveId; title: string }[] = [
-  { id: "A1", title: "Garantizar que un atacante no pueda entrar aunque tenga tu contraseña." },
-  { id: "A2", title: "Evitar que aplicaciones con acceso innecesario recopilen datos adicionales." },
-  { id: "A3", title: "Evitar que otros accedan a tu información desde equipos públicos o compartidos." },
-  { id: "A4", title: "Crear y recordar contraseñas seguras sin anotarlas físicamente." },
-  { id: "A5", title: "Mantener el software protegido contra vulnerabilidades recientes." },
-  { id: "A6", title: "Ahorrar espacio en el dispositivo eliminando permisos y accesos innecesarios." }, // distractor
-  { id: "A7", title: "Evitar que la batería se consuma rápidamente al mantener el sistema actualizado." }, // distractor
-]
+type Motive = { id: MotiveId; text: string }
+type Measure = { id: ActionId; text: string; correctFor: MotiveId[]; isMyth?: boolean }
 
-// Acciones (SLOTS a la DERECHA; esperan recibir un motivo)
-const MEASURES: {
-  id: ActionId
-  text: string
-  correctFor: MotiveId[]
-  isMyth?: boolean
-}[] = [
-  { id: "M1", text: "Usar un gestor de contraseñas para almacenar credenciales.", correctFor: ["A4"] },
-  { id: "M2", text: "Cerrar sesión en dispositivos compartidos después de usarlos.", correctFor: ["A3"] },
-  { id: "M3", text: "Actualizar el sistema operativo y las aplicaciones regularmente.", correctFor: ["A5"] },
-  { id: "M4", text: "Activar la verificación en dos pasos en todas las cuentas críticas.", correctFor: ["A1"] },
-  { id: "M5", text: "Revisar los permisos de aplicaciones móviles cada tres meses.", correctFor: ["A2"] },
-]
+type VariantBlock = {
+  stem?: string
+  motives?: Motive[]     // overrides por id
+  measures?: Measure[]   // overrides por id
+}
 
-// ====== Helpers Drag & Drop ======
-const DRAG_TYPE = "application/ladico-measure-id" // (se mantiene para no tocar el front)
+type Audience = "school" | "university" | "work"
+type Country = "Argentina" | "Perú" | "Uruguay" | "Colombia" | "Chile"
+
+type ExerciseJSON = {
+  id: string
+  baseVersion: string
+  base: {
+    title: string
+    stem: string
+    motives: Motive[]
+    measures: Measure[]
+  }
+  variants?: Partial<Record<Audience, VariantBlock>>
+  variantsByCountry?: Partial<Record<Country, Partial<Record<Audience, VariantBlock>>>>
+}
+
+const EX = exerciseData as unknown as ExerciseJSON
+
+// ===== Helpers: audience & country =====
+function audienceFromAge(age?: number): Audience {
+  if (age == null) return "work"
+  if (age < 20) return "school"
+  if (age <= 25) return "university"
+  return "work"
+}
+
+function normalizeCountry(input?: string | null): Country | null {
+  if (!input) return null
+  const map: Record<string, Country> = {
+    argentina: "Argentina",
+    perú: "Perú",
+    peru: "Perú",
+    uruguay: "Uruguay",
+    colombia: "Colombia",
+    chile: "Chile",
+  }
+  const key = input.trim().toLowerCase()
+  return map[key] ?? null
+}
+
+// Aplica overrides por id (si la variante trae algunos items con mismo id)
+function mergeById<T extends { id: string; text: string }>(baseArr: T[], overrides?: { id: string; text: string }[]) {
+  if (!overrides?.length) return baseArr
+  const ovMap = new Map(overrides.map(o => [o.id, o.text]))
+  return baseArr.map(item => ({
+    ...item,
+    text: ovMap.get(item.id) ?? item.text,
+  }))
+}
+
+// Construye la versión seleccionada (stem + motives + measures)
+function selectVersion(
+  ex: ExerciseJSON,
+  audience: Audience,
+  country: Country | null
+) {
+  const base = ex.base
+  const byCountry = country ? ex.variantsByCountry?.[country]?.[audience] : undefined
+  const byAudience = ex.variants?.[audience]
+
+  const picked: VariantBlock | undefined = byCountry ?? byAudience ?? undefined
+
+  const stem = picked?.stem ?? base.stem
+  const motives = mergeById(base.motives, picked?.motives)
+  const measures = mergeById(base.measures, picked?.measures)
+
+  return { title: base.title, stem, motives, measures }
+}
+
+// ====== Página ======
+const COMPETENCE = "4.2"
+const LEVEL = "intermedio"
+/** Clave de sesión por-usuario para evitar duplicados */
+const SESSION_PREFIX = "session:4.2:Intermedio"
+const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
+
+const DRAG_TYPE = "application/ladico-measure-id" // se mantiene
 
 function draggableProps(id: string) {
   return {
@@ -54,7 +116,6 @@ function draggableProps(id: string) {
     },
   }
 }
-
 function droppableProps(onDropId: (id: MotiveId) => void) {
   return {
     onDragOver: (e: React.DragEvent) => {
@@ -67,89 +128,96 @@ function droppableProps(onDropId: (id: MotiveId) => void) {
   }
 }
 
-// ====== Página ======
-const COMPETENCE = "4.2"
-const LEVEL = "intermedio"
-/** Clave de sesión por-usuario para evitar duplicados */
-const SESSION_PREFIX = "session:4.2:Intermedio";
-const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
-
 export default function Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth()
+
+  // Selección dinámica: edad + país
+  const audience = useMemo(() => audienceFromAge((userData as any)?.age), [userData])
+  const country = useMemo(() => normalizeCountry((userData as any)?.country), [userData])
+
+  const selected = useMemo(() => selectVersion(EX, audience, country), [audience, country])
 
   // Sesión Firestore
   const [sessionId, setSessionId] = useState<string | null>(null)
 
   // pool = MOTIVOS aún no asignados (arrastrables)
-  const [pool, setPool] = useState<MotiveId[]>(THREATS.map((m) => m.id))
+  const [pool, setPool] = useState<MotiveId[]>(selected.motives.map(m => m.id))
   // asignaciones: acción -> UN motivo (máx 1)
-  const [assign, setAssign] = useState<Record<ActionId, MotiveId | null>>({
-    M1: null,
-    M2: null,
-    M3: null,
-    M4: null,
-    M5: null,
-  })
+  const [assign, setAssign] = useState<Record<ActionId, MotiveId | null>>(
+    Object.fromEntries(selected.measures.map(m => [m.id, null])) as Record<ActionId, MotiveId | null>
+  )
   const [done, setDone] = useState(false)
 
-  const ensuringRef = useRef(false);
+  // si cambia la selección (porque llegó edad/país después), reinicia estados
+  useEffect(() => {
+    setPool(selected.motives.map(m => m.id))
+    setAssign(Object.fromEntries(selected.measures.map(m => [m.id, null])) as Record<ActionId, MotiveId | null>)
+  }, [selected])
+
+  const ensuringRef = useRef(false)
   // 1) Carga sesión cacheada (si existe) apenas conocemos el uid
   useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    const LS_KEY = sessionKeyFor(user.uid);
-    const sid = localStorage.getItem(LS_KEY);
-    if (sid) setSessionId(sid);
-  }, [user?.uid]);
+    if (!user || typeof window === "undefined") return
+    const LS_KEY = sessionKeyFor(user.uid)
+    const sid = localStorage.getItem(LS_KEY)
+    if (sid) setSessionId(sid)
+  }, [user?.uid])
 
   // 2) Crea/asegura sesión UNA VEZ por usuario (evita duplicados)
   useEffect(() => {
     if (!user) {
-      setSessionId(null);
-      return;
+      setSessionId(null)
+      return
     }
 
-    const LS_KEY = sessionKeyFor(user.uid);
+    const LS_KEY = sessionKeyFor(user.uid)
     const cached =
-      typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+      typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
 
     if (cached) {
-      if (!sessionId) setSessionId(cached);
-      return;
+      if (!sessionId) setSessionId(cached)
+      return
     }
 
-    if (ensuringRef.current) return;
-    ensuringRef.current = true;
+    if (ensuringRef.current) return
+    ensuringRef.current = true
 
-    (async () => {
+    ;(async () => {
       try {
         const { id } = await ensureSession({
           userId: user.uid,
           competence: COMPETENCE,
           level: "Intermedio",
           totalQuestions: 3,
-        });
-        setSessionId(id);
-        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+        })
+        setSessionId(id)
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test:", e);
+        console.error("No se pudo asegurar la sesión de test:", e)
       } finally {
-        ensuringRef.current = false;
+        ensuringRef.current = false
       }
-    })();
-  }, [user?.uid, sessionId]);
+    })()
+  }, [user?.uid, sessionId])
 
-  const actionMap = useMemo(() => Object.fromEntries(MEASURES.map((m) => [m.id, m])), [])
-  const motiveMap = useMemo(() => Object.fromEntries(THREATS.map((t) => [t.id, t])), [])
+  const actionMap = useMemo(
+    () => Object.fromEntries(selected.measures.map(m => [m.id, m])) as Record<ActionId, Measure>,
+    [selected.measures]
+  )
+  const motiveMap = useMemo(
+    () => Object.fromEntries(selected.motives.map(t => [t.id, t])) as Record<MotiveId, Motive>,
+    [selected.motives]
+  )
 
   // Quita el MOTIVO de todos lados
   const removeEverywhere = (motiveId: MotiveId) => {
     // quita del pool
-    setPool((prev) => prev.filter((x) => x !== motiveId))
+    setPool(prev => prev.filter(x => x !== motiveId))
     // quita de cualquier acción asignada
-    setAssign((prev) => {
+    setAssign(prev => {
       const next: Record<ActionId, MotiveId | null> = { ...prev }
-      ;(Object.keys(next) as ActionId[]).forEach((k) => {
+      ;(Object.keys(next) as ActionId[]).forEach(k => {
         if (next[k] === motiveId) next[k] = null
       })
       return next
@@ -159,24 +227,22 @@ export default function Page() {
   // Volver un MOTIVO al pool
   const dropToPool = (motiveId: MotiveId) => {
     removeEverywhere(motiveId)
-    setPool((prev) => (prev.includes(motiveId) ? prev : [...prev, motiveId]))
+    setPool(prev => (prev.includes(motiveId) ? prev : [...prev, motiveId]))
   }
 
   // Asignar (solo 1 motivo por ACCIÓN)
   const dropToAction = (action: ActionId, motiveId: MotiveId) => {
-    // El motivo deja cualquier otro lugar
     removeEverywhere(motiveId)
-    // Asignar al slot (acción)
-    setAssign((prev) => ({ ...prev, [action]: motiveId }))
+    setAssign(prev => ({ ...prev, [action]: motiveId }))
   }
 
   // Quitar manualmente desde el chip (desde una ACCIÓN)
   const unassign = (action: ActionId) => {
-    setAssign((prev) => {
+    setAssign(prev => {
       const mid = prev[action]
       if (!mid) return prev
       const next = { ...prev, [action]: null }
-      setPool((p) => (mid && !p.includes(mid) ? [...p, mid] : p))
+      setPool(p => (mid && !p.includes(mid) ? [...p, mid] : p))
       return next
     })
   }
@@ -201,39 +267,39 @@ export default function Page() {
     setPoint(COMPETENCE, LEVEL, 1, point)
 
     try {
-      const LS_KEY = user ? sessionKeyFor(user.uid) : null;
+      const LS_KEY = user ? sessionKeyFor(user.uid) : null
 
       // Usa la sesión existente (estado o LS)
       let sid =
         sessionId ||
         (LS_KEY && typeof window !== "undefined"
           ? localStorage.getItem(LS_KEY)
-          : null);
+          : null)
 
       // Si aún no hay sesión (primer uso en este usuario), créala una sola vez
       if (!sid && user && !ensuringRef.current) {
-        ensuringRef.current = true;
+        ensuringRef.current = true
         try {
           const created = await ensureSession({
             userId: user.uid,
             competence: COMPETENCE,
             level: "Intermedio",
             totalQuestions: 3,
-          });
-          sid = created.id;
-          setSessionId(created.id);
+          })
+          sid = created.id
+          setSessionId(created.id)
           if (typeof window !== "undefined")
-            localStorage.setItem(LS_KEY!, created.id);
+            localStorage.setItem(LS_KEY!, created.id)
         } finally {
-            ensuringRef.current = false;
+          ensuringRef.current = false
         }
       }
 
       if (sid) {
-        await markAnswered(sid, 0, point === 1); // índice 0 = P1
+        await markAnswered(sid, 0, point === 1) // índice 0 = P1
       }
     } catch (e) {
-      console.warn("No se pudo marcar P1 respondida:", e);
+      console.warn("No se pudo marcar P1 respondida:", e)
     }
 
     router.push("/exercises/comp-4-2/intermedio/ej2")
@@ -289,15 +355,14 @@ export default function Page() {
           <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Medidas básicas para proteger tus datos personales
+              {selected.title}
             </h2>
 
-            {/* Instrucción */}
+            {/* Stem (incluye la instrucción desde el JSON) */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700 leading-relaxed">
-                  Arrastra cada objetivo hacia la medida preventiva correspondiente, 
-                  de manera que cada medida tenga solo un objetivo asignado.
+                  {selected.stem}
                 </p>
               </div>
             </div>
@@ -319,17 +384,17 @@ export default function Page() {
                       className="relative cursor-grab active:cursor-grabbing bg-white p-3 rounded-2xl border-2 border-gray-200 text-sm transition-all duration-200 hover:border-[#286575] hover:bg-gray-50"
                       {...draggableProps(id)}
                     >
-                      {motiveMap[id].title}
+                      {motiveMap[id]?.text}
                     </li>
                   ))}
                 </ul>
               </section>
 
-              {/* ACCIONES con slots — derecha (encerradas en un mismo recuadro) */}
+              {/* ACCIONES con slots — derecha */}
               <section className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-4">
                 <h3 className="font-semibold text-gray-900 mb-3">Medidas preventivas</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {MEASURES.map((a) => {
+                  {selected.measures.map((a) => {
                     const motiveId = assign[a.id]
                     const motive = motiveId ? motiveMap[motiveId] : null
                     const assigned = Boolean(motiveId)
@@ -347,7 +412,7 @@ export default function Page() {
                         <h4 className="font-semibold text-gray-900 mb-2">{a.text}</h4>
                         <div className="min-h-[72px]">
                           {!motiveId ? (
-                            <p className="text-xs text-gray-400 italic">Suelta aquí el motivo.</p>
+                            <p className="text-xs text-gray-400 italic">Suelta aquí el objetivo.</p>
                           ) : (
                             <div
                               className="p-2.5 rounded-xl border text-sm bg-white border-gray-200 flex items-start gap-2"
@@ -357,12 +422,12 @@ export default function Page() {
                                 type="button"
                                 onClick={() => unassign(a.id)}
                                 className="rounded-md hover:bg-gray-100 p-1"
-                                aria-label="Quitar motivo"
-                                title="Quitar motivo"
+                                aria-label="Quitar objetivo"
+                                title="Quitar objetivo"
                               >
                                 <X className="w-4 h-4 text-gray-500" />
                               </button>
-                              <span className="text-gray-700">{motive?.title}</span>
+                              <span className="text-gray-700">{motive?.text}</span>
                             </div>
                           )}
                         </div>
@@ -388,4 +453,3 @@ export default function Page() {
     </div>
   )
 }
-

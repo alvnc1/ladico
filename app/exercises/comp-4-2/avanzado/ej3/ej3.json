@@ -1,0 +1,65 @@
+{
+  "id": "4.2-avanzado-ej3-contexto",
+  "baseVersion": "v1",
+  "base": {
+    "title": "Comprensión de políticas de privacidad",
+    "stem": "Has creado una cuenta en una red social. "
+  },
+  "variantsByCountry": {
+    "Chile": {
+      "under20": {
+        "stem": "Has creado una cuenta en TikTok. "
+      },
+      "20to40": {
+        "stem": "Has creado una cuenta en Instagram. "
+      },
+      "over40": {
+        "stem": "Has creado una cuenta en Facebook. "
+      }
+    },
+    "Argentina": {
+      "under20": {
+        "stem": "Has creado una cuenta en TikTok. "
+      },
+      "20to40": {
+        "stem": "Has creado una cuenta en Instagram. "
+      },
+      "over40": {
+        "stem": "Has creado una cuenta en Facebook. "
+      }
+    },
+    "Uruguay": {
+      "under20": {
+        "stem": "Has creado una cuenta en TikTok. "
+      },
+      "20to40": {
+        "stem": "Has creado una cuenta en Instagram. "
+      },
+      "over40": {
+        "stem": "Has creado una cuenta en Facebook. "
+      }
+    },
+    "Colombia": {
+      "under20": {
+        "stem": "Has creado una cuenta en TikTok. "
+      },
+      "20to40": {
+        "stem": "Has creado una cuenta en Instagram. "
+      },
+      "over40": {
+        "stem": "Has creado una cuenta en Facebook. "
+      }
+    },
+    "Perú": {
+      "under20": {
+        "stem": "Has creado una cuenta en TikTok. "
+      },
+      "20to40": {
+        "stem": "Has creado una cuenta en Instagram. "
+      },
+      "over40": {
+        "stem": "Has creado una cuenta en Facebook. "
+      }
+    }
+  }
+}

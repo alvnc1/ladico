@@ -1,3 +1,4 @@
+// app/exercises/comp-4-4/intermedio/ej1/page.tsx
 "use client"
 
 import { useMemo, useState, useEffect, useRef } from "react"
@@ -15,12 +16,35 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered, finalizeSession } from "@/lib/testSession"
 
+// ====== Carga del JSON (contexto por país/edad) ======
+import exerciseData from "@/app/exercises/comp-4-4/intermedio/ej1/ej1.json"
+
+// ====== Tipos del JSON ======
+type Country = "Chile" | "Argentina" | "Perú" | "Uruguay" | "Colombia"
+type AgeVariant = "under30" | "over30"
+type ExerciseJSON = {
+  id: string
+  baseVersion: string
+  base: {
+    title: string
+    stemHome: string
+    stemOffice: string
+  }
+  variantsByCountry?: Partial<
+    Record<
+      Country,
+      Partial<Record<AgeVariant, { contextNote?: string }>>
+    >
+  >
+}
+const EX = exerciseData as ExerciseJSON
+
 const COMPETENCE = "4.4" as const
 const LEVEL = "intermedio" as const
 const SESSION_PREFIX = "session:4.4:Intermedio"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-// Acciones del ejercicio
+// ===== Acciones del ejercicio =====
 const TECHNOLOGIES = [
   { id: 1, text: "Reducir la resolución de streaming de 4K a HD o SD." },
   { id: 2, text: "Apagar el router Wi-Fi durante la noche o cuando no se utiliza." },
@@ -35,9 +59,42 @@ const CORRECT_ORDER: ReadonlyArray<number> = [1, 3, 4, 2, 5]
 type Tech = typeof TECHNOLOGIES[number]
 type SlotId = number | null
 
+// ===== Helpers de personalización =====
+function ageToVariant(age?: number | null): AgeVariant {
+  if (age == null) return "over30" // fallback neutro a oficina
+  return age < 30 ? "under30" : "over30"
+}
+
+function normalizeCountry(input?: string | null): Country | null {
+  if (!input) return null
+  const s = input.trim().toLowerCase()
+  if (s.includes("chile")) return "Chile"
+  if (s.includes("argentin")) return "Argentina"
+  if (s.includes("uruguay")) return "Uruguay"
+  if (s.includes("colombia")) return "Colombia"
+  if (s.includes("peru") || s.includes("perú")) return "Perú"
+  return null
+}
+
 export default function Page() {
   const router = useRouter()
   const { user, userData } = useAuth()
+
+  // ===== Derivar país/edad para elegir copia =====
+  const country = useMemo<Country | null>(() => normalizeCountry((userData as any)?.country), [userData])
+  const ageVariant = useMemo<AgeVariant>(() => ageToVariant((userData as any)?.age ?? null), [userData])
+
+  const stem = useMemo(() => {
+    // -30 hogar / +30 oficina (sin pistas)
+    return ageVariant === "under30" ? EX.base.stemHome : EX.base.stemOffice
+  }, [ageVariant])
+
+  const contextNote = useMemo(() => {
+    if (!country) return ""
+    return EX.variantsByCountry?.[country]?.[ageVariant]?.contextNote ?? ""
+  }, [country, ageVariant])
+
+  // ====== Sesión Firestore ======
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
 
@@ -52,18 +109,14 @@ export default function Page() {
       setSessionId(null)
       return
     }
-
     const LS_KEY = sessionKeyFor(user.uid)
     const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
-
     if (cached) {
       if (!sessionId) setSessionId(cached)
       return
     }
-
     if (ensuringRef.current) return
     ensuringRef.current = true
-
     ;(async () => {
       try {
         const { id } = await ensureSession({
@@ -82,9 +135,9 @@ export default function Page() {
     })()
   }, [user?.uid, sessionId])
 
+  // ====== DnD State ======
   const [pool, setPool] = useState<number[]>(() => shuffle(TECHNOLOGIES.map(t => t.id)))
   const [slots, setSlots] = useState<SlotId[]>([null, null, null, null, null])
-
   const techById = (id: number) => TECHNOLOGIES.find(t => t.id === id) as Tech
   const [dragData, setDragData] = useState<{ from: "pool" | "slot"; index: number } | null>(null)
 
@@ -143,6 +196,7 @@ export default function Page() {
     setSlots(newSlots)
   }
 
+  // ====== Scoring ======
   const point: 0 | 1 = useMemo(() => {
     const filled = slots.every(s => s !== null)
     if (!filled) return 0
@@ -153,7 +207,7 @@ export default function Page() {
   }, [slots])
 
   const handleFinish = async () => {
-    const isTeacher = userData?.role === "profesor"
+    const isTeacher = (userData as any)?.role === "profesor"
     setPoint(COMPETENCE, LEVEL, 1, point)
 
     const prog = getProgress(COMPETENCE, LEVEL)
@@ -252,6 +306,7 @@ export default function Page() {
         </div>
       </div>
 
+      {/* Progreso */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-white mb-4">
           <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
@@ -268,26 +323,30 @@ export default function Page() {
         </div>
       </div>
 
+      {/* Tarjeta principal */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Indicar el impacto medioambiental de acciones rutinarias en el uso de dispositivos y recursos digitales
+              {EX.base.title}
             </h2>
+
+            {/* Instrucción personalizada sin pistas */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575] space-y-3">
-                <p className="text-gray-700 leading-relaxed">
-                  En una oficina, el equipo de trabajo busca implementar estrategias sencillas y de bajo costo para disminuir su huella
-                  medioambiental. Se presentan cinco acciones habituales relacionadas con el uso de equipos y recursos.
-                </p>
-                <p className="text-gray-700 leading-relaxed">
-                  A continuación, se presentan cinco acciones digitales comunes. Ordénalas de mayor 
-                  menor impacto ambiental positivo de acuerdo con la evidencia sobre ahorro energético y reducción de emisiones de carbono.
+                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                  {stem}
                 </p>
               </div>
             </div>
+
+            {/* DnD */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <section className="bg-white border border-gray-300 rounded-2xl p-4" onDragOver={allowDrop} onDrop={onDropToPool}>
+              <section
+                className="bg-white border border-gray-300 rounded-2xl p-4"
+                onDragOver={allowDrop}
+                onDrop={onDropToPool}
+              >
                 <h3 className="font-semibold text-gray-900 mb-3">Acciones disponibles</h3>
                 <div className="space-y-3 min-h-[220px]">
                   {pool.map((id, idx) => {
@@ -346,6 +405,7 @@ export default function Page() {
               </section>
             </div>
 
+            {/* Acciones */}
             <div className="mt-8 flex items-center justify-end">
               <Button
                 onClick={handleFinish}

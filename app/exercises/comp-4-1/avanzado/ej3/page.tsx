@@ -8,12 +8,21 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
-import { setPoint } from "@/lib/levelProgress"
+import {
+  setPoint,
+  getProgress,
+  levelPoints,
+  isLevelPassed,
+  getPoint,
+} from "@/lib/levelProgress"
 
 // ===== Config =====
 const COMPETENCE = "4.1" as const
 const LEVEL = "avanzado" as const
+const LEVEL_FS = "Avanzado" as const
+const TOTAL_QUESTIONS = 3
 const QUESTION_NUM = 3 // P3 de 3 (1-based en setPoint)
+const Q_ZERO_BASED = 2  // índice 0-based para Firestore
 const SESSION_PREFIX = "session:4.1:Avanzado"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
@@ -40,7 +49,7 @@ const JUST_TEXT: Record<Exclude<JustKey, "">, string> = {
 
 export default function Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth()
 
   // ===== Sesión =====
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -72,8 +81,8 @@ export default function Page() {
         const { id } = await ensureSession({
           userId: user.uid,
           competence: COMPETENCE,
-          level: "Avanzado",
-          totalQuestions: 3,
+          level: LEVEL_FS,
+          totalQuestions: TOTAL_QUESTIONS,
         })
         setSessionId(id)
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
@@ -102,26 +111,75 @@ export default function Page() {
   // punto final (≥2 subpuntos)
   const point: 0 | 1 = subpoints >= 2 ? 1 : 0
 
-  // ===== Continuar =====
+  // ===== Finalizar y enviar a resultados =====
   const handleFinish = async () => {
+    // Guardar puntaje local de la P3
     setPoint(COMPETENCE, LEVEL, QUESTION_NUM, point)
 
-    // marcar P3 (índice 2 en markAnswered)
-    try {
-      const LS_KEY = user ? sessionKeyFor(user.uid) : null
-      const sid =
-        sessionId ||
-        (LS_KEY && typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null)
+    // Calcular progreso y score
+    const prog = getProgress(COMPETENCE, LEVEL)
+    const totalPts = levelPoints(prog)
+    const levelPassed = isLevelPassed(prog)
+    const score = Math.round((totalPts / TOTAL_QUESTIONS) * 100)
+    const q1 = getPoint(prog, 1)
+    const q2 = getPoint(prog, 2)
+    const q3 = getPoint(prog, 3)
 
+    // Modo profesor: override de resultados para pasar el nivel
+    const isTeacher = userData?.role === "profesor"
+    const finalTotalPts = isTeacher ? TOTAL_QUESTIONS : totalPts
+    const finalPassed = isTeacher ? true : levelPassed
+    const finalScore = isTeacher ? 100 : score
+
+    // Marcar P3 (índice 2) en Firestore
+    let sid = sessionId
+    try {
+      if (!sid && user) {
+        const LS_KEY = sessionKeyFor(user.uid)
+        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
+        if (cached) {
+          sid = cached
+          setSessionId(cached)
+        } else {
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: LEVEL_FS,
+            totalQuestions: TOTAL_QUESTIONS,
+          })
+          sid = id
+          setSessionId(id)
+          if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
+        }
+      }
       if (sid) {
-        await markAnswered(sid, 2, point === 1)
+        await markAnswered(sid, Q_ZERO_BASED, point === 1)
       }
     } catch (e) {
       console.warn("No se pudo marcar P3 respondida:", e)
     }
 
-    // Redirige al dashboard (ajusta si tienes una página de resultados)
-    router.push("/dashboard")
+    // Ir a /test/results con parámetros
+    const qs = new URLSearchParams({
+      score: String(finalScore),
+      passed: String(finalPassed),
+      correct: String(finalTotalPts),
+      total: String(TOTAL_QUESTIONS),
+      competence: COMPETENCE,
+      level: LEVEL,
+      q1: String(q1),
+      q2: String(q2),
+      q3: String(q3),
+      sid: sid ?? "",
+      passMin: "2", // regla de aprobación
+      compPath: "comp-4-1",
+      retryBase: "/exercises/comp-4-1/avanzado",
+      ex1Label: "Ejercicio 1: Evaluación de riesgos en dispositivos",
+      ex2Label: "Ejercicio 2: Políticas y configuraciones avanzadas",
+      ex3Label: "Ejercicio 3: Comparación de métodos de almacenamiento",
+    })
+
+    router.push(`/test/results?${qs.toString()}`)
   }
 
   const progressPct = 100 // P3 de 3
@@ -185,7 +243,7 @@ export default function Page() {
               </p>
             </div>
 
-            {/* Métodos (A y B) — uno debajo del otro, sin hover */}
+            {/* Métodos (A y B) */}
             <div className="grid grid-cols-1 gap-6">
               <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white">
                 <h3 className="font-semibold text-gray-900 mb-2">Método A — Cifrado completo del disco duro</h3>
@@ -257,7 +315,7 @@ export default function Page() {
                       value={k}
                       checked={justKey === k}
                       onChange={() => setJustKey(k)}
-                      className="mt-1"
+                      className="mt-1 accent-[#2e6372]"
                     />
                     <span className="text-sm text-gray-800">{JUST_TEXT[k]}</span>
                   </label>

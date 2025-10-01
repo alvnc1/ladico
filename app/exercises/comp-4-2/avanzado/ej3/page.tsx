@@ -6,17 +6,84 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { setPoint } from "@/lib/levelProgress"
+import {
+  setPoint,
+  getProgress,
+  levelPoints,
+  isLevelPassed,
+  getPoint,
+} from "@/lib/levelProgress"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
+
+// ====== Carga de contexto (base + variantes por país/edad) ======
+import exerciseData from "@/app/exercises/comp-4-2/avanzado/ej3/ej3.json"
 
 // ===== Config =====
 const COMPETENCE = "4.2"
 const LEVEL = "avanzado"
+const LEVEL_FS = "Avanzado"
+const TOTAL_QUESTIONS = 3
+const Q_ONE_BASED = 1       // P1 -> setPoint
+const Q_ZERO_BASED = 0      // P1 -> markAnswered
 const SESSION_PREFIX = "session:4.2:Avanzado:P1_Terms"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-// ===== Data =====
+// ===== Tipos JSON para el contexto =====
+type Country = "Argentina" | "Perú" | "Uruguay" | "Colombia" | "Chile"
+type AgeVariant = "under20" | "20to40" | "over40"
+
+type ExerciseJSON = {
+  id: string
+  baseVersion: string
+  base: {
+    title: string
+    stem: string // contexto base si no hay variante
+  }
+  variantsByCountry?: Partial<
+    Record<
+      Country,
+      Partial<
+        Record<
+          AgeVariant,
+          {
+            stem?: string // contexto personalizado (solo cambia esto)
+          }
+        >
+      >
+    >
+  >
+}
+
+const EXERCISE = exerciseData as ExerciseJSON
+
+// ===== Helpers país/edad para escoger contexto =====
+function ageToVariant(age?: number | null): AgeVariant {
+  if (age == null) return "20to40"
+  if (age < 20) return "under20"
+  if (age <= 40) return "20to40"
+  return "over40"
+}
+
+function normalizeCountry(input?: string | null): Country | null {
+  if (!input) return null
+  const s = input.trim().toLowerCase()
+  if (s.includes("chile")) return "Chile"
+  if (s.includes("argentin")) return "Argentina"
+  if (s.includes("uruguay")) return "Uruguay"
+  if (s.includes("colombia")) return "Colombia"
+  if (s.includes("peru") || s.includes("perú")) return "Perú"
+  return null
+}
+
+function pickStem(country: Country | null, variant: AgeVariant): string {
+  const baseStem = EXERCISE.base.stem
+  if (!country) return baseStem
+  const v = EXERCISE.variantsByCountry?.[country]?.[variant]
+  return v?.stem ?? baseStem
+}
+
+// ===== Data (T&C) =====
 type ParaId = 1 | 2 | 3 | 4 | 5 | 6 | 7
 const PARAGRAPHS: { id: ParaId; title: string; text: string }[] = [
   {
@@ -84,7 +151,24 @@ const JUST_OPTIONS: Record<Exclude<LevelChoice, "">, { key: JustKey; text: strin
 // ===== Page =====
 export default function Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth() as {
+    user: { uid: string } | null
+    userData?: { age?: number; country?: string; role?: string } | null
+  }
+
+  // ===== Personalización de contexto =====
+  const country = useMemo(
+    () => normalizeCountry(userData?.country ?? null),
+    [userData?.country]
+  )
+  const ageVariant = useMemo(
+    () => ageToVariant(userData?.age ?? null),
+    [userData?.age]
+  )
+  const personalizedStem = useMemo(
+    () => pickStem(country, ageVariant),
+    [country, ageVariant]
+  )
 
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
@@ -120,10 +204,10 @@ export default function Page() {
     ;(async () => {
       try {
         const { id } = await ensureSession({
-          userId: user.uid,
+          userId: user.uid!,
           competence: COMPETENCE,
-          level: "Avanzado",
-          totalQuestions: 3,
+          level: LEVEL_FS,
+          totalQuestions: TOTAL_QUESTIONS,
         })
         setSessionId(id)
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
@@ -164,18 +248,57 @@ export default function Page() {
   }
 
   const handleFinish = async () => {
-    setPoint(COMPETENCE, LEVEL, 1, point) // P1
+    // Guardar punto local (P1)
+    setPoint(COMPETENCE, LEVEL, Q_ONE_BASED, point)
+
+    // Calcular progreso y score (para /test/results)
+    const prog = getProgress(COMPETENCE, LEVEL)
+    const totalPts = levelPoints(prog)
+    const levelPassed = isLevelPassed(prog)
+    const score = Math.round((totalPts / TOTAL_QUESTIONS) * 100)
+    const q1 = getPoint(prog, 1)
+    const q2 = getPoint(prog, 2)
+    const q3 = getPoint(prog, 3)
+
+    // Modo profesor
+    const isTeacher = userData?.role === "profesor"
+    const finalTotalPts = isTeacher ? TOTAL_QUESTIONS : totalPts
+    const finalPassed = isTeacher ? true : levelPassed
+    const finalScore = isTeacher ? 100 : score
+
+    // Marcar respondida en Firestore
     const sid =
       sessionId ||
-      (typeof window !== "undefined" && user ? localStorage.getItem(sessionKeyFor(user.uid)) : null)
+      (typeof window !== "undefined" && user ? localStorage.getItem(sessionKeyFor(user.uid!)) : null)
     if (sid) {
       try {
-        await markAnswered(sid, 0, point === 1)
+        await markAnswered(sid, Q_ZERO_BASED, point === 1)
       } catch (e) {
         console.warn("No se pudo marcar la respuesta (P1):", e)
       }
     }
-    router.push("/dashboard")
+
+    // → Enviar a /test/results
+    const qs = new URLSearchParams({
+      score: String(finalScore),
+      passed: String(finalPassed),
+      correct: String(finalTotalPts),
+      total: String(TOTAL_QUESTIONS),
+      competence: COMPETENCE,
+      level: LEVEL,
+      q1: String(q1),
+      q2: String(q2),
+      q3: String(q3),
+      sid: sid ?? "",
+      passMin: "2",
+      compPath: "comp-4-2",
+      retryBase: "/exercises/comp-4-2/avanzado",
+      ex1Label: "Ejercicio 1: Términos y condiciones",
+      ex2Label: "Ejercicio 2: Configuraciones y permisos avanzados",
+      ex3Label: "Ejercicio 3: Políticas de privacidad (avanzado)",
+    })
+
+    router.push(`/test/results?${qs.toString()}`)
   }
 
   const progressPct = (3 / 3) * 100
@@ -183,7 +306,7 @@ export default function Page() {
   // ===== UI =====
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
-      {/* Header (igual que el ejemplo) */}
+      {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
@@ -203,7 +326,7 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Progreso (misma estructura que el ejemplo) */}
+      {/* Progreso */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-white mb-4">
           <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
@@ -232,19 +355,14 @@ export default function Page() {
               Evaluación de términos y condiciones
             </h2>
 
-            {/* Contexto */}
+            {/* Contexto personalizado + instrucciones unidas (fluido) */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575] space-y-3">
                 <p className="text-gray-700 leading-relaxed">
-                  Has creado una cuenta en una plataforma de aprendizaje en línea. Antes de continuar,
-                  debes abrir los <strong>Términos y condiciones</strong> y revisarlos cuidadosamente.
+                  {personalizedStem} Antes de continuar, debes abrir los Términos y condiciones y revisarlos cuidadosamente.
+                  En la ventana emergente encontrarás la política de privacidad en párrafos numerados. Clasifica el nivel de 
+                  protección y selecciona los párrafos que justifiquen tu decisión. Luego, explica tu elección.
                 </p>
-                <p className="text-gray-700">
-                  En la ventana emergente encontrarás la política de privacidad en párrafos numerados. 
-                  Clasifica el nivel de protección y selecciona los párrafos que justifican tu elección. 
-                  Luego, explica tu elección.
-                </p>
-                {/* Botón con estilo de enlace, abre el modal (igual apariencia que "Ir a panel") */}
                 <button
                   type="button"
                   onClick={() => setOpen(true)}
@@ -255,7 +373,7 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Resumen de selección */}
+            {/* Controles de clasificación y justificación */}
             <div className="grid grid-cols-1 gap-4">
               <div className="rounded-2xl border-2 border-gray-200 p-4">
                 <div className="text-sm font-medium text-gray-900 mb-2">Clasificación global</div>
@@ -271,7 +389,6 @@ export default function Page() {
                 </select>
               </div>
 
-              {/* Justificación según nivel elegido */}
               {level && (
                 <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
                   <h3 className="font-semibold text-gray-900 mb-3">Justifica tu clasificación</h3>

@@ -4,7 +4,7 @@
   "correctOrderIds": [4, 3, 5, 1, 2],
   "base": {
     "title": "Priorización de medidas tras un incidente de seguridad",
-    "stem": "Una empresa sufrió accesos no autorizados a varios dispositivos por contraseñas débiles y ausencia de autenticación multifactor (MFA). El área de seguridad propuso varias medidas. Ordena de mayor a menor prioridad y luego justifica tu decisión.",
+    "stem": "Una empresa sufrió accesos no autorizados a varios dispositivos por contraseñas débiles y ausencia de autenticación multifactor (MFA). Medidas de seguridad para proteger dispositivos tras un incidente ayudan a contener el daño y prevenir nuevos accesos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
     "measures": [
       { "id": 1, "text": "Establecer políticas que prohíban la instalación de aplicaciones externas no autorizadas." },
       { "id": 2, "text": "Realizar auditorías de seguridad periódicas para detectar vulnerabilidades." },
@@ -15,7 +15,7 @@
   },
   "variants": {
     "school": {
-      "stem": "En un colegio se detectaron accesos no autorizados a cuentas institucionales por contraseñas débiles y falta de MFA. El equipo TI propuso varias medidas. Ordena de mayor a menor prioridad y justifica tu decisión.",
+      "stem": "En un colegio se detectaron accesos no autorizados a cuentas institucionales por contraseñas débiles y falta de MFA. Medidas de seguridad para proteger cuentas y dispositivos institucionales ayudan a evitar nuevos accesos indebidos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
       "measures": [
         { "id": 3, "text": "Forzar el cambio inmediato de contraseñas del correo institucional y de la plataforma educativa." },
         { "id": 4, "text": "Activar MFA para estudiantes y docentes en todas las cuentas institucionales." },
@@ -23,7 +23,7 @@
       ]
     },
     "university": {
-      "stem": "Una universidad sufrió accesos no autorizados en laboratorios y servicios en línea debido a contraseñas débiles y ausencia de MFA. Ordena de mayor a menor prioridad y justifica tu decisión.",
+      "stem": "Una universidad sufrió accesos no autorizados en laboratorios y servicios en línea debido a contraseñas débiles y ausencia de MFA. Medidas de seguridad para proteger dispositivos y servicios académicos ayudan a contener y remediar el incidente. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
       "measures": [
         { "id": 3, "text": "Forzar el cambio de contraseñas en cuentas de estudiantes y personal (correo, LMS, repositorios)." },
         { "id": 4, "text": "Implementar MFA en el SSO universitario y en sistemas críticos (VPN, LMS)." },
@@ -31,12 +31,69 @@
       ]
     },
     "work": {
-      "stem": "Una empresa detectó accesos no autorizados por contraseñas débiles y falta de MFA en equipos de trabajo. Ordena de mayor a menor prioridad y justifica tu decisión.",
+      "stem": "Una empresa detectó accesos no autorizados por contraseñas débiles y falta de MFA en equipos de trabajo. Medidas de seguridad para proteger dispositivos y sistemas corporativos permiten contener el incidente y reducir riesgos. Ordena de mayor a menor las medidas de seguridad según la prioridad de respuesta tras el incidente y luego justifica tu decisión.",
       "measures": [
         { "id": 3, "text": "Forzar cambio inmediato de contraseñas en servicios corporativos (correo, VPN, gestión)." },
         { "id": 4, "text": "Implementar MFA en correo corporativo, VPN y sistemas críticos." },
         { "id": 1, "text": "Actualizar y aplicar políticas de software no autorizado en estaciones de trabajo." }
       ]
+    }
+  },
+  "variantsByCountry": {
+    "Chile": {
+      "school": {
+        "stem": "En un colegio se usa EducarChile en los laboratorios de computación, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger cuentas y equipos institucionales. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "university": {
+        "stem": "En un laboratorio universitario los estudiantes acceden al correo institucional, al LMS y a la red por VPN, donde se detectaron accesos no autorizados por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger servicios académicos críticos. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "work": {
+        "stem": "En un entorno corporativo se utilizan dispositivos de trabajo para acceder a correo y sistemas internos, donde se identificaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger plataformas corporativas y equipos de trabajo. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      }
+    },
+    "Argentina": {
+      "school": {
+        "stem": "En un colegio se utiliza una plataforma educativa en línea para gestionar clases y tareas, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger cuentas y equipos del colegio. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "university": {
+        "stem": "En la Universidad de Buenos Aires los estudiantes acceden al correo institucional y a plataformas académicas en línea, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger servicios académicos y cuentas institucionales. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "work": {
+        "stem": "En un entorno corporativo con sistemas internos y correo de trabajo se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger credenciales y dispositivos corporativos. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      }
+    },
+    "Uruguay": {
+      "school": {
+        "stem": "En un liceo se usan plataformas del Plan Ceibal en laboratorios y equipos compartidos, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger cuentas y dispositivos estudiantiles. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "university": {
+        "stem": "En la Universidad de la República se accede al correo institucional, EVA y VPN, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger servicios académicos críticos. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "work": {
+        "stem": "En un entorno corporativo con acceso a correo, VPN y sistemas de gestión se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger cuentas internas y dispositivos de trabajo. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      }
+    },
+    "Colombia": {
+      "school": {
+        "stem": "En un colegio se utilizan plataformas como Google Classroom en los laboratorios de computación, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger cuentas y equipos escolares. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "university": {
+        "stem": "En la Universidad de los Andes los estudiantes usan el correo institucional y Sicua Plus, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger servicios académicos y cuentas de la comunidad universitaria. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "work": {
+        "stem": "En un entorno corporativo con sistemas internos de gestión y correo de trabajo se identificaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger plataformas corporativas y equipos de trabajo. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      }
+    },
+    "Perú": {
+      "school": {
+        "stem": "En un colegio se utilizan cuentas de Google Workspace para clases y tareas, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger cuentas educativas y equipos del colegio. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "university": {
+        "stem": "En la Pontificia Universidad Católica del Perú los estudiantes acceden al correo institucional y al Campus Virtual, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger servicios universitarios críticos. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      },
+      "work": {
+        "stem": "En un entorno corporativo se utilizan dispositivos de trabajo para acceder a correo y sistemas internos, donde se detectaron accesos indebidos por contraseñas débiles. Necesitas aplicar medidas de seguridad para proteger cuentas corporativas y equipos de trabajo. Ordena de mayor a menor las medidas según la prioridad de respuesta tras el incidente y justifica tu decisión."
+      }
     }
   }
 }

@@ -1,0 +1,140 @@
+{
+  "id": "4.2-avanzado-ej2",
+  "baseVersion": "v3",
+  "base": {
+    "title": "Configuración de privacidad por red social",
+    "stem": "Estás ajustando la privacidad de una red social. Define quién ve tu perfil, qué datos compartes al registrarte, si activas 2FA y cómo gestionas el consentimiento. Al finalizar, justifica tus decisiones."
+  },
+  "variantsByCountry": {
+    "Chile": {
+      "under20": {
+        "platform": "TikTok",
+        "stem": "En TikTok ajustas la visibilidad del perfil, los datos que entregas al registrarte y el consentimiento para usos adicionales. Define opciones adecuadas para cuidar tu privacidad y luego justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      },
+      "20to40": {
+        "platform": "Instagram",
+        "stem": "En Instagram configuras quién puede ver tu perfil, qué información compartes al registrarte y cómo gestionas el consentimiento. Elige opciones que protejan tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      },
+      "over40": {
+        "platform": "Facebook",
+        "stem": "En Facebook decides la visibilidad del perfil, la información que compartes al registrarte y tu consentimiento para usos de datos. Selecciona opciones que resguarden tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      }
+    },
+    "Argentina": {
+      "under20": {
+        "platform": "Instagram",
+        "stem": "En Instagram ajustas la visibilidad del perfil, los datos que entregas al registrarte y el consentimiento para usos adicionales. Define opciones que cuiden tu privacidad y luego justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      },
+      "20to40": {
+        "platform": "WhatsApp",
+        "stem": "En WhatsApp decides quién ve tu información de cuenta (foto, info, última vez), qué datos comparte tu registro y cómo otorgas consentimiento para usos adicionales. Selecciona opciones que protejan tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu información de cuenta?",
+          "infoShareLabel": "¿Qué datos compartes al registrar tu cuenta?"
+        }
+      },
+      "over40": {
+        "platform": "Facebook",
+        "stem": "En Facebook configuras la visibilidad del perfil, la información que compartes al registrarte y el consentimiento para usos de datos. Elige opciones que resguarden tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      }
+    },
+    "Uruguay": {
+      "under20": {
+        "platform": "Instagram",
+        "stem": "En Instagram determinas quién ve tu perfil, qué datos aportas al registrarte y el consentimiento para tratamientos adicionales. Define opciones que cuiden tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      },
+      "20to40": {
+        "platform": "WhatsApp",
+        "stem": "En WhatsApp ajustas la visibilidad de tu información de cuenta (foto, info, última vez), los datos de registro y el consentimiento. Selecciona opciones que protejan tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu información de cuenta?",
+          "infoShareLabel": "¿Qué datos compartes al registrar tu cuenta?"
+        }
+      },
+      "over40": {
+        "platform": "Facebook",
+        "stem": "En Facebook defines la visibilidad del perfil, la información que compartes al registrarte y tu consentimiento para usos de datos. Elige opciones que resguarden tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      }
+    },
+    "Colombia": {
+      "under20": {
+        "platform": "TikTok",
+        "stem": "En TikTok decides quién ve tu perfil, qué datos entregas al registrarte y cómo otorgas consentimiento para usos adicionales. Define opciones que cuiden tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      },
+      "20to40": {
+        "platform": "Instagram",
+        "stem": "En Instagram ajustas la visibilidad del perfil, qué información compartes al registrarte y tu consentimiento. Selecciona opciones que protejan tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      },
+      "over40": {
+        "platform": "Facebook",
+        "stem": "En Facebook configuras la visibilidad del perfil, la información de registro y el consentimiento para usos de datos. Elige opciones que resguarden tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      }
+    },
+    "Perú": {
+      "under20": {
+        "platform": "TikTok",
+        "stem": "En TikTok ajustas quién ve tu perfil, qué datos entregas al registrarte y el consentimiento para usos adicionales. Define opciones que cuiden tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      },
+      "20to40": {
+        "platform": "WhatsApp",
+        "stem": "En WhatsApp decides la visibilidad de tu información de cuenta (foto, info, última vez), los datos de registro y el consentimiento. Selecciona opciones que protejan tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu información de cuenta?",
+          "infoShareLabel": "¿Qué datos compartes al registrar tu cuenta?"
+        }
+      },
+      "over40": {
+        "platform": "Facebook",
+        "stem": "En Facebook determinas la visibilidad del perfil, la información que compartes al registrarte y tu consentimiento para usos de datos. Elige opciones que resguarden tu privacidad y justifica tus decisiones.",
+        "uiHints": {
+          "visibilityLabel": "¿Quién puede ver tu perfil?",
+          "infoShareLabel": "¿Qué datos compartes al crear tu cuenta?"
+        }
+      }
+    }
+  }
+}

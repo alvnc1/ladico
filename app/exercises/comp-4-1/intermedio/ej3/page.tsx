@@ -8,13 +8,26 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
-import { setPoint } from "@/lib/levelProgress"
+import {
+  setPoint,
+  getProgress,
+  levelPoints,
+  isLevelPassed,
+  getPoint,
+} from "@/lib/levelProgress"
 
 // ===== Config =====
 const COMPETENCE = "4.1"
 const LEVEL = "intermedio"
+const LEVEL_FS = "Intermedio"
+const TOTAL_QUESTIONS = 3
 const SESSION_PREFIX = "session:4.1:Intermedio"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
+
+// Índices pregunta 3
+const Q_ZERO_BASED = 2 // índice 0-based para Firestore
+const Q_ONE_BASEED = 3  // índice 1-based para levelProgress
+const Q_ONE_BASED  = 3  // P3 (1-based) para levelProgress
 
 type OptId = "wifi_ok" | "wifi_priv" | "wifi_movil"
 type OptId2 = "auto_seg" | "auto_riesgo" | "auto_no_mejoras"
@@ -25,7 +38,7 @@ type JustId = "just_auto" | "just_dos_vuln" | "just_apps"
 
 export default function Page() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userData } = useAuth()
 
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
@@ -75,8 +88,8 @@ export default function Page() {
         const { id } = await ensureSession({
           userId: user.uid,
           competence: COMPETENCE,
-          level: "Intermedio",
-          totalQuestions: 3,
+          level: LEVEL_FS,
+          totalQuestions: TOTAL_QUESTIONS,
         })
         setSessionId(id)
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
@@ -90,20 +103,80 @@ export default function Page() {
 
   // ===== Envío =====
   const handleFinish = async () => {
-    setPoint(COMPETENCE, LEVEL, 3, point)
+    // Guardar puntaje local de la P3
+    setPoint(COMPETENCE, LEVEL, Q_ONE_BASED, point)
 
-    const sid =
-      sessionId ||
-      (typeof window !== "undefined" && user ? localStorage.getItem(sessionKeyFor(user.uid)) : null)
+    // Calcular progreso y score
+    const prog = getProgress(COMPETENCE, LEVEL)
+    const totalPts = levelPoints(prog)
+    const levelPassed = isLevelPassed(prog)
+    const score = Math.round((totalPts / TOTAL_QUESTIONS) * 100)
+    const q1 = getPoint(prog, 1)
+    const q2 = getPoint(prog, 2)
+    const q3 = getPoint(prog, 3)
 
-    if (sid) {
-      try {
-        await markAnswered(sid, 2, point === 1) // P3 => índice 2
-      } catch (e) {
-        console.warn("No se pudo marcar la respuesta (P3):", e)
+    // 🔔 Notificar al dashboard que el progreso cambió (refresco del anillo)
+    try {
+      localStorage.setItem("ladico:progress:version", String(Date.now()))
+      // opcional: disparo de evento en esta misma pestaña
+      window.dispatchEvent(new CustomEvent("ladico:progress:refresh"))
+    } catch {}
+
+    // Modo profesor: override de resultados para pasar el nivel
+    const isTeacher = userData?.role === "profesor"
+    const finalTotalPts = isTeacher ? TOTAL_QUESTIONS : totalPts
+    const finalPassed = isTeacher ? true : levelPassed
+    const finalScore = isTeacher ? 100 : score
+
+    // Asegurar sesión y marcar respondida en Firestore
+    let sid = sessionId
+    try {
+      if (!sid && user) {
+        const LS_KEY = sessionKeyFor(user.uid)
+        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
+        if (cached) {
+          sid = cached
+          setSessionId(cached)
+        } else {
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: LEVEL_FS,
+            totalQuestions: TOTAL_QUESTIONS,
+          })
+          sid = id
+          setSessionId(id)
+          if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
+        }
       }
+      if (sid) {
+        await markAnswered(sid, Q_ZERO_BASED, point === 1)
+      }
+    } catch (e) {
+      console.warn("No se pudo marcar la respuesta (P3):", e)
     }
-    router.push("/dashboard")
+
+    // Enviar a /test/results con parámetros
+    const qs = new URLSearchParams({
+      score: String(finalScore),
+      passed: String(finalPassed),
+      correct: String(finalTotalPts),
+      total: String(TOTAL_QUESTIONS),
+      competence: COMPETENCE,
+      level: LEVEL,
+      q1: String(q1),
+      q2: String(q2),
+      q3: String(q3),
+      sid: sid ?? "",
+      passMin: "2", // regla: aprobar con 2/3
+      compPath: "comp-4-1",
+      retryBase: "/exercises/comp-4-1/intermedio",
+      ex1Label: "Ejercicio 1: Protección básica del dispositivo",
+      ex2Label: "Ejercicio 2: Actualizaciones y redes",
+      ex3Label: "Ejercicio 3: Fiabilidad y privacidad del smartphone",
+    })
+
+    router.push(`/test/results?${qs.toString()}`)
   }
 
   const progressPct = 100 // P3 de 3
@@ -136,11 +209,6 @@ export default function Page() {
           <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
             Pregunta 3 de 3
           </span>
-          <div className="flex space-x-2">
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
-          </div>
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
           <div
@@ -152,7 +220,7 @@ export default function Page() {
 
       {/* Tarjeta principal */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
-        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
+        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duración-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
             {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
@@ -207,7 +275,7 @@ export default function Page() {
             </div>
 
             {/* Clasificación + Justificación dentro del MISMO recuadro */}
-            <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
+            <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transición-colors shadow-sm">
               <div className="text-sm font-medium text-gray-900 mb-2">
                 Evalúa el nivel de protección y justifica tu elección.
               </div>
@@ -238,7 +306,7 @@ export default function Page() {
                   return (
                     <label
                       key={opt.id}
-                      className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 transición-all cursor-pointer ${
                         active ? "border-[#286575] bg-[#e6f2f3]" : "border-gray-200 hover:border-[#286575]"
                       }`}
                     >

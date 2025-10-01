@@ -1,0 +1,174 @@
+{
+  "id": "4.4-intermedio-ej3",
+  "baseVersion": "v1",
+  "base": {
+    "title": "Indicar impactos medioambientales positivos de aplicaciones y servicios digitales",
+    "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. Se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo."
+  },
+  "variantsByCountry": {
+    "Chile": {
+      "under20": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su colegio y actividades diarias en Chile, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App de Red Movilidad que incentiva el uso del transporte público en buses eléctricos.", "correct": true },
+          { "key": "B", "text": "Aplicación de delivery con múltiples promociones de comida rápida.", "correct": false },
+          { "key": "C", "text": "Plataforma de reventa de útiles y libros escolares en línea.", "correct": true },
+          { "key": "D", "text": "App de reciclaje municipal que entrega puntos por separar residuos.", "correct": true },
+          { "key": "E", "text": "Juego en línea que premia más horas de conexión con descuentos en compras digitales.", "correct": false }
+        ]
+      },
+      "20to40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En Santiago, donde combina estudio y trabajo apoyándose en apps, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "Aplicación de movilidad compartida como Cabify Eco con flota eléctrica.", "correct": true },
+          { "key": "B", "text": "App de descuentos para centros comerciales.", "correct": false },
+          { "key": "C", "text": "Plataforma de compra colaborativa de alimentos locales.", "correct": true },
+          { "key": "D", "text": "App de reciclaje y donaciones comunitarias en línea.", "correct": true },
+          { "key": "E", "text": "Aplicación que sugiere rutas en automóvil particular para ahorrar tiempo.", "correct": false }
+        ]
+      },
+      "over40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su vida diaria, donde utiliza servicios financieros y de movilidad en Chile, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "Aplicación de BancoEstado que promueve operaciones digitales sin papeleo.", "correct": true },
+          { "key": "B", "text": "App que ofrece cupones para supermercados cercanos.", "correct": false },
+          { "key": "C", "text": "App de transporte público Red que optimiza el uso de buses eléctricos.", "correct": true },
+          { "key": "D", "text": "Plataforma de reciclaje y donaciones comunitarias en línea.", "correct": true },
+          { "key": "E", "text": "App que recomienda rutas en automóvil particular para ahorrar tiempo.", "correct": false }
+        ]
+      }
+    },
+
+    "Argentina": {
+      "under20": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su colegio y actividades cotidianas en Argentina, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App de SUBE Digital que promueve el uso del transporte público.", "correct": true },
+          { "key": "B", "text": "Plataforma de promociones para locales de comida rápida.", "correct": false },
+          { "key": "C", "text": "Aplicación de intercambio de libros y útiles escolares.", "correct": true },
+          { "key": "D", "text": "Programa de reciclaje municipal con app de seguimiento.", "correct": true },
+          { "key": "E", "text": "Juego en línea que fomenta más horas de pantalla con premios.", "correct": false }
+        ]
+      },
+      "20to40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En Buenos Aires, donde combina trabajo y estudio, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App de movilidad compartida BA Taxi Eléctrico.", "correct": true },
+          { "key": "B", "text": "Aplicación de cupones para shoppings.", "correct": false },
+          { "key": "C", "text": "Plataforma de compra colaborativa de alimentos en ferias locales.", "correct": true },
+          { "key": "D", "text": "App de donaciones comunitarias y reciclaje.", "correct": true },
+          { "key": "E", "text": "App que sugiere rutas en auto particular para ahorrar tiempo.", "correct": false }
+        ]
+      },
+      "over40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su vida diaria, con servicios financieros y movilidad en Argentina, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App del Banco Nación para operaciones digitales sin papeleo.", "correct": true },
+          { "key": "B", "text": "Aplicación de descuentos de supermercados.", "correct": false },
+          { "key": "C", "text": "App de transporte público BA Cómo Llego que integra buses eléctricos.", "correct": true },
+          { "key": "D", "text": "Plataforma de reciclaje y donaciones comunitarias.", "correct": true },
+          { "key": "E", "text": "App que recomienda rutas en automóvil particular para ahorrar tiempo.", "correct": false }
+        ]
+      }
+    },
+
+    "Uruguay": {
+      "under20": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su colegio y actividades diarias en Uruguay, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App de STM Montevideo para transporte público eléctrico.", "correct": true },
+          { "key": "B", "text": "App de delivery con promociones rápidas.", "correct": false },
+          { "key": "C", "text": "Plataforma de intercambio de libros y útiles escolares.", "correct": true },
+          { "key": "D", "text": "App de reciclaje Montevideo Decide.", "correct": true },
+          { "key": "E", "text": "Juego en línea que premia con descuentos digitales.", "correct": false }
+        ]
+      },
+      "20to40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En Montevideo, donde combina trabajo y estudio, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App de movilidad compartida con taxis eléctricos.", "correct": true },
+          { "key": "B", "text": "Aplicación de promociones para centros comerciales.", "correct": false },
+          { "key": "C", "text": "Plataforma de compra colaborativa de productos locales.", "correct": true },
+          { "key": "D", "text": "App de donaciones y reciclaje comunitario.", "correct": true },
+          { "key": "E", "text": "App que sugiere rutas en automóvil particular.", "correct": false }
+        ]
+      },
+      "over40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su vida diaria, con servicios financieros y movilidad en Uruguay, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App de BROU para operaciones digitales sin papeleo.", "correct": true },
+          { "key": "B", "text": "Aplicación de descuentos en supermercados.", "correct": false },
+          { "key": "C", "text": "App STM Montevideo para optimizar transporte eléctrico.", "correct": true },
+          { "key": "D", "text": "Plataforma de reciclaje y donaciones comunitarias.", "correct": true },
+          { "key": "E", "text": "App que recomienda rutas en automóvil particular.", "correct": false }
+        ]
+      }
+    },
+
+    "Perú": {
+      "under20": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su colegio y actividades cotidianas en Perú, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App del Metropolitano para promover el uso de buses eléctricos.", "correct": true },
+          { "key": "B", "text": "Aplicación de delivery con promociones de comida rápida.", "correct": false },
+          { "key": "C", "text": "Plataforma de intercambio de libros escolares en línea.", "correct": true },
+          { "key": "D", "text": "App de reciclaje municipal de Lima.", "correct": true },
+          { "key": "E", "text": "Juego digital que premia más horas conectado.", "correct": false }
+        ]
+      },
+      "20to40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En Lima, donde combina trabajo y estudio, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App de movilidad compartida con flota híbrida.", "correct": true },
+          { "key": "B", "text": "Aplicación de cupones en centros comerciales.", "correct": false },
+          { "key": "C", "text": "Plataforma de compra colaborativa de alimentos locales.", "correct": true },
+          { "key": "D", "text": "App de donaciones y reciclaje comunitario.", "correct": true },
+          { "key": "E", "text": "App que sugiere rutas en automóvil particular.", "correct": false }
+        ]
+      },
+      "over40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su vida diaria, con servicios financieros y movilidad en Perú, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App del BCP que impulsa operaciones digitales sin papeleo.", "correct": true },
+          { "key": "B", "text": "Aplicación de descuentos para supermercados.", "correct": false },
+          { "key": "C", "text": "App del Metropolitano que promueve buses eléctricos.", "correct": true },
+          { "key": "D", "text": "Plataforma de reciclaje y donaciones comunitarias.", "correct": true },
+          { "key": "E", "text": "App que recomienda rutas en automóvil particular.", "correct": false }
+        ]
+      }
+    },
+
+    "Colombia": {
+      "under20": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su colegio y actividades diarias en Colombia, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App TransMilenio que promueve buses eléctricos y troncales rápidas.", "correct": true },
+          { "key": "B", "text": "Aplicación de delivery de comida rápida con promociones.", "correct": false },
+          { "key": "C", "text": "Plataforma de intercambio de libros escolares.", "correct": true },
+          { "key": "D", "text": "App de reciclaje de Bogotá Recicla.", "correct": true },
+          { "key": "E", "text": "Juego digital que premia horas de conexión.", "correct": false }
+        ]
+      },
+      "20to40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En Bogotá, donde combina estudio y trabajo, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App de movilidad compartida con taxis eléctricos.", "correct": true },
+          { "key": "B", "text": "Aplicación de cupones para shoppings.", "correct": false },
+          { "key": "C", "text": "Plataforma de compra colaborativa de alimentos locales.", "correct": true },
+          { "key": "D", "text": "App de trueque y reciclaje comunitario.", "correct": true },
+          { "key": "E", "text": "App que sugiere rutas en automóvil particular.", "correct": false }
+        ]
+      },
+      "over40": {
+        "stem": "Usted quiere reducir su impacto ambiental mediante el uso de aplicaciones digitales. En su vida diaria, con servicios financieros y movilidad en Colombia, se presentan cinco alternativas. Seleccione cuáles representan un beneficio ambiental significativo.",
+        "options": [
+          { "key": "A", "text": "App de Bancolombia para operaciones digitales sin papeleo.", "correct": true },
+          { "key": "B", "text": "Aplicación de descuentos de supermercados.", "correct": false },
+          { "key": "C", "text": "App TransMilenio que fomenta buses eléctricos.", "correct": true },
+          { "key": "D", "text": "Plataforma de reciclaje y donaciones comunitarias.", "correct": true },
+          { "key": "E", "text": "App que recomienda rutas en automóvil particular.", "correct": false }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "id": "4.3-intermedio-ej2",
+  "baseVersion": "v2",
+  "base": {
+    "title": "Seleccionar formas sencillas de proteger el bienestar digital",
+    "stem": "Mientras navegas en un sitio web, aparecen ventanas emergentes con ofertas limitadas y mensajes de urgencia. Estas notificaciones generan distracción y presión por no perder oportunidades. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas.",
+    "options": [
+      {
+        "key": "A",
+        "text": "Instalar un bloqueador de anuncios o ventanas emergentes en el navegador.",
+        "correct": true
+      },
+      {
+        "key": "B",
+        "text": "Configurar horarios para navegar y respetar pausas digitales.",
+        "correct": true
+      },
+      {
+        "key": "C",
+        "text": "Bajar el volumen de las notificaciones para que molesten menos.",
+        "correct": false
+      },
+      {
+        "key": "D",
+        "text": "Dejar abierta la página en segundo plano.",
+        "correct": false
+      },
+      {
+        "key": "E",
+        "text": "Diversificar actividades fuera de la web para reducir la dependencia.",
+        "correct": true
+      }
+    ]
+  },
+  "variantsByCountry": {
+    "Chile": {
+      "under20": {
+        "stem": "Mientras ves videos cortos, el feed reproduce automáticamente el siguiente clip y resalta “tendencias” con etiquetas llamativas. Notas que el desplazamiento infinito te hace perder la noción del tiempo. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "20to40": {
+        "stem": "Al buscar productos en Mercado Libre, aparecen banners de “Quedan pocas unidades” y un contador que sugiere que la oferta termina pronto. También surgen ventanas emergentes invitando a activar alertas. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "over40": {
+        "stem": "Al leer una nota en Emol, surgen titulares sugeridos con frases llamativas y un recuadro para suscribirte que interrumpe la lectura. Algunos enlaces usan lenguaje sensacionalista para captar tu atención. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      }
+    },
+    "Argentina": {
+      "under20": {
+        "stem": "Al deslizar en TikTok, aparecen retos virales y efectos que invitan a participar de inmediato; el siguiente video se reproduce automáticamente. Sientes que pasas más tiempo del que planificaste. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "20to40": {
+        "stem": "En Mercado Libre, ves “ofertas relámpago” con temporizador y mensajes de escasez que incentivan compras impulsivas. Saltan pop-ups que recomiendan paquetes premium. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "over40": {
+        "stem": "Mientras lees en Clarín, se intercalan titulares de alto impacto y cuadros de suscripción que detienen el artículo. Algunos enlaces prometen contenido “imperdible”. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      }
+    },
+    "Uruguay": {
+      "under20": {
+        "stem": "En YouTube Shorts, el reproductor continúa con el siguiente video y resalta contenidos “en tendencia”. Notas que el flujo constante dificulta hacer pausas. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "20to40": {
+        "stem": "Al comprar en Mercado Libre, aparecen mensajes de “últimas unidades” y un reloj regresivo que te urge a decidir. Se ofrecen mejoras de visibilidad y envíos “solo por hoy”. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "over40": {
+        "stem": "En El País digital, emergen ventanas de suscripción y enlaces con frases persuasivas que desvían la lectura. Algunos titulares buscan que hagas clic de inmediato. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      }
+    },
+    "Colombia": {
+      "under20": {
+        "stem": "En TikTok, los retos y filtros recomendados aparecen uno tras otro; la app sugiere “sumarte ahora” y el feed no termina. Pierdes la referencia del tiempo. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "20to40": {
+        "stem": "Al navegar en Rappi, surgen ofertas temporales y banners que enfatizan “aprovecha ya”; aparecen pop-ups con promociones personalizadas que interrumpen el flujo. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "over40": {
+        "stem": "En El Tiempo digital, saltan recuadros de suscripción y enlaces con lenguaje llamativo que invitan a “seguir leyendo”. La lectura se ve interrumpida por mensajes insistentes. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      }
+    },
+    "Perú": {
+      "under20": {
+        "stem": "En TikTok, los efectos y desafíos recomendados incentivan a continuar; el siguiente video inicia solo y el feed es interminable. Te cuesta detenerte. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "20to40": {
+        "stem": "En Mercado Libre, encuentras “cuotas sin interés solo hoy” y temporizadores que presionan la compra. Aparecen ventanas emergentes con recomendaciones “para no perderte nada”. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      },
+      "over40": {
+        "stem": "En Trome.pe, se insertan titulares sensacionalistas y pop-ups de suscripción que interrumpen el artículo. Varias notas prometen sorpresas si haces clic. Selecciona todas las acciones que ayudan a proteger tu bienestar digital frente a estas técnicas."
+      }
+    }
+  }
+}

@@ -23,64 +23,103 @@ const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
 // ===== Tipos del JSON =====
 type Audience = "school" | "university" | "work"
+type Country = "Argentina" | "Perú" | "Uruguay" | "Colombia" | "Chile"
 type Measure = { id: number; text: string }
+
+type VariantBlock = { stem?: string; measures?: Measure[] }
+type AudienceVariants = Partial<Record<Audience, VariantBlock>>
 
 type ExerciseJSON = {
   id: string
   baseVersion: string
   correctOrderIds: number[]
   base: { title: string; stem: string; measures: Measure[] }
-  variants?: Partial<Record<Audience, { stem?: string; measures?: Measure[] }>>
+  // Variantes por audiencia (edad) — ya existentes
+  variants?: AudienceVariants
+  // NUEVO: Variantes por país -> audiencia
+  variantsByCountry?: Partial<Record<Country, AudienceVariants>>
 }
 
-const EXERCISE = exerciseData as ExerciseJSON
+const EXERCISE = exerciseData as unknown as ExerciseJSON
 
 // ===== Helpers de variantes =====
 function audienceFromAge(age?: number): Audience {
   if (age == null) return "work"
-  if (age < 18) return "school"
+  if (age < 20) return "school"
   if (age <= 25) return "university"
   return "work"
 }
 
+// Normaliza el country del perfil del usuario a una de las claves válidas
+function normalizeCountry(input?: string | null): Country | null {
+  if (!input) return null
+  const map: Record<string, Country> = {
+    argentina: "Argentina",
+    "argentina ": "Argentina",
+    perú: "Perú",
+    peru: "Perú",
+    uruguay: "Uruguay",
+    colombia: "Colombia",
+    chile: "Chile",
+  }
+  const key = input.trim().toLowerCase()
+  return map[key] ?? null
+}
+
 /**
- * Mezcla base + variante por ID:
- * - Mantiene SIEMPRE las 5 medidas base (IDs 1..5).
- * - Si la variante trae overrides, reemplaza SOLO el texto de los IDs indicados.
- * - El orden inicial en la UI es SIEMPRE el orden de los IDs base (1..5),
- *   NO el orden correcto de evaluación, para no hacerlo obvio.
+ * Mezcla base + overrides (audiencia/país) por ID:
+ * - Mantiene SIEMPRE las medidas base (IDs 1..5) y su orden de IDs como orden inicial.
+ * - Si hay overrides, reemplaza SOLO el texto de los IDs presentes en la variante.
  */
 function applyVariant(
   base: ExerciseJSON["base"],
-  variants: ExerciseJSON["variants"],
-  audience: Audience
+  audienceVariant?: VariantBlock
 ) {
-  const v = variants?.[audience]
-  if (!v) return base
-
-  const overrideMap = new Map((v.measures ?? []).map(m => [m.id, m.text]))
+  if (!audienceVariant) return base
+  const overrideMap = new Map((audienceVariant.measures ?? []).map(m => [m.id, m.text]))
   const measures = base.measures.map(m => ({
     ...m,
     text: overrideMap.get(m.id) ?? m.text,
   }))
   return {
     title: base.title,
-    stem: v.stem ?? base.stem,
+    stem: audienceVariant.stem ?? base.stem,
     measures,
   }
 }
 
+/**
+ * Selección de variante con prioridad:
+ * 1) variantsByCountry[country][audience]
+ * 2) variants[audience]
+ * 3) base
+ */
+function selectVersion(
+  ex: ExerciseJSON,
+  audience: Audience,
+  country: Country | null
+) {
+  const byCountry = country ? ex.variantsByCountry?.[country]?.[audience] : undefined
+  if (byCountry) return applyVariant(ex.base, byCountry)
+
+  const byAudience = ex.variants?.[audience]
+  if (byAudience) return applyVariant(ex.base, byAudience)
+
+  return ex.base
+}
+
 export default function Page() {
   const router = useRouter()
-  const { user, userData } = useAuth() // usamos edad del perfil si existe
+  const { user, userData } = useAuth() // usamos edad/país del perfil si existe
 
-  // Derivar audiencia desde la edad del usuario (fallback: work)
+  // Derivar audiencia y país desde el perfil (con fallbacks)
   const audience = useMemo(() => audienceFromAge((userData as any)?.age), [userData])
+  const country = useMemo(() => normalizeCountry((userData as any)?.country), [userData])
 
-  // Tomar base + aplicar variante (si existe)
+  // Tomar base + aplicar mejor variante disponible (país+edad → edad → base)
   const selected = useMemo(
-    () => applyVariant(EXERCISE.base, EXERCISE.variants, audience),
-    [audience]
+    () => selectVersion(EXERCISE, audience, country),
+    [audience, country]
   )
 
   // Orden correcto (por IDs) — NO es 0..1..2..3..4
@@ -137,7 +176,7 @@ export default function Page() {
     Array(selected.measures.length).fill(null)
   )
 
-  // Si cambia la audiencia (edad llegó más tarde), reinicializamos
+  // Si cambia audience o country (llegan más tarde), reinicializamos
   useEffect(() => {
     setPool(selected.measures.map(m => m.id))
     setSlots(Array(selected.measures.length).fill(null))
@@ -299,25 +338,24 @@ export default function Page() {
       </div>
 
       {/* Progreso */}
-<div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-  <div className="flex items-center justify-between text-white mb-4">
-    <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
-      Pregunta 1 de 3
-    </span>
-    <div className="flex space-x-2">
-      <div className="w-3 h-3 rounded-full bg-[#286575]" />
-      <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
-      <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
-    </div>
-  </div>
-  <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
-    <div
-      className="h-full bg-[#286575] rounded-full transition-all duration-500"
-      style={{ width: `${progressPct}%` }}
-    />
-  </div>
-</div>
-
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <div className="flex items-center justify-between text-white mb-4">
+          <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
+            Pregunta 1 de 3
+          </span>
+          <div className="flex space-x-2">
+            <div className="w-3 h-3 rounded-full bg-[#286575]" />
+            <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
+            <div className="w-3 h-3 rounded-full bg-[#dde3e8]" />
+          </div>
+        </div>
+        <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
+          <div
+            className="h-full bg-[#286575] rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </div>
 
       {/* Tarjeta principal */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
@@ -430,7 +468,9 @@ export default function Page() {
                   id="justificacion"
                   className="w-full rounded-xl border-2 border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1f6b74]"
                   value={justificacion}
-                  onChange={(e) => setJustificacion(e.target.value as "correcta" | "distractor1" | "distractor2" | "")}
+                  onChange={(e) =>
+                    setJustificacion(e.target.value as "correcta" | "distractor1" | "distractor2" | "")
+                  }
                 >
                   <option value="" disabled>Elige una opción…</option>
                   <option value="correcta">{JUST_OPTIONS.correcta}</option>
@@ -440,7 +480,6 @@ export default function Page() {
               </div>
               <div className="mt-3" />
             </div>
-
 
             {/* Acciones */}
             <div className="mt-8 flex items-center justify-end">
