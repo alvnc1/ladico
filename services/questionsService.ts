@@ -178,8 +178,8 @@ function getAgeGroup(age?: number | null): "teen" | "young_adult" | "adult" | "o
   if (typeof age !== "number") return "any"
   if (age >= 13 && age <= 17) return "teen"
   if (age >= 18 && age <= 24) return "young_adult"
-  if (age >= 25 && age <= 54) return "adult"
-  if (age >= 55) return "older_adult"
+  if (age >= 25 && age <= 59) return "adult"
+  if (age >= 60) return "older_adult"
   return "any"
 }
 

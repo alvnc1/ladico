@@ -310,7 +310,7 @@ export default function LadicoP3EstrategiasBusquedaAvanzado() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mt-2">
                 <TacticRow value={stratsB.quotes} onToggle={() => toggleB("quotes")} label={<>Usar comillas para “facturación electrónica”</>} />
-                <TacticRow value={stratsB.site} onToggle={() => toggleB("site")} label={<>Restringir por sitio (site:afip.gob.ar / sii.cl / dian.gov.co / sunat.gob.pe …)</>} />
+                <TacticRow value={stratsB.site} onToggle={() => toggleB("site")} label={<>Restringir por sitio (site:)</>} />
                 <TacticRow value={stratsB.filetype} onToggle={() => toggleB("filetype")} label={<>Restringir tipo de archivo (filetype:pdf)</>} />
                 <TacticRow value={stratsB.date} onToggle={() => toggleB("date")} label={<>Filtrar por fecha (último año)</>} />
                 <TacticRow value={stratsB.inSite} onToggle={() => toggleB("inSite")} label={<>Buscar dentro del sitio (menú o buscador institucional)</>} />

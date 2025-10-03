@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "country": "Chile",
+  "exercises": [
+    {
+      "id": "empanadas-pino",
+      "title": "Receta — Empanadas chilenas de pino",
+      "prompt": "Busca una receta fiable de empanadas de pino al estilo chileno.",
+      "keywordGroups": [
+        ["receta", "recetas", "preparacion", "preparación", "guia", "guía", "cómo hacer", "como hacer"],
+        ["empanada", "empanadas", "empanadillas", "pasteles", "empanadas de pino"],
+        ["carne", "vacuno", "res", "picada", "molida", "pino"]
+      ],
+      "intents": {
+        "receta": ["receta", "preparación", "preparacion", "cómo hacer", "como hacer", "paso a paso", "guía", "guia"],
+        "empanadas": ["empanada", "empanadas", "empanadillas", "pasteles", "empanadas de pino"],
+        "carne": ["carne", "vacuno", "res", "picada", "molida", "pino"]
+      },
+      "results": [
+        {
+          "title": "Empanadas chilenas de pino: receta casera",
+          "url": "https://www.recetaschilenas.cl/empanadas-de-pino",
+          "site": "recetaschilenas.cl",
+          "meta": "⭐ 4.6 · 310 votos · 1 h · Chile",
+          "snippet": "Sofrito de cebolla, comino y ají de color. Masa elástica y horneado parejo. Variante con aceitunas y huevo."
+        },
+        {
+          "title": "Empanadas de carne tradicionales — Paulina Cocina",
+          "url": "https://www.paulinacocina.net/receta-empanadas-carne",
+          "site": "paulinacocina.net",
+          "meta": "⭐ 4.8 · 540 votos · 45 min · Argentina",
+          "snippet": "Paso a paso con tips de relleno (carne picada) y repulgue."
+        },
+        {
+          "title": "Cómo hacer empanadas al horno: masa fácil y relleno de res",
+          "url": "https://www.saboresandinos.pe/empanadas-al-horno",
+          "site": "saboresandinos.pe",
+          "meta": "⭐ 4.6 · 310 votos · 1 h · Perú",
+          "snippet": "Amasado y armado detallado. Trucos para carne molida jugosa."
+        },
+        {
+          "title": "Empanadas de pino chilenas — receta paso a paso",
+          "url": "https://www.saborchileno.cl/empanadas-pino",
+          "site": "saborchileno.cl",
+          "meta": "⭐ 4.7 · 415 votos · 50 min · Chile",
+          "snippet": "Relleno de pino tradicional con cebolla y carne molida. Consejos para dorar la masa sin que se abra."
+        },
+        {
+          "title": "Receta fácil: empanadas chilenas al horno",
+          "url": "https://www.lasrecetasdejuanita.cl/empanadas-chilenas",
+          "site": "lasrecetasdejuanita.cl",
+          "meta": "⭐ 4.5 · 220 votos · 40 min · Chile",
+          "snippet": "Receta simple con ingredientes básicos. Incluye paso a paso con fotos."
+        }
+      ],
+      "videos": [
+        { "img": "/empchl.jpg", "title": "Empanadas chilenas de pino — receta completa", "channel": "Cocina con Tía Ely", "dur": "6:05" },
+        { "img": "/emp.jpg",   "title": "Empanadas de carne jugosas (paso a paso)", "channel": "Cocina en Casa", "dur": "7:42" },
+        { "img": "/emparg.webp","title": "Empanadas argentinas — masa y relleno", "channel": "Sabor Criollo", "dur": "9:10" }
+      ],
+      "boost": { "tlds": [".cl"], "sites": ["recetaschilenas.cl", "saborchileno.cl"] }
+    },
+
+    {
+      "id": "pastel-de-choclo",
+      "title": "Receta — Pastel de choclo chileno",
+      "prompt": "Encuentra una receta confiable de pastel de choclo (chileno) con ingredientes y horneado.",
+      "keywordGroups": [
+        ["receta", "preparación", "como hacer", "cómo hacer", "paso a paso"],
+        ["pastel", "pastel de choclo", "choclo", "maíz", "maiz"],
+        ["pino", "relleno", "carne", "pollo", "hornear", "horneado"]
+      ],
+      "intents": {
+        "receta": ["receta", "preparación", "preparacion", "cómo hacer", "como hacer", "paso a paso"],
+        "pastel": ["pastel de choclo", "pastel", "choclo", "maíz", "maiz"],
+        "relleno": ["pino", "relleno", "carne", "pollo", "hornear", "horneado"]
+      },
+      "results": [
+        {
+          "title": "Pastel de choclo chileno — receta tradicional",
+          "url": "https://www.enmicocina.cl/pastel-de-choclo",
+          "site": "enmicocina.cl",
+          "meta": "⭐ 4.7 · 380 votos · 1 h 10 · Chile",
+          "snippet": "Pino de carne, mezcla de choclo molido con albahaca. Reposo, armado y horneado."
+        },
+        {
+          "title": "Pastel de choclo casero: paso a paso",
+          "url": "https://www.recetaschilenas.cl/pastel-choclo-casero",
+          "site": "recetaschilenas.cl",
+          "meta": "⭐ 4.6 · 290 votos · 1 h · Chile",
+          "snippet": "Ingredientes, molienda y técnica para dorar la cubierta sin resecar el relleno."
+        },
+        {
+          "title": "Receta chilena: pastel de choclo al horno",
+          "url": "https://www.saboresdechile.cl/pastel-choclo",
+          "site": "saboresdechile.cl",
+          "meta": "⭐ 4.8 · 500 votos · 1 h 20 · Chile",
+          "snippet": "Receta clásica con maíz fresco y pollo. Consejos para que quede jugoso."
+        },
+        {
+          "title": "Cómo preparar pastel de choclo fácil",
+          "url": "https://www.cocinachilena.cl/pastel-choclo-facil",
+          "site": "cocinachilena.cl",
+          "meta": "⭐ 4.5 · 180 votos · 55 min · Chile",
+          "snippet": "Explicación rápida, ideal para principiantes. Uso de choclo congelado."
+        }
+      ],
+      "videos": [
+        { "img": "/choclo1.jpg", "title": "Pastel de choclo clásico", "channel": "Cocina Chilena", "dur": "8:50" },
+        { "img": "/choclo2.jpg", "title": "Trucos para la mezcla de choclo", "channel": "La Sazón de la Abuela", "dur": "5:40" },
+        { "img": "/choclo3.jpg", "title": "Cómo dorar el pastel sin secarlo", "channel": "Doña Mary", "dur": "4:55" }
+      ],
+      "boost": { "tlds": [".cl"], "sites": ["enmicocina.cl", "recetaschilenas.cl", "cocinachilena.cl"] }
+    },
+
+    {
+      "id": "permiso-circulacion-2025",
+      "title": "Trámite — Permiso de Circulación 2025",
+      "prompt": "Localiza información oficial para pagar el permiso de circulación 2025 (fechas, requisitos y pago).",
+      "keywordGroups": [
+        ["permiso de circulación", "permiso circulacion", "pago permiso", "renovar permiso"],
+        ["2025", "marzo", "abril", "fechas"],
+        ["chileatiende", "municipalidad", "muni", "site:chileatiende.gob.cl", "site:*.cl"]
+      ],
+      "intents": {
+        "permiso": ["permiso de circulación", "permiso circulacion", "pago permiso", "renovar permiso"],
+        "anio": ["2025", "marzo", "abril", "fechas"],
+        "oficial": ["chileatiende", "municipalidad", "muni", "site:chileatiende.gob.cl", "site:muni.cl"]
+      },
+      "results": [
+        {
+          "title": "Permiso de Circulación 2025 — ChileAtiende",
+          "url": "https://www.chileatiende.gob.cl/permiso-de-circulacion-2025",
+          "site": "chileatiende.gob.cl",
+          "meta": "Gobierno de Chile · Fechas y requisitos",
+          "snippet": "Plazos de pago, documentos, consulta por comuna y enlaces para pagar en línea."
+        },
+        {
+          "title": "Pago en línea — Permiso de Circulación (Santiago)",
+          "url": "https://www.munistgo.cl/permiso-circulacion",
+          "site": "munistgo.cl",
+          "meta": "Ilustre Municipalidad de Santiago",
+          "snippet": "Portal municipal con validación de datos del vehículo y medios de pago."
+        },
+        {
+          "title": "Permiso de circulación en línea — Municipalidad de Valparaíso",
+          "url": "https://www.munivalpo.cl/permiso2025",
+          "site": "munivalpo.cl",
+          "meta": "Ilustre Municipalidad de Valparaíso",
+          "snippet": "Pago electrónico habilitado para contribuyentes. Incluye SOAP y revisión técnica."
+        },
+        {
+          "title": "Guía paso a paso — Permiso de circulación 2025",
+          "url": "https://www.chileautos.cl/blog/permiso-circulacion",
+          "site": "chileautos.cl",
+          "meta": "Blog informativo",
+          "snippet": "Requisitos básicos, valores estimados y tips para evitar multas."
+        }
+      ],
+      "videos": [
+        { "img": "/pcirc1.jpg", "title": "Permiso de circulación: qué necesitas 2025", "channel": "ChileAtiende", "dur": "3:10" },
+        { "img": "/pcirc2.jpg", "title": "Pagar en línea paso a paso", "channel": "Muni Santiago", "dur": "4:01" },
+        { "img": "/pcirc3.jpg", "title": "Seguro obligatorio (SOAP) y revisión técnica", "channel": "AutoTips CL", "dur": "5:20" }
+      ],
+      "boost": { "tlds": [".cl"], "sites": ["chileatiende.gob.cl", "munistgo.cl", "munivalpo.cl", "munilascondes.cl"] }
+    }
+  ]
+}

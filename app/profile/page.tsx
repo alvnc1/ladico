@@ -30,7 +30,7 @@ const countries = [
   "Argentina","Chile","Colombia","Perú","Uruguay"
 ]
 
-const genders = ["Femenino", "Masculino", "No binario", "Prefiero no decir"]
+const genders = ["Femenino", "Masculino", "Prefiero no decir"]
 
 export default function AccountPage() {
   const { user, userData, isProfesor } = useAuth()
@@ -68,7 +68,7 @@ export default function AccountPage() {
 
       const ageNum =
         age.trim() === "" ? null : Number.isFinite(Number(age)) ? Number(age) : NaN
-      if (ageNum as number as any === NaN) {
+      if (ageNum !== null && Number.isNaN(ageNum)) {
         alert("Edad debe ser un número válido.")
         return
       }
@@ -194,18 +194,18 @@ export default function AccountPage() {
                           <div className="text-sm text-gray-600">País</div>
                           <div className="flex items-center gap-3">
                             <div className="w-full max-w-sm">
-                              <Select onValueChange={setCountry} defaultValue={country} disabled={saving}>
-                                <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
-                                  <SelectValue placeholder="Selecciona" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
-                                  {countries.map((c) => (
-                                    <SelectItem key={c} value={c}>
-                                      {c}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <Select value={country} onValueChange={setCountry} disabled={saving}>
+                              <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
+                                <SelectValue placeholder="Selecciona" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
+                                {countries.map((c) => (
+                                  <SelectItem key={c} value={c}>
+                                    {c}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             </div>
                           </div>
                         </div>
@@ -214,18 +214,18 @@ export default function AccountPage() {
                         <div className="grid grid-cols-1 md:grid-cols-[220px,1fr] py-3 border-b border-gray-300">
                           <div className="text-sm text-gray-600">Género</div>
                           <div className="w-full max-w-sm">
-                            <Select onValueChange={setGender} defaultValue={gender} disabled={saving}>
-                              <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
-                                <SelectValue placeholder="Selecciona" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
-                                {genders.map((g) => (
-                                  <SelectItem key={g} value={g}>
-                                    {g}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Select value={gender} onValueChange={setGender} disabled={saving}>
+                            <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
+                              <SelectValue placeholder="Selecciona" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
+                              {genders.map((g) => (
+                                <SelectItem key={g} value={g}>
+                                  {g}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           </div>
                         </div>
 

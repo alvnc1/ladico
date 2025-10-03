@@ -46,10 +46,10 @@ const SITES: Site[] = [
     correct: "enciclopedico",
   },
   {
-    id: "lanacionar",
-    name: "La Nación (Argentina)",
-    url: "https://www.lanacion.com.ar/",
-    correct: "periodistico",
+    id: "latercera",
+    name: "La Tercera",
+    url: "https://www.latercera.com/",
+    correct: "periodistico"
   },
   {
     id: "gobcl",
@@ -58,9 +58,9 @@ const SITES: Site[] = [
     correct: "institucional",
   },
   {
-    id: "eldeforma",
-    name: "El Deforma (México)",
-    url: "https://eldeforma.com/",
+    id: "El Libertino",
+    name: "El Libertino: Sátira política",
+    url: "https://ellibero.cl/el-libertino-2/",
     correct: "satirico",
   },
 ];

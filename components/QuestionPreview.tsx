@@ -20,13 +20,19 @@ export default function QuestionPreview({ question }: QuestionPreviewProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">{question.title}</CardTitle>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             <Badge variant="outline">{question.country || "Sin país"}</Badge>
             <Badge variant="outline">{question.competence}</Badge>
             <Badge variant="secondary">{question.level}</Badge>
             <Badge variant="secondary">
               {question.type === "multiple-response" ? "MR" : "MC"}
             </Badge>
+            {question.gender && (
+              <Badge variant="outline">{question.gender}</Badge>
+            )}
+            {question.age !== undefined && (
+              <Badge variant="outline">{question.age} años</Badge>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -43,11 +49,18 @@ export default function QuestionPreview({ question }: QuestionPreviewProps) {
               <div
                 key={index}
                 className={`p-3 rounded-xl border-2 ${
-                  isCorrect ? "border-green-500 bg-green-50" : "border-gray-200 bg-gray-50"
+                  isCorrect
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-200 bg-gray-50"
                 }`}
               >
-                <span className="font-medium">{String.fromCharCode(65 + index)}.</span> {option}
-                {isCorrect && <Badge className="ml-2 bg-green-600">Correcta</Badge>}
+                <span className="font-medium">
+                  {String.fromCharCode(65 + index)}.
+                </span>{" "}
+                {option}
+                {isCorrect && (
+                  <Badge className="ml-2 bg-green-600">Correcta</Badge>
+                )}
               </div>
             )
           })}
@@ -64,12 +77,20 @@ export default function QuestionPreview({ question }: QuestionPreviewProps) {
           </div>
         </div>
 
-        {question.pais && (
+        {(question.pais || question.autor) && (
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <span>🌎</span>
-            <span>País: {question.pais}</span>
-            <span>•</span>
-            <span>Autor: {question.autor}</span>
+            {question.pais && (
+              <>
+                <span>🌎</span>
+                <span>País: {question.pais}</span>
+              </>
+            )}
+            {question.autor && (
+              <>
+                <span>•</span>
+                <span>Autor: {question.autor}</span>
+              </>
+            )}
           </div>
         )}
       </CardContent>

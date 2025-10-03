@@ -27,8 +27,7 @@
         { "id": 8,  "text": "Priorizar TikTok/Instagram porque ‘siempre es lo más actual’", "correct": false },
         { "id": 9,  "text": "Buscar ‘códigos de descuento’ e ‘influencers’ para acelerar el hallazgo", "correct": false },
         { "id": 10, "text": "Revisar secciones ‘Transparencia’, ‘Normativa’ o ‘Bases y requisitos’ de los sitios", "correct": true },
-        { "id": 11, "text": "Ordenar por ‘más antiguos primero’ para asegurar legitimidad histórica (2015–2017)", "correct": false },
-        { "id": 12, "text": "Combinar país/idioma en el buscador (Ubicación: Chile / Idioma: Español) para pertinencia", "correct": true }
+        { "id": 11, "text": "Ordenar por ‘más antiguos primero’ para asegurar legitimidad histórica (2015–2017)", "correct": false }
       ]
     },
     {

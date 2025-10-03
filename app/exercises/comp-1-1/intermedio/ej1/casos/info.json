@@ -40,7 +40,7 @@
     {
       "id": "ipc-cl",
       "title": "IPC de Chile (INE)",
-      "need": "Necesitas el boletín mensual oficial del IPC 2024 de Chile, preferentemente en PDF, desde el Instituto Nacional de Estadísticas.",
+      "need": "Necesitas el boletín oficial de mayo del IPC 2024 de Chile, preferentemente en PDF, desde el Instituto Nacional de Estadísticas.",
       "criteria": {
         "countries": ["Chile"],
         "genders": ["any"],
@@ -50,7 +50,7 @@
         { "label": "Concepto (IPC/Inflación)", "alts": ["ipc", "inflacion", "inflación"], "required": true },
         { "label": "Dominio oficial (site:ine.gob.cl)", "alts": ["site:ine.gob.cl"], "required": true },
         { "label": "Formato PDF (filetype:pdf)", "alts": ["filetype:pdf", "pdf"] },
-        { "label": "Año (2024)", "alts": ["2024"] },
+        { "label": "Año (2024)", "alts": ["2024, mayo"] },
         { "label": "Palabra clave (boletín/informe/comunicado)", "alts": ["boletin", "boletín", "informe", "comunicado", "prensa"] }
       ],
       "minGroups": 3

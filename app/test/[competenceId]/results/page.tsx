@@ -349,53 +349,72 @@ function TestResultsContent() {
               </>
             )}
             {/* === DETALLE DE PREGUNTAS (verde/rojo por pregunta) === */}
-            {!isTeacher && (
-              <div className="mt-8">
-                <h3 className="font-semibold text-gray-900 mb-3">Detalle de preguntas evaluadas:</h3>
+            <div className="mt-8">
+              <h3 className="font-semibold text-gray-900 mb-3">
+                {isTeacher ? "Detalle de preguntas evaluadas:" : "Detalle de respuestas del alumno:"}
+              </h3>
 
-                <div
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
-                    q1 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 text-gray-800">
-                    {q1 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XCircle className="w-5 h-5 text-red-700" />}
-                    <span>Pregunta 1</span>
-                  </div>
-                  <span className={`font-semibold ${q1 ? "text-green-700" : "text-red-700"}`}>
-                    {q1 ? "Correcta" : "Incorrecta"}
-                  </span>
+              <div
+                className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
+                  q1 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
+                }`}
+              >
+                <div className="flex items-center gap-2 text-gray-800">
+                  {q1 ? (
+                    <CheckCircle className="w-5 h-5 text-green-700" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-red-700" />
+                  )}
+                  <span>Pregunta 1</span>
                 </div>
-
-                <div
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
-                    q2 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
-                  }`}
+                <span
+                  className={`font-semibold ${q1 ? "text-green-700" : "text-red-700"}`}
                 >
-                  <div className="flex items-center gap-2 text-gray-800">
-                    {q2 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XCircle className="w-5 h-5 text-red-700" />}
-                    <span>Pregunta 2</span>
-                  </div>
-                  <span className={`font-semibold ${q2 ? "text-green-700" : "text-red-700"}`}>
-                    {q2 ? "Correcta" : "Incorrecta"}
-                  </span>
-                </div>
-
-                <div
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm ${
-                    q3 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 text-gray-800">
-                    {q3 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XCircle className="w-5 h-5 text-red-700" />}
-                    <span>Pregunta 3</span>
-                  </div>
-                  <span className={`font-semibold ${q3 ? "text-green-700" : "text-red-700"}`}>
-                    {q3 ? "Correcta" : "Incorrecta"}
-                  </span>
-                </div>
+                  {q1 ? "Correcta" : "Incorrecta"}
+                </span>
               </div>
-            )}
+
+              <div
+                className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
+                  q2 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
+                }`}
+              >
+                <div className="flex items-center gap-2 text-gray-800">
+                  {q2 ? (
+                    <CheckCircle className="w-5 h-5 text-green-700" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-red-700" />
+                  )}
+                  <span>Pregunta 2</span>
+                </div>
+                <span
+                  className={`font-semibold ${q2 ? "text-green-700" : "text-red-700"}`}
+                >
+                  {q2 ? "Correcta" : "Incorrecta"}
+                </span>
+              </div>
+
+              <div
+                className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm ${
+                  q3 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
+                }`}
+              >
+                <div className="flex items-center gap-2 text-gray-800">
+                  {q3 ? (
+                    <CheckCircle className="w-5 h-5 text-green-700" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-red-700" />
+                  )}
+                  <span>Pregunta 3</span>
+                </div>
+                <span
+                  className={`font-semibold ${q3 ? "text-green-700" : "text-red-700"}`}
+                >
+                  {q3 ? "Correcta" : "Incorrecta"}
+                </span>
+              </div>
+            </div>
+
 
             {!isTeacher && (
               <div className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl sm:rounded-2xl border border-blue-200 shadow-sm">

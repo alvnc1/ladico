@@ -27,20 +27,23 @@ const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
 /* ===================== Datos del gráfico ===================== */
 type Slice = { etiqueta: string; valor: number; color: string };
-const DATA: Slice[] = [
-  { etiqueta: "Maleta",                 valor: 25, color: "#FFF59D" }, // Suitcase
-  { etiqueta: "Portafolio",             valor: 3,  color: "#9AD0F5" }, // Briefcase
-  { etiqueta: "Riñonera",               valor: 4,  color: "#7E57C2" }, // Hip bag
-  { etiqueta: "Bolsa para portátil",    valor: 3,  color: "#E0BBFF" }, // Laptop bag
-  { etiqueta: "Bolso de mano",          valor: 11, color: "#F57C00" }, // Handbag
-  { etiqueta: "Mochila",                valor: 30, color: "#F4B266" }, // Backpack
-  { etiqueta: "Bolsa de fin de semana", valor: 20, color: "#E64A19" }, // Weekend bag
-  { etiqueta: "Mochila escolar",        valor: 2,  color: "#66BB6A" }, // School bag
-  { etiqueta: "Maletín",                valor: 1,  color: "#388E3C" }, // Attaché-case
-  { etiqueta: "Otro",                   valor: 1,  color: "#90A4AE" }, // Other
+
+const TEMPLATE = [
+  { etiqueta: "Maleta", min: 20, max: 35, color: "#FFF59D" },
+  { etiqueta: "Portafolio", min: 2, max: 6, color: "#9AD0F5" },
+  { etiqueta: "Riñonera", min: 2, max: 7, color: "#7E57C2" },
+  { etiqueta: "Bolsa para portátil", min: 2, max: 6, color: "#E0BBFF" },
+  { etiqueta: "Bolso de mano", min: 8, max: 15, color: "#F57C00" },
+  { etiqueta: "Mochila", min: 25, max: 40, color: "#F4B266" },
+  { etiqueta: "Bolsa de fin de semana", min: 15, max: 25, color: "#E64A19" },
+  { etiqueta: "Mochila escolar", min: 1, max: 5, color: "#66BB6A" },
+  { etiqueta: "Maletín", min: 1, max: 4, color: "#388E3C" },
+  { etiqueta: "Otro", min: 1, max: 3, color: "#90A4AE" },
 ];
 
-const EXPECTED_ANSWER = 25;
+function randInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 /* ==================== Página del ejercicio ==================== */
 
@@ -56,7 +59,22 @@ export default function LuggageChartExerciseP3() {
     const totalQuestions = 3;
     const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
-  // Estado de respuesta
+  // Estado de datos dinámicos
+  const [data, setData] = useState<Slice[]>([]);
+  const [expected, setExpected] = useState<number>(0);
+
+    useEffect(() => {
+    // Genera valores aleatorios una sola vez
+    const generated = TEMPLATE.map((t) => ({
+      etiqueta: t.etiqueta,
+      valor: randInt(t.min, t.max),
+      color: t.color,
+    }));
+    setData(generated);
+    setExpected(generated.find((d) => d.etiqueta === "Maleta")?.valor || 0);
+  }, []);
+
+    // Estado de respuesta
   const [answer, setAnswer] = useState<string>("");
   const [status, setStatus] = useState<"idle" | "ok" | "err">("idle");
 
@@ -101,7 +119,7 @@ export default function LuggageChartExerciseP3() {
   /* ----- Validar + puntaje + navegar a Results ----- */
   const handleFinalize = async () => {
     const numeric = Number(String(answer).replace(/[^\d.-]/g, ""));
-    const ok = Number.isFinite(numeric) && numeric === EXPECTED_ANSWER;
+    const ok = Number.isFinite(numeric) && numeric === expected;
     setStatus(ok ? "ok" : "err");
 
     const point: 0 | 1 = ok ? 1 : 0;
@@ -256,11 +274,11 @@ export default function LuggageChartExerciseP3() {
             </div>
 
             {/* Leyenda arriba del gráfico (como en la imagen) */}
-            <LegendAbove />
+            <LegendAbove data={data} />
 
             {/* Gráfico */}
             <div className="mt-3 flex justify-center">
-              <PieInteractive size={420} data={DATA} />
+              <PieInteractive size={420} data={data} />
             </div>
 
             {/* Respuesta + Finalizar */}
@@ -293,14 +311,16 @@ export default function LuggageChartExerciseP3() {
 }
 
 /* ================== Leyenda (arriba del gráfico) ================== */
-function LegendAbove() {
-  // Orden y colores sincronizados con DATA
-  const items = DATA.map(({ etiqueta, color }) => ({ etiqueta, color }));
+function LegendAbove({ data }: { data: Slice[] }) {
+  const items = data.map(({ etiqueta, color }) => ({ etiqueta, color }));
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
       {items.map((it) => (
         <div key={it.etiqueta} className="flex items-center gap-2 text-sm text-gray-700">
-          <span className="inline-block w-3.5 h-3.5 rounded-sm" style={{ backgroundColor: it.color }} />
+          <span
+            className="inline-block w-3.5 h-3.5 rounded-sm"
+            style={{ backgroundColor: it.color }}
+          />
           <span>{it.etiqueta}</span>
         </div>
       ))}
@@ -309,7 +329,7 @@ function LegendAbove() {
 }
 
 /* ================== Gráfico de torta interactivo (SVG) ================== */
-function PieInteractive({ size = 380, data = DATA }: { size?: number; data?: Slice[] }) {
+function PieInteractive({ size = 380, data }: { size?: number; data: Slice[] }) {
   const total = useMemo(() => data.reduce((s, d) => s + d.valor, 0), [data]);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [tooltip, setTooltip] = useState<{ show: boolean; x: number; y: number; text: string }>(
@@ -354,7 +374,7 @@ function PieInteractive({ size = 380, data = DATA }: { size?: number; data?: Sli
 
   return (
     <div className="relative" style={{ width: size, height: size }} ref={wrapRef}>
-      <svg width={size} height={size} role="img" aria-label="Gráfico de equipaje por tipo">
+      <svg width={size} height={size}>
         {sectors.map((s) => {
           const isHover = hoverIdx === s.i;
           const r = isHover ? baseR + 6 : baseR;
@@ -363,7 +383,7 @@ function PieInteractive({ size = 380, data = DATA }: { size?: number; data?: Sli
               key={s.i}
               d={arcPath(s.start, s.end, r)}
               fill={s.color}
-              className="transition-all duration-150"
+              className="transition-all duration-150 cursor-pointer"
               onMouseMove={(e) => onMove(e, s.i, s.etiqueta, s.valor)}
               onMouseLeave={onLeave}
             />

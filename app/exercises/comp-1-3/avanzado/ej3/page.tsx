@@ -78,6 +78,15 @@ export default function Ej3Comp13Avanzado() {
     })()
   }, [user?.uid, sessionId])
 
+  function normalizeNumberInput(v: string): number | null {
+  if (!v) return null
+  // Reemplaza comas por puntos y elimina espacios
+  const cleaned = v.replace(/\s+/g, '').replace(',', '.')
+  const num = Number(cleaned)
+  return isNaN(num) ? null : num
+}
+
+
   // ========== UI del paso 3 ==========
   const downloadUrl3 = '/api/datasets/comp-1-3/advanced/ej3/default'
 
@@ -87,8 +96,13 @@ export default function Ej3Comp13Avanzado() {
   const EXPECTED3 = { paisMayor: 'Venezuela', robustaColombia: 279.725, diferenciaHonduras: 243.613 }
 
   const vg1 = g1 ? compareText(g1, EXPECTED3.paisMayor).ok : null
-  const vg2 = g2 ? compareNumbers(g2, EXPECTED3.robustaColombia).ok : null
-  const vg3 = g3 ? compareNumbers(g3, EXPECTED3.diferenciaHonduras).ok : null
+
+  const n2 = normalizeNumberInput(g2)
+  const n3 = normalizeNumberInput(g3)
+
+  const vg2 = n2 !== null ? compareNumbers(n2, EXPECTED3.robustaColombia).ok : null
+  const vg3 = n3 !== null ? compareNumbers(n3, EXPECTED3.diferenciaHonduras).ok : null
+
   const totalOk3 = [vg1, vg2, vg3].filter((v) => v === true).length
 
   const MIN_OK_STEP3 = 3
@@ -282,7 +296,7 @@ function ExcelField({
       <Input
         placeholder={placeholder}
         value={value}
-        onChange={(e) => onChange(e.target.value.replace(',', '.'))}
+        onChange={(e) => onChange(e.target.value)}
         className="border-2 rounded-xl border-gray-300 hover:border-gray-400 focus-visible:ring-[#286575]"
         inputMode={unit ? 'decimal' : 'text'}
       />
