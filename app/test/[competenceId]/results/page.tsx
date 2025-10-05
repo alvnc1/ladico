@@ -40,6 +40,18 @@ function TestResultsContent() {
   const [loadingQuestions, setLoadingQuestions] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
+  // === NUEVO: detectar "última competencia del área" a partir del ID de competencia (p.ej. "4.4" o "1.3") ===
+  const isLastCompetenceOfArea = useMemo(() => {
+    const id = (competenceId || "").trim()
+    const [majorStr, minorStr] = id.split(".")
+    const major = Number(majorStr)
+    const minor = Number(minorStr)
+    if (Number.isNaN(major) || Number.isNaN(minor)) return false
+    const LAST_BY_AREA: Record<number, number> = { 1: 3, 4: 4 } // Área 1 => 1.3; Área 4 => 4.4
+    const lastMinor = LAST_BY_AREA[major] ?? 4
+    return minor >= lastMinor
+  }, [competenceId])
+
   // === NUEVO: banderas q1, q2, q3 según respuestas ===
   const [q1, q2, q3] = useMemo<boolean[]>(() => {
     if (testQuestions.length >= 3 && userAnswers.length >= 3) {
@@ -228,52 +240,54 @@ function TestResultsContent() {
       router.back()
       return
     }
-    if (!isAlreadyCompleted) {
-      router.back()
-    }
+    // Usuario: no reintenta desde aquí
+    // if (!isAlreadyCompleted) {
+    //   router.back()
+    // }
   }
 
-
   const handleContinueEvaluation = () => {
-    // competencia actual o la primera del área si corresponde
-    const compId = (firstCompetenceInArea || (params.competenceId as string) || "").trim();
+    // Ir SIEMPRE a la PRIMERA competencia del área (X.1) en el siguiente nivel
+    const id = (params.competenceId as string) || ""
+    const [majorStr] = id.split(".")
+    const major = Number(majorStr)
+    const firstIdInArea = !Number.isNaN(major) ? `${major}.1` : null
+
+    const compId = (firstIdInArea || firstCompetenceInArea || id).trim()
     if (!compId) {
-      router.push("/dashboard");
-      return;
+      router.push("/dashboard")
+      return
     }
 
-    // "1.3" -> "comp-1-3"
-    const compSlug = `comp-${compId.replace(/\./g, "-")}`;
+    const compSlug = `comp-${compId.replace(/\./g, "-")}`
 
     // nivel siguiente (básico → intermedio → avanzado)
     const nextLevel =
       levelParam.startsWith("b") ? "intermedio" :
       levelParam.startsWith("i") ? "avanzado" :
-      null;
+      null
 
-    // tomar ej actual desde la URL (?ej=), si no hay empieza en 0 y sumamos 1
-    const currentEj = Number.parseInt(searchParams.get("ej") || "0", 10);
-    const nextEj = (isNaN(currentEj) ? 0 : currentEj) + 1;
+    // ir SIEMPRE a ej1 al subir de nivel
+    const nextEj = 1
 
     if (nextLevel) {
-      router.push(`/exercises/${compSlug}/${nextLevel}/ej${nextEj}`);
+      router.push(`/exercises/${compSlug}/${nextLevel}/ej${nextEj}`)
     } else {
-      // si ya no hay siguiente nivel, vuelve al dashboard
-      router.push("/dashboard");
+      router.push("/dashboard")
     }
   };
 
-
   const handleContinueToNextCompetence = () => {
     if (nextCompetenceInfo) {
-      const confirmed = confirm(
-        `🎯 CONTINUAR EVALUACIÓN\n\n` +
-        `📍 Siguiente competencia: "${nextCompetenceInfo.name}"\n` +
-        `🎯 Nivel: ${levelParam.charAt(0).toUpperCase() + levelParam.slice(1)}\n` +
-        `📝 Preguntas: 3\n\n` +
-        `¿Deseas continuar con la evaluación de esta competencia?`
-      )
-      if (confirmed) router.push(`/test/${nextCompetenceInfo.id}?level=${levelParam}`)
+      // const confirmed = confirm(
+      //   `🎯 CONTINUAR EVALUACIÓN\n\n` +
+      //   `📍 Siguiente competencia: "${nextCompetenceInfo.name}"\n` +
+      //   `🎯 Nivel: ${levelParam.charAt(0).toUpperCase() + levelParam.slice(1)}\n` +
+      //   `📝 Preguntas: 3\n\n` +
+      //   `¿Deseas continuar con la evaluación de esta competencia?`
+      // )
+      // if (confirmed)
+      router.push(`/test/${nextCompetenceInfo.id}?level=${levelParam}`)
     }
   }
 
@@ -297,20 +311,25 @@ function TestResultsContent() {
             </div>
 
             <CardTitle className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 bg-[#5d8b6a] bg-clip-text text-transparent px-2">
-              {areaCompleted ? "¡Nivel del área completado!" : isAlreadyCompleted ? "¡Competencia Completada!" : isTeacher ? "Evaluación Completada" : (passed ? "¡Felicitaciones!" : "Sigue practicando")}
+              {areaCompleted
+                ? "¡Nivel del área completado!"
+                // : isAlreadyCompleted ? "¡Competencia Completada!"
+                : isTeacher
+                ? "Evaluación Completada"
+                : (passed ? "¡Felicitaciones!" : "Sigue practicando")}
             </CardTitle>
 
             <p className="text-gray-600 text-base sm:text-lg px-2">
               {areaCompleted
                 ? "Has completado este nivel en todas las competencias del área."
-                : isAlreadyCompleted
-                  ? "Ya has completado exitosamente esta competencia anteriormente"
-                  : 
-                    isTeacher 
-                    ? "Evaluación finalizada como profesor"
-                    : (passed
-                      ? "Has completado exitosamente esta competencia"
-                      : "Necesitas al menos 2 respuestas correctas para avanzar")}
+                // : isAlreadyCompleted
+                //   ? "Ya has completado exitosamente esta competencia anteriormente"
+                : 
+                  isTeacher 
+                  ? "Evaluación finalizada como profesor"
+                  : (passed
+                    ? "Has completado exitosamente esta competencia"
+                    : "Necesitas al menos 2 respuestas correctas para avanzar")}
             </p>
           </CardHeader>
 
@@ -446,37 +465,71 @@ function TestResultsContent() {
                   <ChevronRight className="w-4 h-4 mr-2" />
                   Siguiente nivel
                 </Button>
+                {/* SOLO PROFESOR: Intentar de nuevo */}
+                {!passed && (
+                  <Button
+                    onClick={handleRetakeTest}
+                    variant="outline"
+                    className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Intentar de nuevo
+                  </Button>
+                )}
               </>
             ) : (
-              /* --- Rama NORMAL (tu lógica original) --- */
+              /* --- Rama NORMAL (usuario) --- */
               <>
-                {areaCompleted && (
-                  <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
-                    Volver al Dashboard
-                  </Button>
-                )}
-
-                {!areaCompleted && nextCompetenceInfo && passed ? (
-                  <Button
-                    onClick={handleContinueToNextCompetence}
-                    className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                  >
-                    Continuar con {nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...
-                  </Button>
-                ) : !areaCompleted && !nextCompetenceInfo && passed ? (
-                  <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                    Ir al Dashboard
-                  </Button>
-                ) : !areaCompleted && !passed ? (
-                  <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                    Ir al Dashboard
-                  </Button>
+                {/* NUEVO: comportamiento específico al estar en la ÚLTIMA competencia del área */}
+                {isLastCompetenceOfArea ? (
+                  passed ? (
+                    <Button
+                      onClick={handleContinueEvaluation}
+                      className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                    >
+                      Continuar al siguiente nivel
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleReturnToDashboard}
+                      className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                    >
+                      Ir al Dashboard
+                    </Button>
+                  )
                 ) : (
-                  <Button onClick={handleContinueEvaluation} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                    Continuar al siguiente nivel
-                  </Button>
+                  <>
+                    {areaCompleted && (
+                      <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
+                        Volver al Dashboard
+                      </Button>
+                    )}
+
+                    {!areaCompleted && nextCompetenceInfo && passed ? (
+                      <Button
+                        onClick={handleContinueToNextCompetence}
+                        className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                      >
+                        Continuar con {nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...
+                      </Button>
+                    ) : !areaCompleted && !nextCompetenceInfo && passed ? (
+                      <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
+                        Ir al Dashboard
+                      </Button>
+                    ) : !areaCompleted && !passed ? (
+                      <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
+                        Ir al Dashboard
+                      </Button>
+                    ) : (
+                      <Button onClick={handleContinueEvaluation} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
+                        Continuar al siguiente nivel
+                      </Button>
+                    )}
+                  </>
                 )}
 
+                {/* Usuario: comentar el Intentar de nuevo */}
+                {/*
                 {!passed && !isAlreadyCompleted && (
                   <Button
                     onClick={handleRetakeTest}
@@ -487,6 +540,7 @@ function TestResultsContent() {
                     Intentar de nuevo
                   </Button>
                 )}
+                */}
               </>
             )}
           </div>

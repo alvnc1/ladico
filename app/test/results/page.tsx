@@ -71,6 +71,63 @@ function ResultsUniversalContent() {
     router.push(`/exercises/${compPath}/${nextLevel}/ej1`)
   }
 
+  // --- NUEVO: Continuar con la siguiente competencia del MISMO nivel ---
+  const handleContinueToNextCompetence = () => {
+    // competence llega como "4.1", "4.2", etc.
+    const [majorStr, minorStr] = String(competence).split(".")
+    const major = Number(majorStr)
+    const minor = Number(minorStr)
+
+    if (Number.isNaN(major) || Number.isNaN(minor)) {
+      router.push("/dashboard")
+      return
+    }
+
+    const nextMinor = minor + 1
+    const nextCompetenceId = `${major}.${nextMinor}` // p.ej. 4.1 -> 4.2
+    const nextCompPath = `comp-${nextCompetenceId.replace(/\./g, "-")}`
+
+    router.push(`/exercises/${nextCompPath}/${level}/ej1`)
+  }
+
+  // --- NUEVO: Ir al SIGUIENTE NIVEL cuando es la última competencia del área ---
+  const handleGoToNextLevelInArea = () => {
+    const [majorStr] = String(competence).split(".")
+    const major = Number(majorStr)
+
+    const nextLevel =
+      level === "basico" ? "intermedio" :
+      level === "intermedio" ? "avanzado" : null
+
+    if (!nextLevel || Number.isNaN(major)) {
+      router.push("/dashboard")
+      return
+    }
+
+    // Siempre comenzar el nivel siguiente desde la primera competencia del área (X.1)
+    const firstCompPath = `comp-${major}-1`
+    router.push(`/exercises/${firstCompPath}/${nextLevel}/ej1`)
+  }
+
+  // --- NUEVO: detección de "última competencia del área" ---
+  // Por requerimiento: área 4 tiene 4 competencias (4.1–4.4), área 1 (búsqueda) tiene 3 (1.1–1.3).
+  const isLastCompetenceOfArea = (() => {
+    const [majorStr, minorStr] = String(competence).split(".")
+    const major = Number(majorStr)
+    const minor = Number(minorStr)
+    if (Number.isNaN(major) || Number.isNaN(minor)) return false
+
+    const LAST_BY_AREA: Record<number, number> = {
+      1: 3, // Búsqueda: 1.1–1.3
+      4: 4, // Seguridad: 4.1–4.4
+    }
+    const lastMinor = LAST_BY_AREA[major] ?? 4 // fallback genérico
+    return minor >= lastMinor
+  })()
+
+  // --- NUEVO: máximo nivel + última competencia del área ---
+  const isMaxLevelAndLast = isLastCompetenceOfArea && level === "avanzado"
+
   const compTitle = skillsInfo[competence]?.title || "Competencia"
 
   return (
@@ -200,7 +257,6 @@ function ResultsUniversalContent() {
               </div>
             </div>
 
-
             {/* Acciones */}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               {isTeacher ? (
@@ -225,12 +281,33 @@ function ResultsUniversalContent() {
                   </>
                 ) : (
                 <>
-                  <Button
-                    onClick={handleBack}
-                    className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
-                  >
-                    Volver al Dashboard
-                  </Button>
+                  {/* NUEVO: si es la última competencia del área y ya está en AVANZADO, solo mostrar Volver */}
+                  {isMaxLevelAndLast ? (
+                    <Button
+                      onClick={handleBack}
+                      className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
+                    >
+                      Volver al Dashboard
+                    </Button>
+                  ) : (
+                    passed && (
+                      isLastCompetenceOfArea && level !== "avanzado" ? (
+                        <Button
+                          onClick={handleGoToNextLevelInArea}
+                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                        >
+                          Siguiente nivel
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handleContinueToNextCompetence}
+                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                        >
+                          Continuar con la siguiente competencia
+                        </Button>
+                      )
+                    )
+                  )}
                 </>
               )}
             </div>

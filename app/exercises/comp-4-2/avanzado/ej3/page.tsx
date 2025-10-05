@@ -24,9 +24,9 @@ const COMPETENCE = "4.2"
 const LEVEL = "avanzado"
 const LEVEL_FS = "Avanzado"
 const TOTAL_QUESTIONS = 3
-const Q_ONE_BASED = 1       // P1 -> setPoint
-const Q_ZERO_BASED = 0      // P1 -> markAnswered
-const SESSION_PREFIX = "session:4.2:Avanzado:P1_Terms"
+const Q_ONE_BASED = 3       // P3 -> setPoint  ✅
+const Q_ZERO_BASED = 2      // P3 -> markAnswered ✅
+const SESSION_PREFIX = "session:4.2:Avanzado"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
 // ===== Tipos JSON para el contexto =====
@@ -248,7 +248,7 @@ export default function Page() {
   }
 
   const handleFinish = async () => {
-    // Guardar punto local (P1)
+    // Guardar punto local (P3)
     setPoint(COMPETENCE, LEVEL, Q_ONE_BASED, point)
 
     // Calcular progreso y score (para /test/results)
@@ -266,7 +266,7 @@ export default function Page() {
     const finalPassed = isTeacher ? true : levelPassed
     const finalScore = isTeacher ? 100 : score
 
-    // Marcar respondida en Firestore
+    // Marcar respondida en Firestore (P3 -> índice 2)
     const sid =
       sessionId ||
       (typeof window !== "undefined" && user ? localStorage.getItem(sessionKeyFor(user.uid!)) : null)
@@ -274,7 +274,7 @@ export default function Page() {
       try {
         await markAnswered(sid, Q_ZERO_BASED, point === 1)
       } catch (e) {
-        console.warn("No se pudo marcar la respuesta (P1):", e)
+        console.warn("No se pudo marcar la respuesta (P3):", e)
       }
     }
 
