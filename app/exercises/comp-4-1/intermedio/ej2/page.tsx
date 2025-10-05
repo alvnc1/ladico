@@ -18,18 +18,20 @@ const SESSION_PREFIX = "session:4.1:Intermedio"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
 // Valores normalizados (internos)
-type Threat = "smishing" | "phishing" | "malware" | "virus"
+// (Cambio: se elimina "smishing" del tipo)
+type Threat = "phishing" | "malware" | "virus"
 
 // Etiquetas visibles tal como pediste
+// (Cambio: se quita la opción "smishing")
 const OPTIONS: { value: Threat; label: string }[] = [
-  { value: "smishing", label: "smishing" },
   { value: "phishing", label: "pishing" },
   { value: "malware", label: "malware" },
   { value: "virus", label: "virus" },
 ]
 
 // Correcta para esta imagen (SMS falso Netflix)
-const CORRECT: Threat = "smishing"
+// (Cambio: ahora la correcta es "phishing")
+const CORRECT: Threat = "phishing"
 
 export default function Page() {
   const router = useRouter()
@@ -40,7 +42,6 @@ export default function Page() {
 
   // Estado del select
   const [answer, setAnswer] = useState<Threat | "">("")
-
   const isCorrect = useMemo(() => answer === CORRECT, [answer])
 
   // Carga/asegura sesión
@@ -118,7 +119,8 @@ export default function Page() {
                 />
               </Link>
               <span className="text-[#2e6372] sm:text-sm opacity-80 bg-white/10 px-3 py-1 rounded-full">
-                | 4.1 Protección de dispositivos - Nivel Intermedio
+                {" "}
+                | 4.1 Protección de dispositivos - Nivel Intermedio{" "}
               </span>
             </div>
           </div>
@@ -129,7 +131,8 @@ export default function Page() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-white mb-4">
           <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
-            Pregunta 2 de 3
+            {" "}
+            Pregunta 2 de 3{" "}
           </span>
           <div className="flex space-x-2">
             <div className="w-3 h-3 rounded-full bg-[#286575]" />
@@ -153,7 +156,8 @@ export default function Page() {
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
               Identificación de amenazas digitales
             </h2>
-           {/* Contexto */}
+
+            {/* Contexto */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
                 <p className="text-gray-700">
@@ -161,6 +165,7 @@ export default function Page() {
                 </p>
               </div>
             </div>
+
             {/* Imagen pequeña sin recuadro */}
             <div className="w-full flex justify-center mb-4">
               <Image
@@ -175,7 +180,6 @@ export default function Page() {
 
             {/* Recuadro solo para el dropdown */}
             <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transition-colors shadow-sm">
-              
               <select
                 className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
                 value={answer}
