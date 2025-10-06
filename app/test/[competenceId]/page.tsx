@@ -202,11 +202,27 @@ export default function TestPage() {
       // 2) Persistir sesión
       await completeSession(completedSession, correctAnswers)
 
-      // 3) Forzar recomputo local de progreso/anillos
+      // 3) Forzar recomputo local de progreso/anillos + marcar finalizado (aprobado o reprobado)
       try {
+        const slug = (levelParam || "basico").toLowerCase()
+        localStorage.setItem(`ladico:completed:${finalSession.competence}:${slug}`, "1")
         localStorage.setItem("ladico:progress:version", String(Date.now()))
         window.dispatchEvent(new Event("ladico:refresh"))
       } catch {}
+
+      // 3.1) Marcar estado (approved/failed) + tick para que el Dashboard refresque, incluso si reprobó
+      if (!isTeacher && user?.uid && db) {
+        try {
+          const safeCompId = finalSession.competence.replace(/\./g, "_")
+          const statusKey = `competenceStatus.${safeCompId}.${levelParam}`
+          await updateDoc(doc(db, "users", user.uid), {
+            progressTick: Date.now(),
+            [statusKey]: passed ? "approved" : "failed",
+          })
+        } catch (e) {
+          console.warn("No se pudo marcar estado/tick de progreso:", e)
+        }
+      }
 
       // 4) Guardar resultados y progreso SOLO alumno
       if (!isTeacher) {
@@ -233,11 +249,11 @@ export default function TestPage() {
         }
       }
 
-      // 5) Chequear si el ÁREA (todas sus competencias) quedó completa en este nivel
+      // 5) Chequear si el ÁREA quedó completa en este nivel (✅ usar `passed === true`, no `score === 100`)
       const comps = await loadCompetences()
       const currentComp = comps.find((c) => c.id === (params.competenceId as string))
       const dimension = currentComp?.dimension || ""
-      const levelParam = (searchParams.get("level") || "basico").toLowerCase() // "basico" | "intermedio" | "avanzado"
+      const levelParamForArea = levelParam // reutiliza el de arriba
 
       const areaCompetences = comps
         .filter((c) => c.dimension === dimension)
@@ -250,18 +266,18 @@ export default function TestPage() {
             collection(db!, "testSessions"),
             where("userId", "==", user!.uid),
             where("competence", "==", c.id),
-            where("level", "==", levelParam)
+            where("level", "==", levelParamForArea)
           )
         )
-        const hasPerfect = qs.docs.some((d) => (d.data() as any)?.score === 100)
-        if (!hasPerfect) missingAfter++
+        // ⬇️ antes: score === 100
+        const hasPassed = qs.docs.some((d) => (d.data() as any)?.passed === true)
+        if (!hasPassed) missingAfter++
       }
       const justCompletedArea = missingAfter === 0
 
       // 6) Subir currentLevel cuando se complete el ÁREA en ese nivel (solo alumnos)
       if (!isTeacher && justCompletedArea && db && user?.uid) {
         const completedLevel = levelParam as "basico" | "intermedio" | "avanzado"
-        // permite estado inicial "-" y evita bajar nivel
         const rank = { "-": 0, basico: 1, intermedio: 2, avanzado: 3 } as const
         const current =
           ((userData?.currentLevel ?? "-") as "-" | "basico" | "intermedio" | "avanzado")
@@ -309,7 +325,6 @@ export default function TestPage() {
       })
     }
   }
-
 
   if (loading) {
     return (

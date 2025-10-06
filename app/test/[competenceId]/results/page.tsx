@@ -35,46 +35,37 @@ function TestResultsContent() {
   const [areaCounts, setAreaCounts] = useState<{ completed: number; total: number } | null>(null)
   const [nextCompetenceInfo, setNextCompetenceInfo] = useState<{ id: string; name: string } | null>(null)
   const [testQuestions, setTestQuestions] = useState<Question[]>([])
-  const [userAnswers, setUserAnswers] = useState<AnswerValue[]>([]);
+  const [userAnswers, setUserAnswers] = useState<AnswerValue[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [loadingQuestions, setLoadingQuestions] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
-  // === NUEVO: detectar "última competencia del área" a partir del ID de competencia (p.ej. "4.4" o "1.3") ===
+  // Última competencia del área por código
   const isLastCompetenceOfArea = useMemo(() => {
     const id = (competenceId || "").trim()
     const [majorStr, minorStr] = id.split(".")
     const major = Number(majorStr)
     const minor = Number(minorStr)
     if (Number.isNaN(major) || Number.isNaN(minor)) return false
-    const LAST_BY_AREA: Record<number, number> = { 1: 3, 4: 4 } // Área 1 => 1.3; Área 4 => 4.4
+    const LAST_BY_AREA: Record<number, number> = { 1: 3, 4: 4 } // 1 → 1.3; 4 → 4.4
     const lastMinor = LAST_BY_AREA[major] ?? 4
     return minor >= lastMinor
   }, [competenceId])
 
-  // === NUEVO: banderas q1, q2, q3 según respuestas ===
+  // Banderas pregunta por pregunta
   const [q1, q2, q3] = useMemo<boolean[]>(() => {
     if (testQuestions.length >= 3 && userAnswers.length >= 3) {
       return [0, 1, 2].map(i => userAnswers[i] === (testQuestions[i] as any)?.correctAnswerIndex)
     }
-    // Fallback: si no hay preguntas/respuestas en memoria,
-    // marcamos como correctas las primeras "correctAnswers"
     return [0, 1, 2].map(i => i < correctAnswers)
   }, [testQuestions, userAnswers, correctAnswers])
 
   const loadAllAreaQuestions = async (competenceId: string) => {
-    if (!user?.uid || !db) {
-      console.log('Usuario o DB no disponible para cargar preguntas del área')
-      return
-    }
-
+    if (!user?.uid || !db) return
     try {
       const levels = ['basico', 'intermedio', 'avanzado']
       let allQuestions: Question[] = []
       let allAnswers: (number | number[] | null)[] = []
-
-      
-
       for (const level of levels) {
         const sessionQuery = query(
           collection(db, "testSessions"),
@@ -84,7 +75,6 @@ function TestResultsContent() {
           orderBy("startTime", "desc"),
           limit(1)
         )
-
         const sessionSnapshot = await getDocs(sessionQuery)
         if (!sessionSnapshot.empty) {
           const sessionData = sessionSnapshot.docs[0].data() as TestSession
@@ -92,8 +82,6 @@ function TestResultsContent() {
           if (sessionData.answers) allAnswers.push(...sessionData.answers)
         }
       }
-      
-
       if (allQuestions.length > 0) {
         setTestQuestions(allQuestions)
         setUserAnswers(allAnswers)
@@ -145,7 +133,7 @@ function TestResultsContent() {
           questionsLoaded = true
         }
 
-        // 3) Respaldo: buscar la mejor sesión en Firebase
+        // 3) Respaldo: mejor sesión en Firebase
         if (!questionsLoaded && db) {
           const sessionQuery = query(
             collection(db, "testSessions"),
@@ -153,9 +141,7 @@ function TestResultsContent() {
             where("competence", "==", competenceId),
             where("level", "==", levelParam)
           )
-
           const sessionSnapshot = await getDocs(sessionQuery)
-
           if (!sessionSnapshot.empty) {
             const sessions = sessionSnapshot.docs.map(doc => ({
               id: doc.id,
@@ -178,7 +164,6 @@ function TestResultsContent() {
             } else if (initialSessions.length > 0) {
               bestSession = initialSessions[0]
             }
-
             if (bestSession) {
               if (bestSession.questions?.length) setTestQuestions(bestSession.questions)
               if (bestSession.answers) setUserAnswers(bestSession.answers)
@@ -187,6 +172,7 @@ function TestResultsContent() {
           }
         }
 
+        // Cargar vecina/siguiente competencia cuando NO se completó el área
         if (!areaCompleted) {
           const comps = await loadCompetences()
           const current = comps.find(c => c.id === competenceId)
@@ -200,6 +186,7 @@ function TestResultsContent() {
           return
         }
 
+        // Si área completada, obtener info de área y conteos (usando passed === true)
         const comps = await loadCompetences()
         const current = comps.find(c => c.id === competenceId)
         if (!current) return
@@ -216,8 +203,8 @@ function TestResultsContent() {
         for (const c of inArea) {
           if (!db) continue
           const qs = await getDocs(query(collection(db, "testSessions"), where("competence", "==", c.id), where("level", "==", lvl)))
-          const hasPerfect = qs.docs.some(d => (d.data() as any)?.score === 100)
-          if (hasPerfect) completed++
+          const hasPassed = qs.docs.some(d => (d.data() as any)?.passed === true) // <— antes: score === 100
+          if (hasPassed) completed++
         }
         setAreaCounts({ completed, total: inArea.length })
       } catch (error) {
@@ -235,41 +222,35 @@ function TestResultsContent() {
   }
 
   const handleRetakeTest = () => {
-    // El profesor siempre puede reintentar
     if (isTeacher) {
       router.back()
       return
     }
-    // Usuario: no reintenta desde aquí
-    // if (!isAlreadyCompleted) {
-    //   router.back()
-    // }
   }
 
   const handleContinueEvaluation = () => {
-    // Ir SIEMPRE a la PRIMERA competencia del área (X.1) en el siguiente nivel
+    // 🚫 Seguridad extra: si no completó el área y no es profesor, manda a Dashboard
+    if (!isTeacher && !areaCompleted) {
+      router.push("/dashboard")
+      return
+    }
+
+    // Ir a la PRIMERA competencia del área (X.1) en el siguiente nivel
     const id = (params.competenceId as string) || ""
     const [majorStr] = id.split(".")
     const major = Number(majorStr)
     const firstIdInArea = !Number.isNaN(major) ? `${major}.1` : null
-
     const compId = (firstIdInArea || firstCompetenceInArea || id).trim()
     if (!compId) {
       router.push("/dashboard")
       return
     }
-
     const compSlug = `comp-${compId.replace(/\./g, "-")}`
-
-    // nivel siguiente (básico → intermedio → avanzado)
     const nextLevel =
       levelParam.startsWith("b") ? "intermedio" :
       levelParam.startsWith("i") ? "avanzado" :
       null
-
-    // ir SIEMPRE a ej1 al subir de nivel
     const nextEj = 1
-
     if (nextLevel) {
       router.push(`/exercises/${compSlug}/${nextLevel}/ej${nextEj}`)
     } else {
@@ -279,14 +260,6 @@ function TestResultsContent() {
 
   const handleContinueToNextCompetence = () => {
     if (nextCompetenceInfo) {
-      // const confirmed = confirm(
-      //   `🎯 CONTINUAR EVALUACIÓN\n\n` +
-      //   `📍 Siguiente competencia: "${nextCompetenceInfo.name}"\n` +
-      //   `🎯 Nivel: ${levelParam.charAt(0).toUpperCase() + levelParam.slice(1)}\n` +
-      //   `📝 Preguntas: 3\n\n` +
-      //   `¿Deseas continuar con la evaluación de esta competencia?`
-      // )
-      // if (confirmed)
       router.push(`/test/${nextCompetenceInfo.id}?level=${levelParam}`)
     }
   }
@@ -313,7 +286,6 @@ function TestResultsContent() {
             <CardTitle className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 bg-[#5d8b6a] bg-clip-text text-transparent px-2">
               {areaCompleted
                 ? "¡Nivel del área completado!"
-                // : isAlreadyCompleted ? "¡Competencia Completada!"
                 : isTeacher
                 ? "Evaluación Completada"
                 : (passed ? "¡Felicitaciones!" : "Sigue practicando")}
@@ -322,10 +294,7 @@ function TestResultsContent() {
             <p className="text-gray-600 text-base sm:text-lg px-2">
               {areaCompleted
                 ? "Has completado este nivel en todas las competencias del área."
-                // : isAlreadyCompleted
-                //   ? "Ya has completado exitosamente esta competencia anteriormente"
-                : 
-                  isTeacher 
+                : isTeacher 
                   ? "Evaluación finalizada como profesor"
                   : (passed
                     ? "Has completado exitosamente esta competencia"
@@ -337,103 +306,67 @@ function TestResultsContent() {
             {!isTeacher && (
               <>
               <div className="grid grid-cols-3 gap-3 sm:gap-6 text-center">
-              <div className="p-3 sm:p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
-                <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{totalQuestions}</div>
-                <div className="text-xs sm:text-sm text-gray-600 font-medium">Preguntas</div>
-              </div>
-
-              <div className="p-3 sm:p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl shadow-sm border border-green-200">
-                <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-1 sm:mb-2">{correctAnswers}</div>
-                <div className="text-xs sm:text-sm text-gray-600 font-medium">Correctas</div>
-              </div>
-
-              <div className="p-3 sm:p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl sm:rounded-2xl shadow-sm border border-red-200">
-                <div className="text-2xl sm:text-3xl font-bold text-red-600 mb-1 sm:mb-2">{totalQuestions - correctAnswers}</div>
-                <div className="text-xs sm:text-sm text-gray-600 font-medium">Incorrectas</div>
-              </div>
-            </div>
-
-            <div className="text-center p-6 sm:p-8 via-blue-50 to-gray-400 rounded-2xl sm:rounded-3xl border border-gray-300 shadow-lg">
-              <div className="text-4xl sm:text-5xl font-bold bg-[#5d8b6a] bg-clip-text text-transparent mb-2 sm:mb-3">
-                {score}%
-              </div>
-              <div className="text-gray-600 text-base sm:text-lg font-medium">Puntuación obtenida</div>
-              {passed && (
-                <div className="mt-3 sm:mt-4 inline-flex items-center px-3 sm:px-4 py-2 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-medium shadow-sm">
-                  <Trophy className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                  +10 Ladico ganados
+                <div className="p-3 sm:p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
+                  <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{totalQuestions}</div>
+                  <div className="text-xs sm:text-sm text-gray-600 font-medium">Preguntas</div>
                 </div>
-              )}
-            </div>
+
+                <div className="p-3 sm:p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl shadow-sm border border-green-200">
+                  <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-1 sm:mb-2">{correctAnswers}</div>
+                  <div className="text-xs sm:text-sm text-gray-600 font-medium">Correctas</div>
+                </div>
+
+                <div className="p-3 sm:p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl sm:rounded-2xl shadow-sm border border-red-200">
+                  <div className="text-2xl sm:text-3xl font-bold text-red-600 mb-1 sm:mb-2">{totalQuestions - correctAnswers}</div>
+                  <div className="text-xs sm:text-sm text-gray-600 font-medium">Incorrectas</div>
+                </div>
+              </div>
+
+              <div className="text-center p-6 sm:p-8 via-blue-50 to-gray-400 rounded-2xl sm:rounded-3xl border border-gray-300 shadow-lg">
+                <div className="text-4xl sm:text-5xl font-bold bg-[#5d8b6a] bg-clip-text text-transparent mb-2 sm:mb-3">
+                  {score}%
+                </div>
+                <div className="text-gray-600 text-base sm:text-lg font-medium">Puntuación obtenida</div>
+                {passed && (
+                  <div className="mt-3 sm:mt-4 inline-flex items-center px-3 sm:px-4 py-2 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-medium shadow-sm">
+                    <Trophy className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                    +10 Ladico ganados
+                  </div>
+                )}
+              </div>
               </>
             )}
-            {/* === DETALLE DE PREGUNTAS (verde/rojo por pregunta) === */}
+
+            {/* Detalle preguntas */}
             <div className="mt-8">
               <h3 className="font-semibold text-gray-900 mb-3">
                 {isTeacher ? "Detalle de preguntas evaluadas:" : "Detalle de respuestas del alumno:"}
               </h3>
 
-              <div
-                className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
-                  q1 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
-                }`}
-              >
+              <div className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${q1 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"}`}>
                 <div className="flex items-center gap-2 text-gray-800">
-                  {q1 ? (
-                    <CheckCircle className="w-5 h-5 text-green-700" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-red-700" />
-                  )}
+                  {q1 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XCircle className="w-5 h-5 text-red-700" />}
                   <span>Pregunta 1</span>
                 </div>
-                <span
-                  className={`font-semibold ${q1 ? "text-green-700" : "text-red-700"}`}
-                >
-                  {q1 ? "Correcta" : "Incorrecta"}
-                </span>
+                <span className={`font-semibold ${q1 ? "text-green-700" : "text-red-700"}`}>{q1 ? "Correcta" : "Incorrecta"}</span>
               </div>
 
-              <div
-                className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${
-                  q2 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
-                }`}
-              >
+              <div className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${q2 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"}`}>
                 <div className="flex items-center gap-2 text-gray-800">
-                  {q2 ? (
-                    <CheckCircle className="w-5 h-5 text-green-700" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-red-700" />
-                  )}
+                  {q2 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XCircle className="w-5 h-5 text-red-700" />}
                   <span>Pregunta 2</span>
                 </div>
-                <span
-                  className={`font-semibold ${q2 ? "text-green-700" : "text-red-700"}`}
-                >
-                  {q2 ? "Correcta" : "Incorrecta"}
-                </span>
+                <span className={`font-semibold ${q2 ? "text-green-700" : "text-red-700"}`}>{q2 ? "Correcta" : "Incorrecta"}</span>
               </div>
 
-              <div
-                className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm ${
-                  q3 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
-                }`}
-              >
+              <div className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm ${q3 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"}`}>
                 <div className="flex items-center gap-2 text-gray-800">
-                  {q3 ? (
-                    <CheckCircle className="w-5 h-5 text-green-700" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-red-700" />
-                  )}
+                  {q3 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XCircle className="w-5 h-5 text-red-700" />}
                   <span>Pregunta 3</span>
                 </div>
-                <span
-                  className={`font-semibold ${q3 ? "text-green-700" : "text-red-700"}`}
-                >
-                  {q3 ? "Correcta" : "Incorrecta"}
-                </span>
+                <span className={`font-semibold ${q3 ? "text-green-700" : "text-red-700"}`}>{q3 ? "Correcta" : "Incorrecta"}</span>
               </div>
             </div>
-
 
             {!isTeacher && (
               <div className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl sm:rounded-2xl border border-blue-200 shadow-sm">
@@ -448,102 +381,83 @@ function TestResultsContent() {
             )}
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-4">
-            {/* --- Rama PROFESOR --- */}
-            {isTeacher ? (
-              <>
-                <Button
-                  onClick={handleReturnToDashboard}
-                  variant="outline"
-                  className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
-                >
-                  Volver al Dashboard
-                </Button>
-                <Button
-                  onClick={handleContinueEvaluation}
-                  className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                >
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                  Siguiente nivel
-                </Button>
-                {/* SOLO PROFESOR: Intentar de nuevo */}
-                {!passed && (
+              {/* --- PROFESOR --- */}
+              {isTeacher ? (
+                <>
                   <Button
-                    onClick={handleRetakeTest}
+                    onClick={handleReturnToDashboard}
                     variant="outline"
                     className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
                   >
-                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                    Intentar de nuevo
+                    Volver al Dashboard
                   </Button>
-                )}
-              </>
-            ) : (
-              /* --- Rama NORMAL (usuario) --- */
-              <>
-                {/* NUEVO: comportamiento específico al estar en la ÚLTIMA competencia del área */}
-                {isLastCompetenceOfArea ? (
-                  passed ? (
+                  <Button
+                    onClick={handleContinueEvaluation}
+                    className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                  >
+                    <ChevronRight className="w-4 h-4 mr-2" />
+                    Siguiente nivel
+                  </Button>
+                  {!passed && (
                     <Button
-                      onClick={handleContinueEvaluation}
-                      className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                      onClick={handleRetakeTest}
+                      variant="outline"
+                      className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
                     >
-                      Continuar al siguiente nivel
+                      <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                      Intentar de nuevo
                     </Button>
-                  ) : (
-                    <Button
-                      onClick={handleReturnToDashboard}
-                      className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                    >
-                      Ir al Dashboard
-                    </Button>
-                  )
-                ) : (
-                  <>
-                    {areaCompleted && (
-                      <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
-                        Volver al Dashboard
-                      </Button>
-                    )}
-
-                    {!areaCompleted && nextCompetenceInfo && passed ? (
+                  )}
+                </>
+              ) : (
+                /* --- USUARIO --- */
+                <>
+                  {/* Caso: última competencia del área */}
+                  {isLastCompetenceOfArea ? (
+                    areaCompleted && passed ? (
                       <Button
-                        onClick={handleContinueToNextCompetence}
+                        onClick={handleContinueEvaluation}
                         className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
                       >
-                        Continuar con {nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...
-                      </Button>
-                    ) : !areaCompleted && !nextCompetenceInfo && passed ? (
-                      <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                        Ir al Dashboard
-                      </Button>
-                    ) : !areaCompleted && !passed ? (
-                      <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                        Ir al Dashboard
-                      </Button>
-                    ) : (
-                      <Button onClick={handleContinueEvaluation} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
                         Continuar al siguiente nivel
                       </Button>
-                    )}
-                  </>
-                )}
+                    ) : (
+                      <Button
+                        onClick={handleReturnToDashboard}
+                        className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                      >
+                        Ir al Dashboard
+                      </Button>
+                    )
+                  ) : (
+                    <>
+                      {areaCompleted && (
+                        <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
+                          Volver al Dashboard
+                        </Button>
+                      )}
 
-                {/* Usuario: comentar el Intentar de nuevo */}
-                {/*
-                {!passed && !isAlreadyCompleted && (
-                  <Button
-                    onClick={handleRetakeTest}
-                    variant="outline"
-                    className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
-                  >
-                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                    Intentar de nuevo
-                  </Button>
-                )}
-                */}
-              </>
-            )}
-          </div>
+                      {!areaCompleted && nextCompetenceInfo ? (
+                        <Button
+                          onClick={handleContinueToNextCompetence}
+                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                        >
+                          Continuar con {nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...
+                        </Button>
+                      ) : !areaCompleted && !nextCompetenceInfo ? (
+                        <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
+                          Ir al Dashboard
+                        </Button>
+                      ) : (
+                        <Button onClick={handleContinueEvaluation} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
+                          Continuar al siguiente nivel
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
 
           </CardContent>
         </Card>
