@@ -1,4 +1,3 @@
-// app/exercises/comp-4-4/intermedio/ej1/page.tsx
 "use client"
 
 import { useMemo, useState, useEffect, useRef } from "react"
@@ -198,12 +197,13 @@ export default function Page() {
 
   // ====== Scoring ======
   const point: 0 | 1 = useMemo(() => {
-    const filled = slots.every(s => s !== null)
-    if (!filled) return 0
-    for (let i = 0; i < CORRECT_ORDER.length; i++) {
-      if (slots[i] !== CORRECT_ORDER[i]) return 0
-    }
-    return 1
+    // Deben estar en los primeros 3 slots (en cualquier orden) los ids 1, 3 y 4.
+    const top3 = slots.slice(0, 3)
+    // Si hay algún vacío en los primeros 3, aún no otorga punto
+    if (top3.some(s => s === null)) return 0
+    const REQUIRED = [1, 3, 4]
+    const hasAll = REQUIRED.every(id => top3.includes(id))
+    return hasAll ? 1 : 0
   }, [slots])
 
   const handleFinish = async () => {

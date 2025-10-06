@@ -283,7 +283,7 @@ export default function Page() {
                         <span className="text-xs text-gray-500">🔒</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>🏠 <strong>Av. Los Leones 1234, Providencia</strong></span>
+                        <span>🏠 <strong>Av. Los Leones 1234, Providencia, 7510477</strong></span>
                         <span className="text-xs text-gray-500">🌍</span>
                       </div>
                       <div className="flex items-center justify-between">
