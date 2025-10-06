@@ -14,8 +14,6 @@ import {
 } from "@/lib/levelProgress"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered, finalizeSession } from "@/lib/testSession"
-// (Opcional) Si tienes lucide-react instalado, puedes usar íconos reales.
-// import { Wifi, Signal, Plane, Sun, Moon, Battery, Bluetooth, MapPin } from "lucide-react"
 
 const COMPETENCE = "4.4" as const
 const LEVEL = "intermedio" as const
@@ -26,42 +24,40 @@ type Tile = {
   id: number
   key: string
   label: string
-  // Usa emoji para universalidad (puedes cambiar por <Icon /> si prefieres lucide-react)
   emoji: string
 }
 
-// 8 controles del panel rápido
 const TILES: Tile[] = [
-  { id: 1, key: "wifi",           label: "Wi-Fi",               emoji: "📶" },
-  { id: 2, key: "mobileData",     label: "Datos móviles",       emoji: "📡" },
-  { id: 3, key: "airplane",       label: "Modo avión",          emoji: "✈️" },
-  { id: 4, key: "autoBrightness", label: "Brillo automático",   emoji: "🔆" },
-  { id: 5, key: "bluetooth",      label: "Bluetooth",           emoji: "🅱️" },
-  { id: 6, key: "location",       label: "Localización (GPS)",  emoji: "📍" },
-  { id: 7, key: "batterySaver",   label: "Ahorro de batería",   emoji: "🔋" },
-  { id: 8, key: "darkMode",       label: "Modo oscuro",         emoji: "🌙" },
+  { id: 1, key: "wifi", label: "Wi-Fi", emoji: "📶" },
+  { id: 2, key: "mobileData", label: "Datos móviles", emoji: "📡" },
+  { id: 3, key: "airplane", label: "Modo avión", emoji: "✈️" },
+  { id: 4, key: "autoBrightness", label: "Brillo automático", emoji: "🔆" },
+  { id: 5, key: "bluetooth", label: "Bluetooth", emoji: "🅱️" },
+  { id: 6, key: "location", label: "Localización (GPS)", emoji: "📍" },
+  { id: 7, key: "batterySaver", label: "Ahorro de batería", emoji: "🔋" },
+  { id: 8, key: "darkMode", label: "Modo oscuro", emoji: "🌙" },
 ] as const
 
-// Selección correcta (exacta): activar SOLO estos
-const CORRECT_SET = new Set<number>([3, 4, 6, 7, 8])
+// Configuración inicial: Localización y Bluetooth activados
+const INITIAL_ACTIVE = new Set<number>([5, 6])
+
+// Acciones correctas (cada una vale 1 punto)
+const SHOULD_BE_ON = new Set<number>([3, 4, 7])
+const SHOULD_BE_OFF = new Set<number>([5, 6])
 
 export default function Page() {
   const router = useRouter()
   const { user, userData } = useAuth()
 
-  // ====== Sesión Firestore ======
-// ...
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
 
-  // 1) Cargar sesión cacheada por-usuario
   useEffect(() => {
     if (!user || typeof window === "undefined") return
     const sid = localStorage.getItem(sessionKeyFor(user.uid))
     if (sid) setSessionId(sid)
   }, [user?.uid])
 
-  // 2) Asegurar/crear sesión si no hay cache
   useEffect(() => {
     if (!user) {
       setSessionId(null)
@@ -93,9 +89,8 @@ export default function Page() {
     })()
   }, [user?.uid, sessionId])
 
-  // ====== Estado de selección ======
-  // ids activados por el usuario
-  const [active, setActive] = useState<Set<number>>(() => new Set())
+  // ===== Estado de selección =====
+  const [active, setActive] = useState<Set<number>>(new Set(INITIAL_ACTIVE))
 
   const toggleTile = (id: number) => {
     setActive(prev => {
@@ -106,18 +101,19 @@ export default function Page() {
     })
   }
 
-  // ====== Puntaje (selección exacta) ======
+  // ===== Puntaje =====
   const point: 0 | 1 = useMemo(() => {
-    if (active.size !== CORRECT_SET.size) return 0
-    for (const id of CORRECT_SET) if (!active.has(id)) return 0
-    return 1
+    let correctCount = 0
+    // Activar los que deben estar activados
+    for (const id of SHOULD_BE_ON) if (active.has(id)) correctCount++
+    // Desactivar los que deben estar apagados
+    for (const id of SHOULD_BE_OFF) if (!active.has(id)) correctCount++
+    return correctCount >= 3 ? 1 : 0
   }, [active])
 
-  // ====== Finalizar ======
+  // ===== Finalizar =====
   const handleFinish = async () => {
     const isTeacher = userData?.role === "profesor"
-
-    // Guardar punto de la P2
     setPoint(COMPETENCE, LEVEL, 2, point)
 
     const prog = getProgress(COMPETENCE, LEVEL)
@@ -128,7 +124,6 @@ export default function Page() {
     const q2 = getPoint(prog, 2)
     const q3 = getPoint(prog, 3)
 
-    // Profesor: forzar “aprobado”
     const finalTotalPts = isTeacher ? 3 : totalPts
     const finalPassed = isTeacher ? true : passed
     const finalScore = isTeacher ? 100 : score
@@ -160,7 +155,7 @@ export default function Page() {
 
       if (sid) {
         try {
-          await markAnswered(sid, 1, point === 1) // P2 = index 1
+          await markAnswered(sid, 1, point === 1)
         } catch (e) {
           console.warn("No se pudo registrar P2:", e)
         }
@@ -195,6 +190,7 @@ export default function Page() {
 
   const progressPct = 66
 
+  // ===== Render =====
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
@@ -241,37 +237,36 @@ export default function Page() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
-            {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-              Indicar configuraciones digitales rutinarias que reducen el consumo energético de un dispositivo móvil
+              Configurar el dispositivo para reducir su consumo energético
             </h2>
 
-            {/* Escenario */}
+            {/* Instrucción */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575] space-y-3">
                 <p className="text-gray-700 leading-relaxed">
-                  En el menú de configuración rápida de un teléfono móvil aparecen iconos que permiten activar o desactivar
-                  distintas funciones. 
+                  Se le presenta un menú de configuraciones rápidas de un teléfono móvil donde aparecen los íconos que permiten activar o desactivar distintas funciones.
                 </p>
-                <p className="text-gray-700 leading-relaxed mb-3">
-                  Selecciona todas las configuraciones que ayudan a reducir el consumo energético. 
+                <p className="text-gray-700 leading-relaxed mb-3 font-medium">
+                  Configure el teléfono de modo que ayude a reducir el consumo energético.
                 </p>
               </div>
             </div>
-            {/* Panel rápido estilo iPhone */}
+
+            {/* Panel */}
             <div className="bg-[#f6f7f9] border border-gray-300 rounded-2xl p-4">
-              {/* Barra de estado */}
+              {/* Barra superior dinámica */}
               <div className="flex items-center justify-between text-gray-600 text-xs mb-3">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">9:41</span>
                   <span className="hidden sm:inline">|</span>
                   <span className="hidden sm:inline">Centro de control</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span>📶</span>
-                  <span>📍</span>
-                  <span>🛜</span>
-                  <span>🔋 82%</span>
+                <div className="flex items-center gap-1 text-lg">
+                  {[...active].map(id => {
+                    const tile = TILES.find(t => t.id === id)
+                    return <span key={id}>{tile?.emoji}</span>
+                  })}
                 </div>
               </div>
 
@@ -288,7 +283,6 @@ export default function Page() {
                         ${selected ? "bg-[#e6f4f4] border-[#286575]" : "bg-white border-gray-300 hover:border-gray-400"}`}
                       aria-pressed={selected}
                     >
-                      {/* círculo de selección arriba-derecha */}
                       <span
                         className={`absolute top-2 right-2 inline-flex h-5 w-5 items-center justify-center rounded-full border
                           ${selected ? "bg-[#286575] border-[#286575] text-white" : "bg-white border-gray-300 text-transparent"}`}

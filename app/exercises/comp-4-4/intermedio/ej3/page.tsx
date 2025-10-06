@@ -1,4 +1,3 @@
-// app/exercises/comp-4-4/intermedio/ej3/page.tsx
 "use client"
 
 import { useMemo, useState, useEffect, useRef } from "react"
@@ -16,13 +15,10 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered, finalizeSession } from "@/lib/testSession"
 
-// ====== Carga del JSON (país + edad) ======
 import exerciseData from "@/app/exercises/comp-4-4/intermedio/ej3/ej3.json"
 
-// ====== Tipos del JSON ======
 type Country = "Chile" | "Argentina" | "Perú" | "Uruguay" | "Colombia"
 type AgeVariant = "under20" | "20to40" | "over40"
-
 type OptionNode = { key: "A" | "B" | "C" | "D" | "E"; text: string; correct: boolean }
 
 type ExerciseJSON = {
@@ -37,15 +33,12 @@ type ExerciseJSON = {
   >
 }
 
-// 👇 Igual que en los otros ejercicios
 const EX = exerciseData as ExerciseJSON
-
 const COMPETENCE = "4.4" as const
 const LEVEL = "intermedio" as const
 const SESSION_PREFIX = "session:4.4:Intermedio"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-// ===== Helpers país / edad =====
 function ageToVariant(age?: number | null): AgeVariant {
   if (age == null) return "20to40"
   if (age < 20) return "under20"
@@ -73,24 +66,21 @@ export default function Page() {
     userData?: { age?: number; country?: string; role?: string } | null
   }
 
-  // ===== Derivar país/edad =====
   const country = useMemo<Country | null>(() => normalizeCountry(userData?.country), [userData])
   const ageVariant = useMemo<AgeVariant>(() => ageToVariant(userData?.age ?? null), [userData])
 
-  // ===== Copia localizada =====
   const stem = useMemo(() => {
     if (!country) return EX.base.stem
     return EX.variantsByCountry?.[country]?.[ageVariant]?.stem ?? EX.base.stem
   }, [country, ageVariant])
 
   const options = useMemo(() => {
-    if (!country) return EX.base ? [] : []
+    if (!country) return []
     return EX.variantsByCountry?.[country]?.[ageVariant]?.options ?? []
   }, [country, ageVariant])
 
   const [sessionId, setSessionId] = useState<string | null>(null)
 
-  /* ==== Sesión por-usuario ==== */
   useEffect(() => {
     if (!user || typeof window === "undefined") return
     const sid = localStorage.getItem(sessionKeyFor(user.uid))
@@ -129,16 +119,16 @@ export default function Page() {
     })
   }
 
-  // ===== Puntaje =====
+  // ===== Puntaje modificado =====
   const point: 0 | 1 = useMemo(() => {
     const correctKeys = new Set(options.filter(o => o.correct).map(o => o.key))
-    const chosen = new Set(selected)
-    if (chosen.size !== correctKeys.size) return 0
-    for (const k of chosen) if (!correctKeys.has(k)) return 0
-    return 1
+    let correctCount = 0
+    for (const key of correctKeys) {
+      if (selected.has(key)) correctCount++
+    }
+    return correctCount >= 2 ? 1 : 0
   }, [selected, options])
 
-  // ===== Finalizar =====
   const handleFinish = async () => {
     const isTeacher = userData?.role === "profesor"
 
@@ -177,7 +167,7 @@ export default function Page() {
 
       if (sid) {
         try {
-          await markAnswered(sid, 2, point === 1) // P3 = index 2
+          await markAnswered(sid, 2, point === 1)
         } catch (e) {
           console.warn("No se pudo registrar P3:", e)
         }
@@ -222,7 +212,6 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
-      {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
@@ -242,16 +231,15 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Progreso */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-white mb-4">
           <span className="text-xs text-[#286575] sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full">
             Pregunta 3 de 3
           </span>
           <div className="flex space-x-2">
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
-            <div className="w-3 h-3 rounded-full bg-[#286575] shadow-lg" />
+            <div className="w-3 h-3 rounded-full bg-[#286575]" />
+            <div className="w-3 h-3 rounded-full bg-[#286575]" />
+            <div className="w-3 h-3 rounded-full bg-[#286575]" />
           </div>
         </div>
         <div className="bg-[#dde3e8] rounded-full h-2.5 overflow-hidden">
@@ -262,7 +250,6 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Tarjeta principal */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
         <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
