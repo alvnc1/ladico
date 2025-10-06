@@ -202,9 +202,9 @@ export default function Ej2Comp13Avanzado() {
                 Resultados de Tabla Dinámica
               </h3>
               <div className="space-y-4">
-                <ExcelField label="Unidades totales en Santiago" value={c1} onChange={setC1} unit="unidades" />
-                <ExcelField label="Precio promedio en Valparaíso" value={c2} onChange={setC2} unit="$" />
-                <ExcelField label="Tienda con mayor total de unidades" value={c3} onChange={setC3} />
+                <ExcelField label="Unidades vendidas en Santiago" value={c1} onChange={setC1} unit="unidades" />
+                <ExcelField label="Precio promedio en Valparaíso" value={c2} onChange={setC2} unit="entero" />
+                <ExcelField label="Tienda con mayor unidades vendidas" value={c3} onChange={setC3} />
               </div>
             </div>
 

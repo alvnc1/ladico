@@ -290,24 +290,48 @@ function ResultsUniversalContent() {
                       Volver al Dashboard
                     </Button>
                   ) : (
-                    passed && (
-                      isLastCompetenceOfArea && level !== "avanzado" ? (
-                        <Button
-                          onClick={handleGoToNextLevelInArea}
-                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
-                        >
-                          Siguiente nivel
-                        </Button>
+                    <>
+                      {passed ? (
+                        // ✅ Si aprueba, comportamiento normal
+                        isLastCompetenceOfArea && level !== "avanzado" ? (
+                          <Button
+                            onClick={handleGoToNextLevelInArea}
+                            className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                          >
+                            Siguiente nivel
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={handleContinueToNextCompetence}
+                            className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                          >
+                            Continuar con la siguiente competencia
+                          </Button>
+                        )
                       ) : (
-                        <Button
-                          onClick={handleContinueToNextCompetence}
-                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
-                        >
-                          Continuar con la siguiente competencia
-                        </Button>
-                      )
-                    )
+                        // ❌ Si reprueba:
+                        isLastCompetenceOfArea ? (
+                          // 👉 Si además es la última competencia del área, volver al Dashboard
+                          <Button
+                            onClick={handleBack}
+                            className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
+                          >
+                            Volver al Dashboard
+                          </Button>
+                        ) : (
+                          // 👉 Si no es la última, puede seguir a la siguiente competencia
+                          <Button
+                            onClick={handleContinueToNextCompetence}
+                            className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                          >
+                            Siguiente competencia
+                          </Button>
+                        )
+                      )}
+                    </>
                   )}
+
+
                 </>
               )}
             </div>
