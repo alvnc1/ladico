@@ -2,10 +2,10 @@
 
 import type { Competence } from "@/types"
 import { useRouter } from "next/navigation"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 // Helpers para rutas/niveles
 import {
   firstExerciseRoute,
@@ -66,31 +66,51 @@ export default function CompetenceCard({
 
   const circumference = useMemo(() => 2 * Math.PI * 18, [])
 
+  const levelToSlug = (lvl: "Básico" | "Intermedio" | "Avanzado"): LevelSlug =>
+    lvl === "Básico" ? "basico" : lvl === "Intermedio" ? "intermedio" : "avanzado"
+
+  // Marca local de "finalizado" (aprobado o reprobado) para rellenar el anillo igual
+  const [finishedFlag, setFinishedFlag] = useState(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const slug = levelToSlug(currentAreaLevel)
+    const key = `ladico:completed:${competence.id}:${slug}`
+    const refresh = () => {
+      const fin = localStorage.getItem(key) === "1"
+      setFinishedFlag(fin)
+    }
+    refresh()
+    const handler = () => refresh()
+    window.addEventListener("ladico:refresh", handler)
+    return () => window.removeEventListener("ladico:refresh", handler)
+  }, [competence.id, currentAreaLevel])
+
+  // ✅ terminado pero NO aprobado → debe bloquear y mostrar "Reprobado"
+  const failedAndFinished = finishedFlag && !levelStatus.completed
+
   const effectiveProgressPct = useMemo(() => {
     if (isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed) return 100
+    if (finishedFlag) return 100
     if (locallyStarted && !levelStatus.inProgress && !levelStatus.completed) return 15
     return levelStatus.progressPct
-  }, [isTeacher, currentAreaLevel, levelStatus.progressPct, levelStatus.inProgress, levelStatus.completed, locallyStarted])
+  }, [isTeacher, currentAreaLevel, levelStatus.progressPct, levelStatus.inProgress, levelStatus.completed, locallyStarted, finishedFlag])
 
   const dashOffset = useMemo(
     () => circumference * (1 - effectiveProgressPct / 100),
     [circumference, effectiveProgressPct]
   )
 
-  const showDash = levelStatus.inProgress || levelStatus.completed || locallyStarted
+  const showDash = levelStatus.inProgress || levelStatus.completed || locallyStarted || finishedFlag
 
   const labelText = useMemo(() => {
-    if (!levelStatus.inProgress && !levelStatus.completed && !locallyStarted) return "-"
+    if (!levelStatus.inProgress && !levelStatus.completed && !locallyStarted && !finishedFlag) return "-"
     return `Nivel ${levelNumber}`
-  }, [levelStatus.inProgress, levelStatus.completed, locallyStarted, levelNumber])
-
-  const levelToSlug = (lvl: "Básico" | "Intermedio" | "Avanzado"): LevelSlug =>
-    lvl === "Básico" ? "basico" : lvl === "Intermedio" ? "intermedio" : "avanzado"
+  }, [levelStatus.inProgress, levelStatus.completed, locallyStarted, finishedFlag, levelNumber])
 
   // ====== REGLAS DE BOTONES ======
   const isLastLevel = levelNumber === 3
 
-  // Estudiante: para avanzar al siguiente nivel requiere completar competencia + área —> (tu lógica inicial)
+  // Estudiante: para avanzar al siguiente nivel requiere completar competencia + área
   // Profesor: SIN modo secuencial -> ignora `areaCompletedAtLevel`
   const currentLevelSlug = levelToSlug(currentAreaLevel)
   const nxt = nextLevel(currentLevelSlug)
@@ -98,20 +118,24 @@ export default function CompetenceCard({
 
   // Base (estudiante)
   let canStartCurrent = hasEnoughQuestions && !levelStatus.completed
+  // ⛔ bloquear si terminó pero reprobó (solo alumno)
+  if (!isTeacher && failedAndFinished) {
+    canStartCurrent = false
+  }
+
   let canAdvanceToNextLevel = levelStatus.completed && !isLastLevel && areaCompletedAtLevel
   let allowNext = canAdvanceToNextLevel && nextExists
 
   // ----- OVERRIDES PARA PROFESOR (NO secuencial) -----
   if (isTeacher) {
-  // Puede comenzar SIEMPRE el nivel actual si hay preguntas
-  canStartCurrent = hasEnoughQuestions
+    // Puede comenzar SIEMPRE el nivel actual si hay preguntas
+    canStartCurrent = hasEnoughQuestions
 
-  // Solo habilita el siguiente nivel si ya tocó este nivel (iniciado o completado).
-  // Así, en una cuenta nueva aparece "Comenzar evaluación" y no "Comenzar nivel 2".
-  const alreadyTouched = levelStatus.inProgress || levelStatus.completed || locallyStarted
-  canAdvanceToNextLevel = !isLastLevel && nextExists && alreadyTouched
-  allowNext = canAdvanceToNextLevel
-}
+    // Solo habilita el siguiente nivel si ya tocó este nivel (iniciado o completado).
+    const alreadyTouched = levelStatus.inProgress || levelStatus.completed || locallyStarted
+    canAdvanceToNextLevel = !isLastLevel && nextExists && alreadyTouched
+    allowNext = canAdvanceToNextLevel
+  }
 
   const canStartOrContinue = levelStatus.inProgress || canStartCurrent || allowNext
 
@@ -119,7 +143,8 @@ export default function CompetenceCard({
     if (levelStatus.inProgress) return "Continuar"
     if (allowNext) return `Comenzar nivel ${levelNumber + 1}`
     if (canStartCurrent) return "Comenzar evaluación"
-    if (!allowNext && (levelStatus.inProgress || levelStatus.completed || locallyStarted)) return "Volver a intentar"
+    if (!allowNext && (levelStatus.inProgress || levelStatus.completed || locallyStarted || failedAndFinished))
+      return "Volver a intentar"
     return "Bloqueado"
   })()
 
@@ -134,7 +159,7 @@ export default function CompetenceCard({
     !allowNext &&
     (levelStatus.inProgress || levelStatus.completed || locallyStarted)
 
-  // Rama especial Avanzado (profe) igual que antes
+  // Rama especial Avanzado (profe)
   const showTeacherAdvancedReset =
     isTeacher && currentAreaLevel === "Avanzado" && levelStatus.completed
 
@@ -363,7 +388,12 @@ export default function CompetenceCard({
                           clipRule="evenodd"
                         />
                       </svg>
-                      <span className="text-xs text-green-700 font-medium">Completado</span>
+                      <span className="text-xs text-green-700 font-medium">Aprobado</span>
+                    </>
+                  ) : failedAndFinished ? (
+                    <>
+                      <XCircle className="h-4 w-4 text-red-500" />
+                      <span className="text-xs text-red-700 font-medium">Reprobado</span>
                     </>
                   ) : (
                     <>
