@@ -1,4 +1,3 @@
-// app/exercises/comp-4-1/intermedio/ej3/page.tsx
 "use client"
 
 import Link from "next/link"
@@ -57,11 +56,23 @@ export default function Page() {
   const nivelOk = nivel === "bajo"
   const justOk = justif === "just_dos_vuln"
 
+  // 👉 Nuevo cálculo: cada respuesta correcta vale 1 punto (total 5)
+  const subScore = useMemo(() => {
+    let score = 0
+    if (wifiOk) score++
+    if (autoOk) score++
+    if (nubeOk) score++
+    if (nivelOk) score++
+    if (justOk) score++
+    return score
+  }, [wifiOk, autoOk, nubeOk, nivelOk, justOk])
+
+  // 👉 Se obtiene 1 punto global si tiene 3 o más respuestas correctas
   const point: 0 | 1 = useMemo(() => {
     const allAnswered = wifi && auto && nube && nivel && justif
     if (!allAnswered) return 0
-    return wifiOk && autoOk && nubeOk && nivelOk && justOk ? 1 : 0
-  }, [wifi, auto, nube, nivel, justif, wifiOk, autoOk, nubeOk, nivelOk, justOk])
+    return subScore >= 3 ? 1 : 0
+  }, [wifi, auto, nube, nivel, justif, subScore])
 
   // ===== Sesión =====
   useEffect(() => {
@@ -118,7 +129,6 @@ export default function Page() {
     // 🔔 Notificar al dashboard que el progreso cambió (refresco del anillo)
     try {
       localStorage.setItem("ladico:progress:version", String(Date.now()))
-      // opcional: disparo de evento en esta misma pestaña
       window.dispatchEvent(new CustomEvent("ladico:progress:refresh"))
     } catch {}
 
@@ -168,7 +178,7 @@ export default function Page() {
       q2: String(q2),
       q3: String(q3),
       sid: sid ?? "",
-      passMin: "2", // regla: aprobar con 2/3
+      passMin: "2",
       compPath: "comp-4-1",
       retryBase: "/exercises/comp-4-1/intermedio",
       ex1Label: "Ejercicio 1: Protección básica del dispositivo",
@@ -238,7 +248,7 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Preguntas 1-3: ahora con dropdown */}
+            {/* Preguntas 1-3: dropdowns */}
             <div className="space-y-4 mb-6">
               <SelectField<OptId>
                 label="Conexión automática a redes Wi-Fi abiertas"
@@ -246,7 +256,7 @@ export default function Page() {
                 onChange={setWifi}
                 options={[
                   { id: "wifi_ok", text: "Permite una conexión rápida y estable sin necesidad de contraseñas." },
-                  { id: "wifi_priv", text: "Expone los datos del usuario a posibles accesos no autorizados en redes inseguras." }, // ✅
+                  { id: "wifi_priv", text: "Expone los datos del usuario a posibles accesos no autorizados en redes inseguras." },
                   { id: "wifi_movil", text: "Mejora la privacidad porque evita el uso de redes móviles." },
                 ]}
               />
@@ -256,7 +266,7 @@ export default function Page() {
                 value={auto}
                 onChange={setAuto}
                 options={[
-                  { id: "auto_seg", text: "Mantiene el dispositivo protegido contra vulnerabilidades recientes al instalar parches de seguridad." }, // ✅
+                  { id: "auto_seg", text: "Mantiene el dispositivo protegido contra vulnerabilidades recientes al instalar parches de seguridad." },
                   { id: "auto_riesgo", text: "Aumenta la exposición del dispositivo porque se descargan archivos sin control del usuario." },
                   { id: "auto_no_mejoras", text: "Reduce la fiabilidad ya que impide recibir las últimas mejoras del sistema." },
                 ]}
@@ -268,19 +278,18 @@ export default function Page() {
                 onChange={setNube}
                 options={[
                   { id: "nube_cifra", text: "Garantiza la protección total porque la nube siempre cifra la información por defecto." },
-                  { id: "nube_riesgo", text: "Riesgo para la privacidad, ya que los datos almacenados podrían ser leídos por terceros." }, // ✅
+                  { id: "nube_riesgo", text: "Riesgo para la privacidad, ya que los datos almacenados podrían ser leídos por terceros." },
                   { id: "nube_hackers", text: "Aumenta la fiabilidad del sistema porque bloquea el acceso de hackers a la nube." },
                 ]}
               />
             </div>
 
-            {/* Clasificación + Justificación dentro del MISMO recuadro */}
+            {/* Clasificación + Justificación */}
             <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transición-colors shadow-sm">
               <div className="text-sm font-medium text-gray-900 mb-2">
                 Evalúa el nivel de protección y justifica tu elección.
               </div>
 
-              {/* Clasificación (select) */}
               <div className="mb-4">
                 <select
                   className="w-full rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#286575]"
@@ -293,12 +302,11 @@ export default function Page() {
                 </select>
               </div>
 
-              {/* Justificación (radios) */}
               <div className="space-y-2">
                 {(
                   [
                     { id: "just_auto", text: "La información del usuario queda siempre protegida por las actualizaciones automáticas, lo que elimina cualquier riesgo." },
-                    { id: "just_dos_vuln", text: "Hay configuraciones activadas que implican vulnerabilidades graves." }, // ✅
+                    { id: "just_dos_vuln", text: "Hay configuraciones activadas que implican vulnerabilidades graves." },
                     { id: "just_apps", text: "El dispositivo solo es vulnerable si el usuario instala aplicaciones sospechosas, no por sus configuraciones iniciales." },
                   ] as { id: JustId; text: string }[]
                 ).map((opt) => {
