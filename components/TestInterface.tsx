@@ -459,18 +459,7 @@ export default function TestInterface({
             </div>
 
             {/* Navegación */}
-            <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
-              <div className="flex space-x-3 w-full sm:w-auto">
-                {currentIndex > 0 && (
-                  <Button
-                    onClick={handlePrev}
-                    variant="outline"
-                    className="flex-1 sm:flex-none px-6 sm:px-8 py-3 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl font-medium transition-all text-sm sm:text-base"
-                  >
-                    Anterior
-                  </Button>
-                )}
-              </div>
+            <div className="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0">
 
               <Button
                 onClick={() => handleNext(false)}
