@@ -263,18 +263,41 @@ export default function Page() {
     "": "",
   }
 
-  // ============== Evaluación ==============
-  const orderCorrect = useMemo(() => {
-    const filled = slots.every(s => s !== null)
-    if (!filled) return false
-    for (let i = 0; i < CORRECT_ORDER_IDS.length; i++) {
-      if (slots[i] !== CORRECT_ORDER_IDS[i]) return false
-    }
-    return true
-  }, [slots, CORRECT_ORDER_IDS])
+    // ============== Evaluación ==============
+  // Helper: normaliza texto para buscar por raíz (quita acentos y pasa a minúsculas)
+  function norm(s: string) {
+    return s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+  }
+  function hasRoot(s: string, root: string) {
+    return norm(s).includes(root) // raíces: "forz", "implement", "activ"
+  }
 
+  // 1) Tomamos SOLO las tres primeras posiciones del orden final
+  const top3Ids = [slots[0], slots[1], slots[2]].filter(
+    (x): x is number => x != null
+  )
+  const top3Texts = top3Ids.map(id => measureById(id).text)
+
+  // 2) Deben estar, en cualquier orden, las tres acciones clave
+  const containsForzar = top3Texts.some(t => hasRoot(t, "forz"))        // forzar/forzada/forz...
+  const containsImplementar = top3Texts.some(t => hasRoot(t, "implement")) // implementar/implementación...
+  const containsActivar = top3Texts.some(t => hasRoot(t, "activ"))      // activar/activación...
+
+  const top3Condition =
+    top3Texts.length === 3 &&
+    containsForzar &&
+    containsImplementar &&
+    containsActivar
+
+  // 3) Justificación correcta (igual que antes)
   const justificationCorrect = justificacion === "correcta"
-  const point: 0 | 1 = orderCorrect && justificationCorrect ? 1 : 0
+
+  // 4) Puntaje binario según la nueva regla
+  const point: 0 | 1 = top3Condition && justificationCorrect ? 1 : 0
+
 
   // ============== Continuar ==============
   const handleNext = async () => {
