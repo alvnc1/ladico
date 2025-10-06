@@ -197,7 +197,6 @@ export default function GoogleLikeFormBuilder() {
   const [formDesc, setFormDesc] = useState("Descripción del formulario");
   const [questions, setQuestions] = useState<Question[]>([
     newQuestion(1),
-    newQuestion(2),
   ]);
   const [selectedId, setSelectedId] = useState<string | null>(
     questions[0]?.id ?? null
@@ -592,6 +591,18 @@ export default function GoogleLikeFormBuilder() {
                 );
               })}
             </div>
+
+            {questions.length === 0 && (
+              <div className="flex justify-center py-8">
+                <Button
+                  onClick={addQuestion}
+                  className="bg-[#286575] hover:bg-[#3a7d89] rounded-xl px-6 text-white"
+                >
+                  + Agregar Campo
+                </Button>
+              </div>
+            )}
+
 
             {/* Acciones */}
             <div className="mt-6 flex justify-between">
