@@ -1,4 +1,3 @@
-// app/exercises/comp-4-3/intermedio/ej2/page.tsx
 "use client"
 
 import { useEffect, useMemo, useState, useRef } from "react"
@@ -163,14 +162,18 @@ export default function Page() {
     })
   }
 
-  // Puntaje local (para resultados): 1 si A,B,E exactamente; 0 en otro caso
-  const point: 0 | 1 = useMemo(() => {
-    const chosen = Array.from(selected)
-    const correctSet = new Set<Key>(["A", "B", "E"])
-    if (chosen.length !== correctSet.size) return 0
-    for (const c of chosen) if (!correctSet.has(c)) return 0
-    return 1
-  }, [selected])
+  // ====== Nuevo puntaje: cada alternativa correcta suma 1; punto final si >= 2 ======
+  const correctKeys = useMemo(() => {
+    return new Set<Key>(OPTIONS.filter(o => o.correct).map(o => o.key))
+  }, [OPTIONS])
+
+  const correctCount = useMemo(() => {
+    let cnt = 0
+    for (const k of selected) if (correctKeys.has(k)) cnt++
+    return cnt
+  }, [selected, correctKeys])
+
+  const point: 0 | 1 = useMemo(() => (correctCount >= 2 ? 1 : 0), [correctCount])
 
   const handleNext = async () => {
     // Guarda el punto local (para anillo/resultados)
@@ -205,7 +208,7 @@ export default function Page() {
 
     try {
       if (sid) {
-        await markAnswered(sid, 1, true) // P2
+        await markAnswered(sid, 1, point === 1) // P2: correcta si alcanzó el umbral
       }
     } catch (e) {
       console.warn("No se pudo marcar P2 respondida:", e)

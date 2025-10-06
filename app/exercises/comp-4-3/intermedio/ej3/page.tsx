@@ -17,11 +17,10 @@ import { ensureSession, markAnswered, finalizeSession } from "@/lib/testSession"
 
 const COMPETENCE = "4.3" as const
 const LEVEL = "intermedio" as const
-// Clave de sesión por-usuario (igual que en ej1/ej2)
 const SESSION_PREFIX = "session:4.3:Intermedio";
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`;
 
-// Tecnologías (exactamente las 5 pedidas)
+// Tecnologías
 const TECHNOLOGIES = [
   { id: 1, text: "Juego en línea multijugador con instrucciones." },
   { id: 2, text: "Botón físico de emergencia con llamada automática a un familiar." },
@@ -30,7 +29,7 @@ const TECHNOLOGIES = [
   { id: 5, text: "Portal de trámites digitales con pictogramas." },
 ] as const
 
-// Orden correcto (de arriba hacia abajo)
+// Orden correcto (solo referencia visual)
 const CORRECT_ORDER: ReadonlyArray<number> = [2, 3, 4, 5, 1]
 
 type Tech = typeof TECHNOLOGIES[number]
@@ -38,61 +37,57 @@ type SlotId = number | null
 
 export default function Page() {
   const router = useRouter()
-  const { user, userData } = useAuth() // ⬅️ ahora también userData para rol
+  const { user, userData } = useAuth()
 
-  // ====== Sesión Firestore ======
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const ensuringRef = useRef(false); // evita dobles llamados en StrictMode
+  const ensuringRef = useRef(false)
 
-  // 1) Cargar sesión cacheada por-usuario
+  // 1) Cargar sesión cacheada
   useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    const sid = localStorage.getItem(sessionKeyFor(user.uid));
-    if (sid) setSessionId(sid);
-  }, [user?.uid]);
+    if (!user || typeof window === "undefined") return
+    const sid = localStorage.getItem(sessionKeyFor(user.uid))
+    if (sid) setSessionId(sid)
+  }, [user?.uid])
 
-  // 2) Asegurar/crear sesión por-usuario si no hay cache
+  // 2) Asegurar sesión
   useEffect(() => {
     if (!user) {
-      setSessionId(null);
-      return;
+      setSessionId(null)
+      return
     }
 
-    const LS_KEY = sessionKeyFor(user.uid);
-    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-
+    const LS_KEY = sessionKeyFor(user.uid)
+    const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
     if (cached) {
-      if (!sessionId) setSessionId(cached);
-      return;
+      if (!sessionId) setSessionId(cached)
+      return
     }
 
-    if (ensuringRef.current) return;
-    ensuringRef.current = true;
-
-    (async () => {
+    if (ensuringRef.current) return
+    ensuringRef.current = true
+    ;(async () => {
       try {
         const { id } = await ensureSession({
           userId: user.uid,
           competence: COMPETENCE,
           level: "Intermedio",
           totalQuestions: 3,
-        });
-        setSessionId(id);
-        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
+        })
+        setSessionId(id)
+        if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
       } catch (e) {
-        console.error("No se pudo asegurar la sesión de test (P3):", e);
+        console.error("No se pudo asegurar la sesión de test (P3):", e)
       } finally {
-        ensuringRef.current = false;
+        ensuringRef.current = false
       }
-    })();
-  }, [user?.uid, sessionId]);
+    })()
+  }, [user?.uid, sessionId])
 
   // ====== Estado Drag & Drop ======
   const [pool, setPool] = useState<number[]>(() => shuffle(TECHNOLOGIES.map(t => t.id)))
   const [slots, setSlots] = useState<SlotId[]>([null, null, null, null, null])
 
   const techById = (id: number) => TECHNOLOGIES.find(t => t.id === id) as Tech
-
   const [dragData, setDragData] = useState<{ from: "pool" | "slot"; index: number } | null>(null)
 
   function onDragStart(from: "pool" | "slot", index: number) {
@@ -104,8 +99,6 @@ export default function Page() {
 
   function onDropToSlot(slotIndex: number) {
     if (!dragData) return
-
-    // Calcular nueva foto de pool/slots de forma atómica
     let newPool = [...pool]
     let newSlots = [...slots] as SlotId[]
 
@@ -113,14 +106,10 @@ export default function Page() {
       const id = pool[dragData.index]
       if (id == null) return
       const target = newSlots[slotIndex]
-      // 1) quitar del pool por índice original
       newPool.splice(dragData.index, 1)
-      // 2) si había algo en el slot, devolverlo al pool
       if (target !== null) newPool.push(target)
-      // 3) colocar en slot
       newSlots[slotIndex] = id
     } else {
-      // mover entre slots (intercambio)
       const id = slots[dragData.index]
       const target = newSlots[slotIndex]
       newSlots[dragData.index] = target
@@ -150,7 +139,6 @@ export default function Page() {
     e.preventDefault()
   }
 
-  // Quitar un item del slot con “×”
   function removeFromSlot(slotIndex: number) {
     let newPool = [...pool]
     let newSlots = [...slots] as SlotId[]
@@ -163,22 +151,19 @@ export default function Page() {
     setSlots(newSlots)
   }
 
-  // ====== Puntaje: coincidencia exacta ======
+  // ====== Nuevo puntaje: deben estar en el top 3 los ids 2,3,4 (sin importar el orden) ======
   const point: 0 | 1 = useMemo(() => {
-    const filled = slots.every(s => s !== null)
-    if (!filled) return 0
-    for (let i = 0; i < CORRECT_ORDER.length; i++) {
-      if (slots[i] !== CORRECT_ORDER[i]) return 0
-    }
-    return 1
+    const top3 = slots.slice(0, 3)
+    const REQUIRED = [2, 3, 4]
+    const hasAllRequired = REQUIRED.every(id => top3.includes(id))
+    return hasAllRequired ? 1 : 0
   }, [slots])
 
   // ====== Finalizar ======
   const handleFinish = async () => {
     const isTeacher = userData?.role === "profesor"
-
-    // Guarda el punto local (para UI de resultados)
     setPoint(COMPETENCE, LEVEL, 3, point)
+
     const prog = getProgress(COMPETENCE, LEVEL)
     const totalPts = levelPoints(prog)
     const passed = isLevelPassed(prog)
@@ -187,57 +172,38 @@ export default function Page() {
     const q2 = getPoint(prog, 2)
     const q3 = getPoint(prog, 3)
 
-    // Para profesor: forzar “aprobado” y 100% para que el dashboard muestre COMPLETADO y deje avanzar
     const finalTotalPts = isTeacher ? 3 : totalPts
     const finalPassed = isTeacher ? true : passed
     const finalScore = isTeacher ? 100 : score
 
-    // Asegurar sesión y registrar respuesta de la P3
-    let sid = sessionId;
+    let sid = sessionId
     try {
       if (!sid && user) {
-        const LS_KEY = sessionKeyFor(user.uid);
-        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
+        const LS_KEY = sessionKeyFor(user.uid)
+        const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null
         if (cached) {
-          sid = cached;
-        } else if (!ensuringRef.current) {
-          ensuringRef.current = true;
-          try {
-            const { id } = await ensureSession({
-              userId: user.uid,
-              competence: COMPETENCE,
-              level: "Intermedio",
-              totalQuestions: 3,
-            });
-            sid = id;
-            setSessionId(id);
-            if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id);
-          } finally {
-            ensuringRef.current = false;
-          }
+          sid = cached
+        } else {
+          const { id } = await ensureSession({
+            userId: user.uid,
+            competence: COMPETENCE,
+            level: "Intermedio",
+            totalQuestions: 3,
+          })
+          sid = id
+          setSessionId(id)
+          if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
         }
       }
 
       if (sid) {
-        // Registrar la respuesta de la pregunta 3
-        try {
-          await markAnswered(sid, 2, point === 1)
-        } catch (e) {
-          console.warn("No se pudo registrar P3 con markAnswered:", e)
-        }
-
-        // Consolidar sesión en Firestore (para profesor quedará endTime=null, pero score/passed actualizados)
-        try {
-          await finalizeSession(sid, { correctCount: finalTotalPts, total: 3, passMin: 2 })
-        } catch (e) {
-          console.warn("No se pudo finalizar la sesión en P3:", e)
-        }
+        await markAnswered(sid, 2, point === 1)
+        await finalizeSession(sid, { correctCount: finalTotalPts, total: 3, passMin: 2 })
       }
     } catch (e) {
-      console.warn("No se pudo (re)asegurar/finalizar la sesión al guardar P3:", e);
+      console.warn("Error al registrar/finalizar la sesión:", e)
     }
 
-    // Limpia referencia local a la sesión por-usuario (evita arrastrar estado a un nuevo intento)
     try {
       if (user) localStorage.removeItem(sessionKeyFor(user.uid))
     } catch {}
@@ -253,19 +219,14 @@ export default function Page() {
       q2: String(q2),
       q3: String(q3),
       sid: sid ?? "",
-      passMin: "2",                       // (opcional) mínimo para aprobar
-      compPath: "comp-4-3",               // <- necesario para rutas de “retry/next level”
-      retryBase: "/exercises/comp-4-3/intermedio", // (opcional) si quieres forzarlo
-      // Etiquetas opcionales
+      passMin: "2",
+      compPath: "comp-4-3",
+      retryBase: "/exercises/comp-4-3/intermedio",
       ex1Label: "Ejercicio 1: Prevención de riesgos para la salud y el bienestar en entornos digitales",
       ex2Label: "Ejercicio 2: Seleccionar formas sencillas de proteger el bienestar digital",
       ex3Label: "Ejercicio 3: Tecnologías digitales para el bienestar e inclusión social",
-      // Métricas opcionales (si aplica)
-      // pairs: `${correctPairs}/${totalPairs}`,
-      // kscore: String(percent),
     })
 
-    // 2) Empuja SIEMPRE a la misma página:
     router.push(`/test/results?${qs.toString()}`)
   }
 
@@ -315,9 +276,8 @@ export default function Page() {
 
       {/* Tarjeta principal */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
-        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 transition-all duration-300 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
+        <Card className="bg-white shadow-2xl rounded-2xl sm:rounded-3xl border-0 ring-2 ring-[#286575] ring-opacity-30 shadow-[#286575]/10">
           <CardContent className="p-4 sm:p-6 lg:p-8">
-            {/* Título */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
               Tecnologías digitales para el bienestar e inclusión social
             </h2>
@@ -336,14 +296,14 @@ export default function Page() {
                 </p>
               </div>
             </div>
-            {/* Layout DnD — dos recuadros iguales */}
+
+            {/* Layout DnD */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Pool */}
               <section
                 className="bg-white border-2 border-gray-200 rounded-2xl p-4"
                 onDragOver={allowDrop}
                 onDrop={onDropToPool}
-                aria-label="Tecnologías disponibles para arrastrar"
               >
                 <h3 className="font-semibold text-gray-900 mb-3">Tecnologías disponibles</h3>
                 <div className="space-y-3 min-h-[220px]">
@@ -355,9 +315,7 @@ export default function Page() {
                         draggable
                         onDragStart={() => onDragStart("pool", idx)}
                         onDragEnd={onDragEnd}
-                        className="relative cursor-grab active:cursor-grabbing bg-white p-3 rounded-2xl border-2 border-gray-200 text-sm transition-all duration-200 hover:border-[#286575] hover:bg-gray-50"
-                        role="button"
-                        tabIndex={0}
+                        className="relative cursor-grab active:cursor-grabbing bg-white p-3 rounded-2xl border-2 border-gray-200 text-sm transition-all hover:border-[#286575] hover:bg-gray-50"
                       >
                         {t.text}
                       </div>
@@ -370,48 +328,42 @@ export default function Page() {
               <section className="bg-white border border-gray-200 rounded-2xl p-4">
                 <h3 className="font-semibold text-gray-900 mb-3">Orden de mayor a menor prioridad</h3>
                 <div className="space-y-3">
-                  {slots.map((slot, i) => {
-                    const isFilled = !!slot
-                    return (
-                      <div
-                        key={i}
-                        onDragOver={allowDrop}
-                        onDrop={() => onDropToSlot(i)}
-                        className={`rounded-xl transition relative
-                          ${
-                            isFilled
-                              ? "border-2 border-transparent bg-transparent p-0 min-h-0"
-                              : "min-h-[56px] border-2 border-dashed border-gray-300 bg-white p-3"
-                          }
-                          ${dragData ? "ring-1 ring-[#286575]/40" : ""}`}
-                        aria-label={`Caja destino ${i + 1}`}
-                      >
-                        {isFilled ? (
-                          <div
-                            draggable
-                            onDragStart={() => onDragStart("slot", i)}
-                            onDragEnd={onDragEnd}
-                            className="cursor-grab active:cursor-grabbing"
-                          >
-                            <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3 text-sm">
-                              <button
-                                onClick={() => removeFromSlot(i)}
-                                className="leading-none text-gray-500 hover:text-gray-700"
-                                aria-label="Quitar"
-                                type="button"
-                                title="Quitar"
-                              >
-                                ×
-                              </button>
-                              <span>{techById(slot!).text}</span>
-                            </div>
+                  {slots.map((slot, i) => (
+                    <div
+                      key={i}
+                      onDragOver={allowDrop}
+                      onDrop={() => onDropToSlot(i)}
+                      className={`rounded-xl transition relative ${
+                        slot
+                          ? "border-2 border-transparent bg-transparent p-0"
+                          : "min-h-[56px] border-2 border-dashed border-gray-300 bg-white p-3"
+                      } ${dragData ? "ring-1 ring-[#286575]/40" : ""}`}
+                    >
+                      {slot ? (
+                        <div
+                          draggable
+                          onDragStart={() => onDragStart("slot", i)}
+                          onDragEnd={onDragEnd}
+                          className="cursor-grab active:cursor-grabbing"
+                        >
+                          <div className="flex items-center gap-2 bg-white border border-blue-400 rounded-xl p-3 text-sm">
+                            <button
+                              onClick={() => removeFromSlot(i)}
+                              className="leading-none text-gray-500 hover:text-gray-700"
+                              aria-label="Quitar"
+                              type="button"
+                              title="Quitar"
+                            >
+                              ×
+                            </button>
+                            <span>{techById(slot).text}</span>
                           </div>
-                        ) : (
-                          <span className="text-sm text-gray-400">Suelta aquí</span>
-                        )}
-                      </div>
-                    )
-                  })}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">Suelta aquí</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </section>
             </div>
