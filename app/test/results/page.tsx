@@ -9,11 +9,12 @@ import { Trophy, XCircle, CheckCircle, XCircle as XIcon, ChevronRight } from "lu
 import { finalizeSession } from "@/lib/testSession"
 import { useAuth } from "@/contexts/AuthContext"
 import { skillsInfo } from "@/components/data/digcompSkills"
+import { updateCurrentLevel } from "@/lib/updateCurrentLevel"
 
 function ResultsUniversalContent() {
   const sp = useSearchParams()
   const router = useRouter()
-  const { userData } = useAuth()
+  const { user, userData } = useAuth()
   const isTeacher = userData?.role === "profesor"
 
   // --------- Parámetros recibidos (flexibles y con defaults) ----------
@@ -44,12 +45,22 @@ function ResultsUniversalContent() {
   const pairs = sp.get("pairs") // "12/15"
   const kscore = sp.get("kscore") // "80"
 
-  // --------- Limpieza local y consolidación opcional ----------
+  // --------- Limpieza local, marcar finalización y consolidación opcional ----------
   useEffect(() => {
     try {
       const key = `ladico:${competence}:${level}:progress`
       localStorage.removeItem(key)
     } catch {/* no-op */}
+
+    // Marcar como finalizado (aprobado o reprobado) para que el dashboard lo muestre
+    try {
+      const slug = level.toLowerCase()
+      localStorage.setItem(`ladico:completed:${competence}:${slug}`, "1")
+      localStorage.setItem("ladico:progress:version", String(Date.now()))
+      window.dispatchEvent(new Event("ladico:refresh"))
+    } catch {
+      /* no-op */
+    }
 
     ;(async () => {
       if (!sid) return
@@ -59,7 +70,18 @@ function ResultsUniversalContent() {
         console.warn("No se pudo finalizar la sesión en resultados:", e)
       }
     })()
-  }, [sid, competence, level, correct, total, passMin])
+
+    // Actualizar currentLevel si se completó el área
+    ;(async () => {
+      if (user?.uid && userData) {
+        try {
+          await updateCurrentLevel(user.uid, userData, level, isTeacher)
+        } catch (e) {
+          console.warn("No se pudo actualizar currentLevel:", e)
+        }
+      }
+    })()
+  }, [sid, competence, level, correct, total, passMin, user?.uid, userData, isTeacher])
 
   // --------- Acciones ----------
   const handleBack = () => router.push("/dashboard")
@@ -124,6 +146,10 @@ function ResultsUniversalContent() {
     const lastMinor = LAST_BY_AREA[major] ?? 4 // fallback genérico
     return minor >= lastMinor
   })()
+
+  // --- NUEVO: verificar si el área está completa en el nivel actual ---
+  // Simplificado: si estás en la última competencia del área y apruebas, asumimos que el área está completa
+  const isAreaCompletedAtLevel = isLastCompetenceOfArea && passed
 
   // --- NUEVO: máximo nivel + última competencia del área ---
   const isMaxLevelAndLast = isLastCompetenceOfArea && level === "avanzado"
@@ -292,13 +318,20 @@ function ResultsUniversalContent() {
                   ) : (
                     <>
                       {passed ? (
-                        // ✅ Si aprueba, comportamiento normal
-                        isLastCompetenceOfArea && level !== "avanzado" ? (
+                        // ✅ Si aprueba, verificar si puede avanzar al siguiente nivel
+                        isLastCompetenceOfArea && level !== "avanzado" && isAreaCompletedAtLevel ? (
                           <Button
                             onClick={handleGoToNextLevelInArea}
                             className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
                           >
                             Siguiente nivel
+                          </Button>
+                        ) : isLastCompetenceOfArea && level !== "avanzado" && !isAreaCompletedAtLevel ? (
+                          <Button
+                            onClick={handleBack}
+                            className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
+                          >
+                            Volver al Dashboard
                           </Button>
                         ) : (
                           <Button

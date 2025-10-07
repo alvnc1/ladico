@@ -19,6 +19,7 @@ type UserDoc = {
   currentLevel?: string
   LadicoScore?: number
   completedCompetences?: string[]
+  competenceStatus?: Record<string, Record<string, string>> // competenceStatus.1.1.basico = "approved"
 }
 
 type SortMode = "default" | "completed" | "competence" | "selected"
@@ -56,6 +57,7 @@ export default function UserResultsPage() {
           completedCompetences: Array.isArray(data?.completedCompetences)
             ? (data!.completedCompetences as string[])
             : [],
+          competenceStatus: data?.competenceStatus || {},
         }
       })
       setUsers(rows)
@@ -70,6 +72,24 @@ export default function UserResultsPage() {
   useEffect(() => {
     refresh()
   }, [])
+
+  // Helper para extraer competencias completadas con nivel
+  const getCompletedCompetencesWithLevel = (user: UserDoc): string[] => {
+    const competences: string[] = []
+    
+    if (user.competenceStatus) {
+      Object.entries(user.competenceStatus).forEach(([compId, levels]) => {
+        Object.entries(levels).forEach(([level, status]) => {
+          if (status === "approved") {
+            const levelLetter = level === "basico" ? "B" : level === "intermedio" ? "I" : level === "avanzado" ? "A" : level
+            competences.push(`${compId} ${levelLetter}`)
+          }
+        })
+      })
+    }
+    
+    return competences.sort()
+  }
 
   // Helpers para ordenar por código de competencia
   const parseCode = (code: string): [number, number] => {
@@ -390,7 +410,6 @@ export default function UserResultsPage() {
                     <th className="py-2 pr-4">Usuario</th>
                     <th className="py-2 pr-4">Email</th>
                     <th className="py-2 pr-4">País</th>
-                    <th className="py-2 pr-4">Nivel actual</th>
                     <th className="py-2 pr-4">Competencias completadas</th>
                   </tr>
                 </thead>
@@ -412,13 +431,12 @@ export default function UserResultsPage() {
                       </td>
                       <td className="py-3 pr-4">{u.email || "-"}</td>
                       <td className="py-3 pr-4">{u.country || "-"}</td>
-                      <td className="py-3 pr-4 capitalize">{u.currentLevel || "-"}</td>
                       <td className="py-3 pr-4">
                         <div className="flex flex-wrap gap-1">
-                          {(u.completedCompetences ?? []).length > 0 ? (
-                            [...(u.completedCompetences ?? [])]
-                              .sort(compareCodes)
-                              .map((c) => (
+                          {(() => {
+                            const competences = getCompletedCompetencesWithLevel(u)
+                            return competences.length > 0 ? (
+                              competences.map((c) => (
                                 <span
                                   key={`${u.uid}-${c}`}
                                   className={`px-2 py-0.5 rounded-full text-xs border ${
@@ -430,12 +448,13 @@ export default function UserResultsPage() {
                                   {c}
                                 </span>
                               ))
-                          ) : (
-                            <span className="text-gray-400 text-xs">—</span>
-                          )}
+                            ) : (
+                              <span className="text-gray-400 text-xs">—</span>
+                            )
+                          })()}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Total: {u.completedCompetences?.length || 0}
+                          Total: {getCompletedCompetencesWithLevel(u).length}
                         </div>
                       </td>
                     </tr>
