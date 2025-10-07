@@ -68,20 +68,16 @@ export default function Page() {
     return ok
   }, [actions])
 
-  const reflectionCorrect = useMemo(() => {
-    const hasAllCorrect =
-      measures.includes("vpn") &&
-      measures.includes("no_auto") &&
-      measures.includes("https")
-    const hasAnyWrong = measures.includes("horario") || measures.includes("logout")
-    return hasAllCorrect && !hasAnyWrong
+  // Cada medida correcta suma 1 punto; las incorrectas no restan.
+  const measuresCorrectCount = useMemo(() => {
+    return correctMeasures.reduce((acc, m) => acc + (measures.includes(m) ? 1 : 0), 0)
   }, [measures])
 
-  // Total subpuntos: 0–5 (4 riesgos + 1 medidas)
-  const totalSubpoints = risksCorrectCount + (reflectionCorrect ? 1 : 0)
+  // Total de puntos: 0–7 (4 riesgos + 3 medidas correctas)
+  const totalPoints = risksCorrectCount + measuresCorrectCount
 
-  // Punto global de la pregunta: 1 si total >= 3, si no 0
-  const point: 0 | 1 = totalSubpoints >= 3 ? 1 : 0
+  // Punto global de la pregunta: 1 si total >= 4, si no 0
+  const point: 0 | 1 = totalPoints >= 4 ? 1 : 0
 
   // ===== Sesión =====
   useEffect(() => {
@@ -276,7 +272,7 @@ export default function Page() {
             <div className="mt-8 flex items-center justify-end">
               <Button
                 onClick={handleNext}
-                className="w-full sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
+                className="w/all sm:w-auto px-8 sm:px-10 py-3 bg-[#286675] rounded-xl font-medium text-white shadow-lg hover:bg-[#3a7d89]"
               >
                 Siguiente
               </Button>

@@ -6,7 +6,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, Settings as Gear, Star } from "lucide-react"
 
-const STORAGE_KEY = "ladico:4.2:avanzado:ej1"
+/** ⬇️ Namespacing por usuario vía ?user= (p.ej. /ruta?user=ana) */
+const STORAGE_NS = "ladico:4.2:avanzado:ej1"
+const USER_ID =
+  (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("user") : null) ||
+  "anon"
+/** ⬇️ Clave final por usuario (evita “mezcla” entre usuarios) */
+const STORAGE_KEY = `${STORAGE_NS}:u:${USER_ID}`
 
 type PersistedSim = {
   security?: {
@@ -137,6 +143,32 @@ export default function SimMailPage() {
   const rememberDevice = !!persisted.security?.rememberDevice
   const autoVacation = !!persisted.security?.autoVacation
 
+  /** ⬇️ Lógica de puntaje solicitada.
+   *  Reglas:
+   *  - Cerrar todas las sesiones +1
+   *  - Alertas de seguridad +1
+   *  - Preguntas de seguridad para recuperar la contraseña -1
+   *  - Cambiar contraseña +1
+   *  - Activar verificación en dos pasos (2FA) +1
+   *  - Distractores (savePasswords, rememberDevice, autoVacation) no suman ni restan
+   */
+  const score = useMemo(() => {
+    let s = 0
+    if (signedOutAll) s += 1
+    if (alertsOn) s += 1
+    if (securityQEnabled) s -= 1
+    if (changedPassword) s += 1
+    if (enabled2FA) s += 1
+    return s
+  }, [signedOutAll, alertsOn, securityQEnabled, changedPassword, enabled2FA])
+
+  /** ⬇️ Guardamos el puntaje por usuario (no altera la UI) */
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}:score`, String(score))
+    } catch {}
+  }, [score])
+
   // Estado correo
   const [folder, setFolder] = useState<Folder>("inbox")
   const [openSettings, setOpenSettings] = useState(false)
@@ -245,7 +277,7 @@ export default function SimMailPage() {
                       { id: "inbox", label: "Inbox", badge: listCount(MESSAGES, "inbox") },
                       { id: "sent", label: "Sent messages", badge: 0 },
                       { id: "drafts", label: "Drafts", badge: 0 },
-                      { id: "spam", label: "Spam", badge: 0 },
+                      { id: "spam", label: 0 ? "Spam" : "Spam", badge: 0 },
                       { id: "bin", label: "Bin", badge: 0 },
                     ] as { id: Folder; label: string; badge?: number }[]).map((f) => {
                       const active = folder === f.id

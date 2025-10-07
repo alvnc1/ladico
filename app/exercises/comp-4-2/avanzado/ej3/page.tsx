@@ -24,8 +24,8 @@ const COMPETENCE = "4.2"
 const LEVEL = "avanzado"
 const LEVEL_FS = "Avanzado"
 const TOTAL_QUESTIONS = 3
-const Q_ONE_BASED = 3       // P3 -> setPoint  ✅
-const Q_ZERO_BASED = 2      // P3 -> markAnswered ✅
+const Q_ONE_BASED = 3       // P3 -> setPoint
+const Q_ZERO_BASED = 2      // P3 -> markAnswered
 const SESSION_PREFIX = "session:4.2:Avanzado"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
@@ -84,7 +84,7 @@ function pickStem(country: Country | null, variant: AgeVariant): string {
 }
 
 // ===== Data (T&C) =====
-type ParaId = 1 | 2 | 3 | 4 | 5 | 6 | 7
+type ParaId = 1 | 2 | 3 | 4 | 5 | 6
 const PARAGRAPHS: { id: ParaId; title: string; text: string }[] = [
   {
     id: 1,
@@ -124,9 +124,7 @@ const PARAGRAPHS: { id: ParaId; title: string; text: string }[] = [
   },
 ]
 
-// correct: select 4,5,6; classify "bajo"; right justification for "bajo"
-const CORRECT_PARAS: ParaId[] = [4, 5, 6] as const
-
+// Opciones de clasificación/justificación
 type LevelChoice = "alto" | "medio" | "bajo" | ""
 type JustKey = "ok" | "d1" | "d2" | ""
 
@@ -176,8 +174,7 @@ export default function Page() {
   // Modal state
   const [open, setOpen] = useState(false)
 
-  // Selections
-  const [selectedParas, setSelectedParas] = useState<ParaId[]>([])
+  // Selecciones del usuario (ya NO hay selección de párrafos)
   const [level, setLevel] = useState<LevelChoice>("")
   const [just, setJust] = useState<JustKey>("")
 
@@ -212,39 +209,25 @@ export default function Page() {
         setSessionId(id)
         if (typeof window !== "undefined") localStorage.setItem(LS_KEY, id)
       } catch (e) {
-        console.error("No se pudo asegurar la sesión (4.2 Avanzado P1):", e)
+        console.error("No se pudo asegurar la sesión (4.2 Avanzado P3):", e)
       } finally {
         ensuringRef.current = false
       }
     })()
   }, [user?.uid, sessionId])
 
-  // ===== Evaluation =====
-  const parasCorrect = useMemo(() => {
-    const a = [...selectedParas].sort().join(",")
-    const b = [...CORRECT_PARAS].sort().join(",")
-    return a === b
-  }, [selectedParas])
-
+  // ===== Evaluation (NUEVA: sin puntaje por párrafos) =====
   const levelCorrect = level === "bajo"
-  const justCorrect =
-    (level === "bajo" && just === "ok") ||
-    (level === "medio" && just === "ok") ||
-    (level === "alto" && just === "ok")
+  const justCorrect = level !== "" && just === "ok" // "ok" es la correcta para el nivel elegido
 
-  // Full point only if exact paragraphs + expected global level (bajo) + correcto para ese nivel
-  const point: 0 | 1 = parasCorrect && levelCorrect && justCorrect ? 1 : 0
+  // Nuevo puntaje: 2 (clasificación) + 1 (justificación). Punto global si ≥ 2.
+  const rawPoints = (levelCorrect ? 2 : 0) + (justCorrect ? 1 : 0)
+  const point: 0 | 1 = rawPoints >= 2 ? 1 : 0
 
   // ===== Handlers =====
-  const togglePara = (id: ParaId) => {
-    setSelectedParas((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
-  }
-
   const handleLevelChange = (v: LevelChoice) => {
     setLevel(v)
-    setJust("") // reset justification when level changes
+    setJust("") // reset justification al cambiar nivel
   }
 
   const handleFinish = async () => {
@@ -355,13 +338,12 @@ export default function Page() {
               Evaluación de términos y condiciones
             </h2>
 
-            {/* Contexto personalizado + instrucciones unidas (fluido) */}
+            {/* Contexto personalizado + instrucciones (actualizadas) */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575] space-y-3">
                 <p className="text-gray-700 leading-relaxed">
-                  {personalizedStem} Antes de continuar, debes abrir los Términos y condiciones y revisarlos cuidadosamente.
-                  En la ventana emergente encontrarás la política de privacidad en párrafos numerados. Clasifica el nivel de 
-                  protección y selecciona los párrafos que justifiquen tu decisión. Luego, explica tu elección.
+                  {personalizedStem} En los Términos y condiciones verás la política de privacidad que ya 
+                  aceptaste por defecto. Clasifica el nivel de protección global y luego justifica tu decisión.
                 </p>
                 <button
                   type="button"
@@ -373,7 +355,7 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Controles de clasificación y justificación */}
+            {/* Controles de clasificación y justificación (sin cambios visuales) */}
             <div className="grid grid-cols-1 gap-4">
               <div className="rounded-2xl border-2 border-gray-200 p-4">
                 <div className="text-sm font-medium text-gray-900 mb-2">Clasificación global</div>
@@ -431,7 +413,7 @@ export default function Page() {
         </Card>
       </div>
 
-      {/* ===== Modal T&C ===== */}
+      {/* ===== Modal T&C (SOLO LECTURA) ===== */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
@@ -449,34 +431,21 @@ export default function Page() {
 
             <div className="px-5 py-4 overflow-y-auto" style={{ maxHeight: "calc(85vh - 64px - 72px)" }}>
               <div className="space-y-3">
-                {PARAGRAPHS.map((p) => {
-                  const checked = selectedParas.includes(p.id)
-                  return (
-                    <label
-                      key={p.id}
-                      className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
-                        checked ? "border-[#286575] bg-[#e6f2f3]" : "border-gray-200 hover:border-[#286575]"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="mt-1 accent-[#286575]"
-                        checked={checked}
-                        onChange={() => togglePara(p.id)}
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{p.title}</div>
-                        <p className="text-sm text-gray-800">{p.text}</p>
-                      </div>
-                    </label>
-                  )
-                })}
+                {PARAGRAPHS.map((p) => (
+                  <div
+                    key={p.id}
+                    className="p-3 rounded-xl border-2 border-gray-200 bg-white"
+                  >
+                    <div className="text-sm font-medium text-gray-900">{p.title}</div>
+                    <p className="text-sm text-gray-800">{p.text}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="px-5 py-4 border-t bg-gray-50 flex items-center justify-between">
               <div className="text-xs text-gray-600">
-                Marca los párrafos que justifican tu evaluación y cierra para continuar.
+               
               </div>
               <Button onClick={() => setOpen(false)} className="bg-[#286675] hover:bg-[#3a7d89] text-white rounded-xl">
                 Listo
