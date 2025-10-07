@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, XCircle, CheckCircle, XCircle as XIcon } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { updateCurrentLevel } from "@/lib/updateCurrentLevel"
+import { doc, updateDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 function ResultsAvanzadoContent() {
     const sp = useSearchParams()
@@ -88,13 +91,34 @@ function ResultsAvanzadoContent() {
         }
     }, [qp.correct, qp.total, qp.passed, qp.score, qp.level, qp.competence, qp.q1, qp.q2, qp.q3, fallback])
 
-    // 4) Limpiar progreso local de este nivel
+    // 4) Limpiar progreso local, marcar finalización y actualizar currentLevel
     useEffect(() => {
         try {
         const key = `ladico:${data.competence}:${data.level}:progress`
         localStorage.removeItem(key)
         } catch {}
-    }, [data.competence, data.level])
+
+        // Marcar como finalizado (aprobado o reprobado) para que el dashboard lo muestre
+        try {
+            const slug = data.level.toLowerCase()
+            localStorage.setItem(`ladico:completed:${data.competence}:${slug}`, "1")
+            localStorage.setItem("ladico:progress:version", String(Date.now()))
+            window.dispatchEvent(new Event("ladico:refresh"))
+        } catch {
+            /* no-op */
+        }
+
+        // Actualizar currentLevel si se completó el área
+        ;(async () => {
+            if (user?.uid && userData) {
+                try {
+                    await updateCurrentLevel(user.uid, userData, data.level, isTeacher)
+                } catch (e) {
+                    console.warn("No se pudo actualizar currentLevel:", e)
+                }
+            }
+        })()
+    }, [data.competence, data.level, user?.uid, userData, isTeacher])
 
     const handleBack = () => router.push("/dashboard")
     const handleRetry = () => router.push("/exercises/comp-3-4/avanzado/ej1")

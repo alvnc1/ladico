@@ -9,6 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, XCircle, CheckCircle, XCircle as XIcon, RotateCcw, ChevronRight } from "lucide-react"
 import { finalizeSession } from "@/lib/testSession"
 import { useAuth } from "@/contexts/AuthContext"
+import { updateCurrentLevel } from "@/lib/updateCurrentLevel"
+import { doc, updateDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 function ResultsIntermedioContent() {
     const sp = useSearchParams()
@@ -98,13 +101,23 @@ function ResultsIntermedioContent() {
         }
     }, [qp.correct, qp.total, qp.passed, qp.score, qp.level, qp.competence, qp.q1, qp.q2, qp.q3, qp.sid, fallback])
 
-    // ==== 4) Al montar: limpiar progreso local y (si hay sid) finalizar sesión ====
+    // ==== 4) Al montar: limpiar progreso local, marcar finalización y (si hay sid) finalizar sesión ====
     useEffect(() => {
         try {
         const key = `ladico:${data.competence}:${data.level}:progress`
         localStorage.removeItem(key)
         } catch {
         /* no-op */
+        }
+
+        // Marcar como finalizado (aprobado o reprobado) para que el dashboard lo muestre
+        try {
+            const slug = data.level.toLowerCase()
+            localStorage.setItem(`ladico:completed:${data.competence}:${slug}`, "1")
+            localStorage.setItem("ladico:progress:version", String(Date.now()))
+            window.dispatchEvent(new Event("ladico:refresh"))
+        } catch {
+            /* no-op */
         }
 
         ;(async () => {
@@ -119,7 +132,18 @@ function ResultsIntermedioContent() {
             console.warn("No se pudo finalizar la sesión en resultados:", e)
         }
         })()
-    }, [data.sid, data.competence, data.level, data.correct, data.total])
+
+        // Actualizar currentLevel si se completó el área
+        ;(async () => {
+            if (user?.uid && userData) {
+                try {
+                    await updateCurrentLevel(user.uid, userData, data.level, isTeacher)
+                } catch (e) {
+                    console.warn("No se pudo actualizar currentLevel:", e)
+                }
+            }
+        })()
+    }, [data.sid, data.competence, data.level, data.correct, data.total, user?.uid, userData, isTeacher])
 
     const handleBack = () => router.push("/dashboard")
     const handleRetry = () => router.push("/exercises/comp-3-4/intermedio/ej1")
