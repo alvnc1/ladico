@@ -24,7 +24,7 @@ const OPTIONS: { key: Key; text: string }[] = [
   { key: "E", text: "Usar redes móviles solo para correos cortos y guardar todos los archivos en la nube." },
 ] as const
 
-// Respuesta correcta EXACTA: A, B y C
+// Respuestas correctas: A, B y C
 const CORRECT_SET = new Set<Key>(["A", "B", "C"])
 
 export default function Page() {
@@ -84,11 +84,13 @@ export default function Page() {
     })
   }
 
-  // ====== Puntaje (exactitud) ======
+  // ====== Puntaje (cada correcta suma 1; punto si ≥ 2 correctas) ======
   const point: 0 | 1 = useMemo(() => {
-    if (selected.size !== CORRECT_SET.size) return 0
-    for (const k of CORRECT_SET) if (!selected.has(k)) return 0
-    return 1
+    let correctCount = 0
+    selected.forEach(k => {
+      if (CORRECT_SET.has(k)) correctCount++
+    })
+    return correctCount >= 2 ? 1 : 0
   }, [selected])
 
   // ====== Siguiente (no finaliza; P1 -> P2) ======
@@ -140,7 +142,7 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Header */}
-      <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
+      <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-2xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-white space-y-2 sm:space-y-0">
             <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-4">
@@ -187,6 +189,7 @@ export default function Page() {
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
               Elegir las acciones digitales más sostenible.
             </h2>
+
             {/* Escenario (contexto) */}
             <div className="mb-6">
               <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575] space-y-3">
@@ -201,7 +204,8 @@ export default function Page() {
                 </p>
               </div>
             </div>
-            {/* Tabla de datos (FUERA del contexto, como pediste) */}
+
+            {/* Tabla de datos */}
             <div className="mb-6 overflow-x-auto">
               <table className="w-full text-left border border-gray-200 rounded-xl overflow-hidden">
                 <thead className="bg-gray-100">

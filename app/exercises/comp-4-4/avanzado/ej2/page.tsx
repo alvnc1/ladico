@@ -26,14 +26,16 @@ function clearSimStorage() {
 }
 
 type Persisted = {
+  // Estructura que guarda el SIM:
+  // { settings: { bluetoothOff, btAutoConnectOff, hotspotOff, gmailWifiOnlyAttachments, ytDefaultQuality }, sub }
   settings?: {
-    autoBrightness?: boolean
-    batterySaver?: boolean
-    darkMode?: boolean
-    preferWifi?: boolean
-    disableBackgroundRefresh?: boolean
-    locationAlwaysOn?: boolean // penaliza si está activado "siempre"
+    bluetoothOff?: boolean
+    btAutoConnectOff?: boolean
+    hotspotOff?: boolean
+    gmailWifiOnlyAttachments?: boolean
+    ytDefaultQuality?: boolean
   }
+  sub?: number
 }
 
 function loadPersisted(): Persisted {
@@ -114,20 +116,27 @@ export default function AdvancedEj2Page() {
   const handleNext = useCallback(async () => {
     // 1) Leer el estado del SIM (teléfono)
     const persisted = loadPersisted()
-    const s = persisted.settings || {}
 
-    // 2) Calcular subpuntos
-    // Acciones positivas: preferWifi, autoBrightness, batterySaver, darkMode, disableBackgroundRefresh
-    // Penaliza si locationAlwaysOn está true
+    // 2) Calcular subpuntos (nuevo sistema):
+    // 1 punto por cada acción:
+    // - bluetoothOff
+    // - btAutoConnectOff
+    // - hotspotOff
+    // - gmailWifiOnlyAttachments
+    // - ytDefaultQuality
+    // Con 3 o más ⇒ punto de la pregunta.
     let sub = 0
-    if (s.preferWifi) sub += 1
-    if (s.autoBrightness) sub += 1
-    if (s.batterySaver) sub += 1
-    if (s.darkMode) sub += 1
-    if (s.disableBackgroundRefresh) sub += 1
-    if (s.locationAlwaysOn) sub -= 1
+    if (typeof persisted.sub === "number") {
+      sub = persisted.sub
+    } else {
+      const s = persisted.settings || {}
+      if (s.bluetoothOff) sub += 1
+      if (s.btAutoConnectOff) sub += 1
+      if (s.hotspotOff) sub += 1
+      if (s.gmailWifiOnlyAttachments) sub += 1
+      if (s.ytDefaultQuality) sub += 1
+    }
 
-    // Reglas: 3+ → correcto (1), si no 0
     const p2: 0 | 1 = sub >= 3 ? 1 : 0
 
     // 3) Guardar punto local (nivel/competencia)
@@ -195,7 +204,7 @@ export default function AdvancedEj2Page() {
       {/* Enunciado */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <Card className="bg-white shadow-2xl rounded-2xl border-0 ring-2 ring-[#286575]/20 w-full max-w-[840px] mx-auto">
-          <CardContent className="p-4 sm:p-6 lg:p-8 space-y-6">
+          <CardContent className="p-4 sm:px-6 lg:p-8 space-y-6">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
               Elegir configuraciones digitales que reduzcan el impacto ambiental en el uso rutinario del teléfono
             </h2>

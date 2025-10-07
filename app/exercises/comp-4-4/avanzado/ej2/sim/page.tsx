@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,6 +20,8 @@ import {
   Grid,
   Globe,
 } from "lucide-react"
+
+const STORAGE_KEY = "ladico:4.4:avanzado:ej2"
 
 type Screen =
   | "root"
@@ -69,6 +71,37 @@ export default function SettingsSim() {
 
   const [ytDefaultQuality, setYtDefaultQuality] = useState(false)
   const [ytOfflineDownloads, setYtOfflineDownloads] = useState(false)
+
+  // ⬇️ Sistema de puntaje (solo esto agregado): 1 punto por cada acción correcta; con 3 o más ⇒ punto de la pregunta.
+  useEffect(() => {
+    try {
+      const actions = {
+        bluetoothOff: !btOn,                     // desactivar bluetooth
+        btAutoConnectOff: !btAutoConnect,        // desactivar nuevas conexiones automáticas
+        hotspotOff: !hotspot,                    // desactivar compartir Internet
+        gmailWifiOnlyAttachments: gmailWifiOnlyAttachments, // activar adjuntos solo en Wi-Fi (Gmail)
+        ytDefaultQuality: ytDefaultQuality,      // activar calidad de video predeterminada (YouTube)
+      }
+
+      const sub =
+        (actions.bluetoothOff ? 1 : 0) +
+        (actions.btAutoConnectOff ? 1 : 0) +
+        (actions.hotspotOff ? 1 : 0) +
+        (actions.gmailWifiOnlyAttachments ? 1 : 0) +
+        (actions.ytDefaultQuality ? 1 : 0)
+
+      const payload = { settings: actions, sub }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+    } catch {
+      // no-op
+    }
+  }, [
+    btOn,
+    btAutoConnect,
+    hotspot,
+    gmailWifiOnlyAttachments,
+    ytDefaultQuality,
+  ])
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
@@ -232,7 +265,7 @@ export default function SettingsSim() {
             {/* General > Información */}
             {screen === "info" && (
               <Card>
-                <KV label="Nombre" value="iPhone de Josefa" />
+                <KV label="Nombre" value="iPhone" />
                 <Divider />
                 <KV label="Versión" value="iOS 17.5 (21F90)" />
                 <Divider />
