@@ -81,7 +81,7 @@ export default function NightPage() {
             {/* ❌ Silenciar todas las notificaciones */}
             <Row
               title="Silenciar todas las notificaciones desde las 22:00"
-              description="Bloquea notificaciones útiles sin fomentar un descanso equilibrado."
+              description="Bloquea notificaciones."
               active={state.muteAll}
               onToggle={(v) => setState((s) => ({ ...s, muteAll: v }))}
             />
@@ -89,7 +89,7 @@ export default function NightPage() {
             {/* ❌ Silenciar llamadas */}
             <Row
               title="Silenciar llamadas desde las 22:00"
-              description="Podría impedir recibir comunicaciones importantes."
+              description="Bloquea llamadas."
               active={state.muteCalls}
               onToggle={(v) => setState((s) => ({ ...s, muteCalls: v }))}
             />

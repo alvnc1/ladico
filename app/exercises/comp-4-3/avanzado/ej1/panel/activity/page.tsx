@@ -85,8 +85,8 @@ export default function ActivityPage() {
 
             {/* ❌ Notificación amistosa después de 3 horas */}
             <Row
-              title="Notificación amistosa después de 3 horas de uso continuo en una app"
-              description="Aviso tardío que no previene sesiones prolongadas."
+              title="Notificación cada 3 horas con resumen de actividad"
+              description="Resumen sobre uso de aplicaciones."
               active={state.friendlyAfter3h}
               onToggle={(v) => setState((s) => ({ ...s, friendlyAfter3h: v }))}
             />

@@ -11,28 +11,34 @@ import { ensureSession, markAnswered } from "@/lib/testSession"
 import { setPoint, getProgress, getPoint, levelPoints, isLevelPassed } from "@/lib/levelProgress"
 
 // ====== Configuración ======
-const STORAGE_KEY = "ladico:4.2:avanzado:ej1" // estado del SIM (correo)
+const STORAGE_KEY = "ladico:4.2:avanzado:ej1" // namespace base del SIM
 const COMPETENCE = "4.2" as const
 const LEVEL = "avanzado" as const
 const QUESTION_INDEX = 1 // Pregunta 1 de 3 (1-based para setPoint)
 const SESSION_PREFIX = "session:4.2:Avanzado"
 const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 
-// Estado esperado desde el SIM (puedes ajustar si tu SIM usa otras claves)
+// ⬇️ Clave por-usuario para evitar filtraciones entre cuentas
+const storageKeyFor = (uid?: string | null) => `${STORAGE_KEY}:u:${uid ?? "anon"}`
+
+// Estado esperado desde el SIM (se añaden flags nuevos usados en la rúbrica)
 type PersistedSim = {
   security?: {
     changedPassword?: boolean
     enabled2FA?: boolean
     signedOutAllSessions?: boolean
     reviewedRecentActivity?: boolean
+    // ⬇️ nuevos usados para puntaje
+    securityAlerts?: boolean
+    securityQuestionsEnabled?: boolean
   }
 }
 
-// Helpers de SIM
-function loadPersisted(): PersistedSim {
+// Helpers de SIM (lectura por-usuario)
+function loadPersisted(uid?: string | null): PersistedSim {
   if (typeof window === "undefined") return {}
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(storageKeyFor(uid))
     return raw ? (JSON.parse(raw) as PersistedSim) : {}
   } catch {
     return {}
@@ -82,18 +88,29 @@ export default function Advanced42Ej1Page() {
     })()
   }, [user?.uid, sessionId])
 
-  // Puntaje según acciones de seguridad aplicadas en el SIM
+  // Puntaje según acciones de seguridad aplicadas en el SIM (por-usuario)
   const point: 0 | 1 = useMemo(() => {
-    const p = loadPersisted()
+    const p = loadPersisted(user?.uid)
     const s = p.security || {}
-    let sub = 0
-    if (s.changedPassword) sub += 1
-    if (s.enabled2FA) sub += 1
-    if (s.signedOutAllSessions) sub += 1
-    if (s.reviewedRecentActivity) sub += 1
-    // Reglas: 1 punto si realizó 3 o más acciones recomendadas
-    return sub >= 3 ? 1 : 0
-  }, [])
+
+    // Rúbrica solicitada:
+    // - Cerrar todas las sesiones +1  -> signedOutAllSessions
+    // - Alertas de seguridad +1       -> securityAlerts
+    // - Preguntas de seguridad -1     -> securityQuestionsEnabled
+    // - Cambiar contraseña +1         -> changedPassword
+    // - Activar 2FA +1                -> enabled2FA
+    // - Distractores: no suman ni restan
+    let score = 0
+    if (s.signedOutAllSessions) score += 1
+    if (s.securityAlerts) score += 1
+    if (s.securityQuestionsEnabled) score -= 1
+    if (s.changedPassword) score += 1
+    if (s.enabled2FA) score += 1
+
+    // Regla binaria para otorgar el punto de la pregunta:
+    // ✅ 1 punto si el total alcanza al menos 3
+    return score >= 3 ? 1 : 0
+  }, [user?.uid])
 
   const handleNext = useCallback(async () => {
     // Guardar punto local
@@ -111,7 +128,7 @@ export default function Advanced42Ej1Page() {
       console.warn("No se pudo marcar P1 respondida:", e)
     }
 
-    // (No finalizamos sesión porque es P1 de 3) → continuar a P2
+    // Continuar a P2
     router.push("/exercises/comp-4-2/avanzado/ej2")
   }, [point, router, sessionId, user?.uid])
 
@@ -181,8 +198,9 @@ export default function Advanced42Ej1Page() {
                 Ingresa al entorno simulado de correo y aplica medidas de seguridad en tu cuenta.
               </p>
               <p className="text-sm">
+                {/* ⬇️ Pasamos ?user=<uid> para que el SIM guarde/lea bajo la misma clave por-usuario */}
                 <Link
-                  href="/exercises/comp-4-2/avanzado/ej1/sim"
+                  href={`/exercises/comp-4-2/avanzado/ej1/sim?user=${encodeURIComponent(user?.uid ?? "anon")}`}
                   className="text-blue-600 hover:underline font-medium"
                 >
                   Ir a correo
