@@ -1,4 +1,3 @@
-// app/account/page.tsx
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
@@ -7,8 +6,9 @@ import { Lock, Trash2, User, Link as LinkIcon, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Sidebar from "@/components/Sidebar"
 import { useAuth } from "@/contexts/AuthContext"
-import { db } from "@/lib/firebase"
+import { db, auth } from "@/lib/firebase"
 import { doc, updateDoc } from "firebase/firestore"
+import { signOut } from "firebase/auth"
 import {
   Select,
   SelectContent,
@@ -20,16 +20,7 @@ import { Input } from "@/components/ui/input"
 
 type TabKey = "profile" | "auth" | "delete"
 
-{/* const countries = [
-  "Argentina","Bolivia","Brasil","Chile","Colombia","Costa Rica","Cuba",
-  "Ecuador","El Salvador","Guatemala","Honduras","México","Nicaragua",
-  "Panamá","Paraguay","Perú","República Dominicana","Uruguay","Venezuela",
-]
-*/}
-const countries = [
-  "Argentina","Chile","Colombia","Perú","Uruguay"
-]
-
+const countries = ["Argentina", "Chile", "Colombia", "Perú", "Uruguay"]
 const genders = ["Femenino", "Masculino", "Prefiero no decir"]
 
 export default function AccountPage() {
@@ -42,6 +33,7 @@ export default function AccountPage() {
   const [gender, setGender] = useState<string>("")
   const [age, setAge] = useState<string>("")
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!user) router.push("/")
@@ -88,6 +80,47 @@ export default function AccountPage() {
       setSaving(false)
     }
   }
+
+  const handleDeleteAccount = async () => {
+    if (!user) return
+    const confirm1 = window.confirm(
+      "⚠️ Esta acción eliminará permanentemente tu cuenta y todos tus datos asociados (incluyendo resultados y sesiones).\n\n¿Deseas continuar?"
+    )
+    if (!confirm1) return
+
+    const confirm2 = window.prompt(
+      "Escribe 'ELIMINAR' para confirmar la eliminación permanente de tu cuenta:"
+    )
+    if (confirm2 !== "ELIMINAR") {
+      alert("Eliminación cancelada.")
+      return
+    }
+
+    try {
+      setDeleting(true)
+
+      // 🔥 Llamada al endpoint admin existente
+      const res = await fetch("/admin/delete-users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uids: [user.uid] }), // 👈 Enviamos array
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "No se pudo eliminar la cuenta.")
+
+      // 🔐 Logout local y redirección
+      await signOut(auth)
+      alert("Tu cuenta y todos tus datos fueron eliminados correctamente.")
+      router.push("/")
+    } catch (e: any) {
+      console.error("Error al eliminar la cuenta:", e)
+      alert(e?.message || "No se pudo eliminar la cuenta.")
+    } finally {
+      setDeleting(false)
+    }
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -167,7 +200,7 @@ export default function AccountPage() {
                     <Row label="Nombre" value={userData?.name || "-"} />
                     <Row label="Correo" value={user?.email || "-"} />
 
-                    {/* Rol visible */}
+                    {/* Rol */}
                     <div className="grid grid-cols-1 md:grid-cols-[220px,1fr] py-3 border-b border-gray-300">
                       <div className="text-sm text-gray-600 flex items-center gap-2">
                         Rol
@@ -186,7 +219,7 @@ export default function AccountPage() {
                       </div>
                     </div>
 
-                    {/* Campos nuevos: solo edita profesor; resto, lectura */}
+                    {/* Campos editables solo para profesor */}
                     {isProfesor ? (
                       <>
                         {/* País */}
@@ -195,17 +228,17 @@ export default function AccountPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-full max-w-sm">
                               <Select value={country} onValueChange={setCountry} disabled={saving}>
-                              <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
-                                <SelectValue placeholder="Selecciona" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
-                                {countries.map((c) => (
-                                  <SelectItem key={c} value={c}>
-                                    {c}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                                <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
+                                  <SelectValue placeholder="Selecciona" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
+                                  {countries.map((c) => (
+                                    <SelectItem key={c} value={c}>
+                                      {c}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         </div>
@@ -215,17 +248,17 @@ export default function AccountPage() {
                           <div className="text-sm text-gray-600">Género</div>
                           <div className="w-full max-w-sm">
                             <Select value={gender} onValueChange={setGender} disabled={saving}>
-                            <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
-                              <SelectValue placeholder="Selecciona" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
-                              {genders.map((g) => (
-                                <SelectItem key={g} value={g}>
-                                  {g}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <SelectTrigger className="rounded-2xl border-2 border-gray-200 focus:border-[#286675] h-11 lg:h-12">
+                                <SelectValue placeholder="Selecciona" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white rounded-2xl border border-gray-200 shadow-lg">
+                                {genders.map((g) => (
+                                  <SelectItem key={g} value={g}>
+                                    {g}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
 
@@ -286,7 +319,9 @@ export default function AccountPage() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-900">Proveedor</p>
-                          <p className="text-xs text-gray-500">Email &amp; Password (Firebase Auth)</p>
+                          <p className="text-xs text-gray-500">
+                            Email &amp; Password (Firebase Auth)
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -302,14 +337,16 @@ export default function AccountPage() {
                 {tab === "delete" && (
                   <div className="space-y-4">
                     <p className="text-sm text-gray-700">
-                      Esta acción eliminará permanentemente tu cuenta y todos tus datos asociados. No se puede deshacer.
+                      Esta acción eliminará permanentemente tu cuenta y todos tus datos asociados.
+                      No se puede deshacer.
                     </p>
                     <Button
                       variant="destructive"
+                      disabled={deleting}
                       className="bg-rose-600 hover:bg-rose-700 text-white rounded-3xl"
-                      onClick={() => alert("Aquí llamas a tu lógica de borrado")}
+                      onClick={handleDeleteAccount}
                     >
-                      Eliminar mi cuenta
+                      {deleting ? "Eliminando..." : "Eliminar mi cuenta"}
                     </Button>
                   </div>
                 )}
