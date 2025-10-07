@@ -111,7 +111,7 @@ export default function LimitDailyPage() {
             {/* 2) ❌ Recordatorios de tiempo en pantalla */}
             <Row
               title="Recordatorios de tiempo en pantalla"
-              description="Muestra avisos ocasionales sobre tiempo usado (no limita ni protege el descanso)."
+              description="Muestra avisos ocasionales sobre tiempo usado."
               active={state.screenTimeReminders}
               onToggle={(v) => setState((s) => ({ ...s, screenTimeReminders: v }))}
             />
@@ -119,7 +119,7 @@ export default function LimitDailyPage() {
             {/* 3) ❌ Resumen semanal */}
             <Row
               title="Resumen de tiempos en pantalla al final de la semana"
-              description="Entrega un informe semanal (no reduce el uso ni promueve pausas)."
+              description="Entrega un informe semanal."
               active={state.weeklySummary}
               onToggle={(v) => setState((s) => ({ ...s, weeklySummary: v }))}
             />

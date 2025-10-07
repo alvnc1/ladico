@@ -90,7 +90,7 @@ export default function ScreenPage() {
             {/* ❌ Bloqueo automático de pantalla */}
             <Row
               title="Bloqueo automático de pantalla después de 10 minutos de inactividad"
-              description="Bloquea el dispositivo sin promover pausas regulares."
+              description="Bloquea el dispositivo."
               active={state.autoLock}
               onToggle={(v) => setState((s) => ({ ...s, autoLock: v }))}
             />

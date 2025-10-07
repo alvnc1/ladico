@@ -3,6 +3,7 @@
 
 import { useMemo, useRef, useState, useEffect } from "react"
 import Link from "next/link"
+import { useAuth } from "@/contexts/AuthContext"
 import {
   ChevronLeft,
   ChevronRight,
@@ -86,6 +87,12 @@ const ALL_CHATS: Chat[] = [
 
 /* ================== Página ================== */
 export default function InstaInboxSim() {
+  const { user, userData } = useAuth() as any
+  const username = useMemo(
+  () => userData?.username || user?.displayName || (user?.email ? user.email.split("@")[0] : "Usuario"),
+  [userData?.username, user?.displayName, user?.email]
+)
+
   const [screen, setScreen] = useState<Screen>("inbox")
   const [activeChatId, setActiveChatId] = useState<ChatId | null>(null)
 
@@ -177,7 +184,7 @@ export default function InstaInboxSim() {
           {screen === "inbox" && (
             <>
               <DMHeader
-                username="jofloresss"
+                username={username}
                 right={
                   <button aria-label="Configuración" onClick={() => setScreen("settings")}>
                     <SettingsIcon className="w-5 h-5 opacity-80" />
@@ -288,7 +295,7 @@ export default function InstaInboxSim() {
             <>
               <DMHeader username="Mensajes" left={<BackBtn onClick={() => setScreen("notifications")} />} />
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-                <div className="text-sm text-white/70 mb-1">Solicitudes de mensajes</div>
+                <div className="text-sm text-white/70 mb-1">Solicitudes de mensajes de personas que no te siguen</div>
                 <div className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-3">
                   <div className="text-sm">{notifMessagesEnabled ? "Activadas" : "Desactivadas"}</div>
                   <Switch on={notifMessagesEnabled} setOn={setNotifMessagesEnabled} />
