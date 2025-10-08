@@ -5,14 +5,26 @@ import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, Settings as Gear, Star } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
-/** ⬇️ Namespacing por usuario vía ?user= (p.ej. /ruta?user=ana) */
+/** ⬇️ Namespacing por usuario (clave propia por uid) */
 const STORAGE_NS = "ladico:4.2:avanzado:ej1"
-const USER_ID =
-  (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("user") : null) ||
-  "anon"
-/** ⬇️ Clave final por usuario (evita “mezcla” entre usuarios) */
-const STORAGE_KEY = `${STORAGE_NS}:u:${USER_ID}`
+
+/** ⬇️ Estado por defecto: TODO apagado (OFF) */
+const DEFAULT_STATE: PersistedSim = {
+  security: {
+    changedPassword: false,
+    enabled2FA: false,
+    signedOutAllSessions: false,
+    reviewedRecentActivity: false,
+    securityAlerts: false,
+    securityQuestionsEnabled: false,
+    securityWord: "",
+    savePasswords: false,
+    rememberDevice: false,
+    autoVacation: false,
+  },
+}
 
 type PersistedSim = {
   security?: {
@@ -43,21 +55,6 @@ type Message = {
   starred?: boolean
   folder: Folder
   body: string
-}
-
-function loadPersisted(): PersistedSim {
-  if (typeof window === "undefined") return {}
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as PersistedSim) : {}
-  } catch {
-    return {}
-  }
-}
-function savePersisted(next: PersistedSim) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-  } catch {}
 }
 
 /** Switch accesible con “pelota” negra y estado verde cuando está activo */
@@ -121,8 +118,33 @@ function SettingCard(props: { title: string; hint?: string; status?: string; don
 }
 
 export default function SimMailPage() {
-  const [persisted, setPersisted] = useState<PersistedSim>(() => loadPersisted())
-  useEffect(() => savePersisted(persisted), [persisted])
+  const { user } = useAuth()
+
+  /** ⬇️ Clave por usuario (uid o 'anon') */
+  const STORAGE_KEY = useMemo(
+    () => `${STORAGE_NS}:u:${user?.uid ?? "anon"}`,
+    [user?.uid]
+  )
+
+  /** ⬇️ Carga por-usuario con defaults OFF */
+  const [persisted, setPersisted] = useState<PersistedSim>(DEFAULT_STATE)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      setPersisted(raw ? (JSON.parse(raw) as PersistedSim) : DEFAULT_STATE)
+    } catch {
+      setPersisted(DEFAULT_STATE)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [STORAGE_KEY])
+
+  /** ⬇️ Guarda por-usuario */
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
+    } catch {}
+  }, [persisted, STORAGE_KEY])
 
   const setFlag = (key: keyof NonNullable<PersistedSim["security"]>, value: boolean) => {
     setPersisted((p) => ({ ...p, security: { ...(p.security || {}), [key]: value } }))
@@ -143,15 +165,7 @@ export default function SimMailPage() {
   const rememberDevice = !!persisted.security?.rememberDevice
   const autoVacation = !!persisted.security?.autoVacation
 
-  /** ⬇️ Lógica de puntaje solicitada.
-   *  Reglas:
-   *  - Cerrar todas las sesiones +1
-   *  - Alertas de seguridad +1
-   *  - Preguntas de seguridad para recuperar la contraseña -1
-   *  - Cambiar contraseña +1
-   *  - Activar verificación en dos pasos (2FA) +1
-   *  - Distractores (savePasswords, rememberDevice, autoVacation) no suman ni restan
-   */
+  /** ⬇️ Lógica de puntaje solicitada. */
   const score = useMemo(() => {
     let s = 0
     if (signedOutAll) s += 1
@@ -167,7 +181,7 @@ export default function SimMailPage() {
     try {
       localStorage.setItem(`${STORAGE_KEY}:score`, String(score))
     } catch {}
-  }, [score])
+  }, [score, STORAGE_KEY])
 
   // Estado correo
   const [folder, setFolder] = useState<Folder>("inbox")

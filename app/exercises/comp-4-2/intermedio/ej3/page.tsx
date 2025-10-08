@@ -148,11 +148,10 @@ export default function Page() {
 
   // Puntaje según opciones correctas de la variante
   const point: 0 | 1 = useMemo(() => {
-    const chosen = Array.from(selected)
     const correctSet = new Set<OptionKey>(OPTIONS.filter(o => o.correct).map(o => o.key))
-    if (chosen.length !== correctSet.size) return 0
-    for (const c of chosen) if (!correctSet.has(c)) return 0
-    return 1
+    let subpoints = 0
+    for (const k of selected) if (correctSet.has(k)) subpoints++
+    return subpoints >= 2 ? 1 : 0
   }, [selected, OPTIONS])
 
   // 1) Carga sesión cacheada

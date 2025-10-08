@@ -88,18 +88,11 @@ export default function Advanced42Ej1Page() {
     })()
   }, [user?.uid, sessionId])
 
-  // Puntaje según acciones de seguridad aplicadas en el SIM (por-usuario)
+  // Puntaje (se recalculará también al continuar para evitar valores viejos)
   const point: 0 | 1 = useMemo(() => {
     const p = loadPersisted(user?.uid)
     const s = p.security || {}
 
-    // Rúbrica solicitada:
-    // - Cerrar todas las sesiones +1  -> signedOutAllSessions
-    // - Alertas de seguridad +1       -> securityAlerts
-    // - Preguntas de seguridad -1     -> securityQuestionsEnabled
-    // - Cambiar contraseña +1         -> changedPassword
-    // - Activar 2FA +1                -> enabled2FA
-    // - Distractores: no suman ni restan
     let score = 0
     if (s.signedOutAllSessions) score += 1
     if (s.securityAlerts) score += 1
@@ -107,14 +100,23 @@ export default function Advanced42Ej1Page() {
     if (s.changedPassword) score += 1
     if (s.enabled2FA) score += 1
 
-    // Regla binaria para otorgar el punto de la pregunta:
-    // ✅ 1 punto si el total alcanza al menos 3
     return score >= 3 ? 1 : 0
   }, [user?.uid])
 
   const handleNext = useCallback(async () => {
+    // 🔄 Recalcular del storage por si el usuario acaba de volver del SIM
+    const persisted = loadPersisted(user?.uid)
+    const s = persisted.security || {}
+    let score = 0
+    if (s.signedOutAllSessions) score += 1
+    if (s.securityAlerts) score += 1
+    if (s.securityQuestionsEnabled) score -= 1
+    if (s.changedPassword) score += 1
+    if (s.enabled2FA) score += 1
+    const freshPoint: 0 | 1 = score >= 3 ? 1 : 0
+
     // Guardar punto local
-    setPoint(COMPETENCE, LEVEL, QUESTION_INDEX, point)
+    setPoint(COMPETENCE, LEVEL, QUESTION_INDEX, freshPoint)
 
     // Marcar P1 respondida en sesión (índice 0-based: 0)
     try {
@@ -122,7 +124,7 @@ export default function Advanced42Ej1Page() {
         sessionId ||
         (typeof window !== "undefined" && user ? localStorage.getItem(sessionKeyFor(user.uid)) : null)
       if (sid) {
-        await markAnswered(sid, QUESTION_INDEX - 1, point === 1)
+        await markAnswered(sid, QUESTION_INDEX - 1, freshPoint === 1)
       }
     } catch (e) {
       console.warn("No se pudo marcar P1 respondida:", e)
@@ -130,7 +132,7 @@ export default function Advanced42Ej1Page() {
 
     // Continuar a P2
     router.push("/exercises/comp-4-2/avanzado/ej2")
-  }, [point, router, sessionId, user?.uid])
+  }, [router, sessionId, user?.uid])
 
   // UI
   const progressPct = (1 / 3) * 100 // Pregunta 1 de 3
@@ -198,9 +200,9 @@ export default function Advanced42Ej1Page() {
                 Ingresa al entorno simulado de correo y aplica medidas de seguridad en tu cuenta.
               </p>
               <p className="text-sm">
-                {/* ⬇️ Pasamos ?user=<uid> para que el SIM guarde/lea bajo la misma clave por-usuario */}
+                {/* ⬇️ Sin query (?user=): el SIM ya guarda/lee por uid internamente */}
                 <Link
-                  href={`/exercises/comp-4-2/avanzado/ej1/sim?user=${encodeURIComponent(user?.uid ?? "anon")}`}
+                  href={`/exercises/comp-4-2/avanzado/ej1/sim`}
                   className="text-blue-600 hover:underline font-medium"
                 >
                   Ir a correo

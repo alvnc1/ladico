@@ -287,7 +287,7 @@ export default function Page() {
             {/* Clasificación + Justificación */}
             <div className="rounded-2xl border-2 border-gray-200 p-4 bg-white hover:border-[#286575] hover:bg-gray-50 transición-colors shadow-sm">
               <div className="text-sm font-medium text-gray-900 mb-2">
-                Evalúa el nivel de protección y justifica tu elección.
+                Evalúa el nivel de protección de configuración por defecto del teléfono y justifica tu elección.
               </div>
 
               <div className="mb-4">
