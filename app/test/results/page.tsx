@@ -10,8 +10,6 @@ import { finalizeSession } from "@/lib/testSession"
 import { useAuth } from "@/contexts/AuthContext"
 import { skillsInfo } from "@/components/data/digcompSkills"
 import { updateCurrentLevel } from "@/lib/updateCurrentLevel"
-import { doc, updateDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
 
 function ResultsUniversalContent() {
   const sp = useSearchParams()
@@ -83,35 +81,7 @@ function ResultsUniversalContent() {
         }
       }
     })()
-
-    // Actualizar completedCompetences si aprobó (solo para estudiantes)
-    ;(async () => {
-      if (passed && !isTeacher && user?.uid && userData && db) {
-        try {
-          const updatedCompetences = [...userData.completedCompetences]
-          const levelLetter = level === "basico" ? "B" : level === "intermedio" ? "I" : level === "avanzado" ? "A" : level
-          const competenceWithLevel = `${competence} ${levelLetter}`
-          
-          // Remover cualquier entrada anterior de esta competencia (sin nivel o con otro nivel)
-          const competenceId = competence
-          const filteredCompetences = updatedCompetences.filter(comp => {
-            // Mantener competencias que no sean de la misma competencia
-            return !comp.startsWith(competenceId + " ")
-          })
-          
-          // Agregar la nueva entrada con el nivel correspondiente
-          filteredCompetences.push(competenceWithLevel)
-          
-          await updateDoc(doc(db, "users", user.uid), {
-            completedCompetences: filteredCompetences,
-            LadicoScore: userData.LadicoScore + 10,
-          })
-        } catch (error) {
-          console.error("Error updating user progress:", error)
-        }
-      }
-    })()
-  }, [sid, competence, level, correct, total, passMin, user?.uid, userData, isTeacher, passed])
+  }, [sid, competence, level, correct, total, passMin, user?.uid, userData, isTeacher])
 
   // --------- Acciones ----------
   const handleBack = () => router.push("/dashboard")
