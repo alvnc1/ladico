@@ -77,12 +77,27 @@ export default function UserResultsPage() {
   const getCompletedCompetencesWithLevel = (user: UserDoc): string[] => {
     const competences: string[] = []
     
+    // Primero, agregar competencias del campo completedCompetences (formato: "1.1 B", "1.1 I", etc.)
+    if (user.completedCompetences) {
+      user.completedCompetences.forEach(comp => {
+        if (comp.includes(" ")) { // Formato con nivel
+          competences.push(comp)
+        }
+      })
+    }
+    
+    // Luego, agregar competencias del campo competenceStatus (formato: competenceStatus.1_1.basico = "approved")
     if (user.competenceStatus) {
       Object.entries(user.competenceStatus).forEach(([compId, levels]) => {
         Object.entries(levels).forEach(([level, status]) => {
           if (status === "approved") {
             const levelLetter = level === "basico" ? "B" : level === "intermedio" ? "I" : level === "avanzado" ? "A" : level
-            competences.push(`${compId} ${levelLetter}`)
+            const competenceWithLevel = `${compId.replace(/_/g, ".")} ${levelLetter}`
+            
+            // Solo agregar si no existe ya en completedCompetences
+            if (!competences.some(c => c === competenceWithLevel)) {
+              competences.push(competenceWithLevel)
+            }
           }
         })
       })
@@ -317,8 +332,9 @@ export default function UserResultsPage() {
                       País: u.country || "",
                       "Nivel actual": u.currentLevel || "",
                       "Puntaje Ladico": u.LadicoScore ?? "",
-                      "Competencias completadas (códigos)": (u.completedCompetences ?? []).join(", "),
-                      "Total competencias": u.completedCompetences?.length || 0,
+                      "Competencias completadas (códigos)": getCompletedCompetencesWithLevel(u).join(", "),
+                      "Total competencias": getCompletedCompetencesWithLevel(u).length,
+
                     }))
                     const ws = XLSX.utils.json_to_sheet(rows)
                     const wb = XLSX.utils.book_new()
