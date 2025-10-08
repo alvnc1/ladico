@@ -179,9 +179,22 @@ function TestResultsContent() {
           if (current) {
             const inArea = comps.filter(c => c.dimension === current.dimension).sort((a, b) => a.code.localeCompare(b.code))
             const currentIndex = inArea.findIndex(c => c.id === competenceId)
-            const nextCompetence = inArea[currentIndex + 1]
-            if (nextCompetence) setNextCompetenceInfo({ id: nextCompetence.id, name: nextCompetence.name })
-            else setNextCompetenceInfo(null)
+            
+            // Determinar la siguiente competencia (secuencial)
+            let nextCompetence: typeof inArea[0] | null = null
+            if (currentIndex < inArea.length - 1) {
+              // Si no es la última competencia, ir a la siguiente
+              nextCompetence = inArea[currentIndex + 1]
+            } else {
+              // Si es la última competencia del área, volver a la primera
+              nextCompetence = inArea[0]
+            }
+            
+            if (nextCompetence) {
+              setNextCompetenceInfo({ id: nextCompetence.id, name: nextCompetence.name })
+            } else {
+              setNextCompetenceInfo(null)
+            }
           }
           return
         }
@@ -258,9 +271,49 @@ function TestResultsContent() {
     }
   };
 
-  const handleContinueToNextCompetence = () => {
-    if (nextCompetenceInfo) {
-      router.push(`/test/${nextCompetenceInfo.id}?level=${levelParam}`)
+  const handleContinueToNextCompetence = async () => {
+    try {
+      // Cargar todas las competencias para obtener el orden correcto
+      const comps = await loadCompetences()
+      const current = comps.find(c => c.id === competenceId)
+      
+      if (!current) {
+        router.push("/dashboard")
+        return
+      }
+
+      // Obtener todas las competencias del área actual ordenadas
+      const inArea = comps
+        .filter(c => c.dimension === current.dimension)
+        .sort((a, b) => a.code.localeCompare(b.code))
+
+      // Encontrar el índice de la competencia actual
+      const currentIndex = inArea.findIndex(c => c.id === competenceId)
+      
+      if (currentIndex === -1) {
+        router.push("/dashboard")
+        return
+      }
+
+      // Determinar la siguiente competencia
+      let nextCompetence: typeof inArea[0] | null = null
+      
+      if (currentIndex < inArea.length - 1) {
+        // Si no es la última competencia, ir a la siguiente
+        nextCompetence = inArea[currentIndex + 1]
+      } else {
+        // Si es la última competencia del área, volver a la primera
+        nextCompetence = inArea[0]
+      }
+
+      if (nextCompetence) {
+        router.push(`/test/${nextCompetence.id}?level=${levelParam}`)
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (error) {
+      console.error("Error navegando a la siguiente competencia:", error)
+      router.push("/dashboard")
     }
   }
 
@@ -412,23 +465,14 @@ function TestResultsContent() {
               ) : (
                 /* --- USUARIO --- */
                 <>
-                  {/* Caso: última competencia del área */}
-                  {isLastCompetenceOfArea ? (
-                    areaCompleted && passed ? (
-                      <Button
-                        onClick={handleContinueEvaluation}
-                        className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                      >
-                        Continuar al siguiente nivel
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={handleReturnToDashboard}
-                        className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                      >
-                        Ir al Dashboard
-                      </Button>
-                    )
+                  {/* Lógica unificada para navegación secuencial */}
+                  {areaCompleted && passed ? (
+                    <Button
+                      onClick={handleContinueEvaluation}
+                      className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                    >
+                      Continuar al siguiente nivel
+                    </Button>
                   ) : (
                     <>
                       {areaCompleted && (
@@ -442,7 +486,10 @@ function TestResultsContent() {
                           onClick={handleContinueToNextCompetence}
                           className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
                         >
-                          Continuar con {nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...
+                          {isLastCompetenceOfArea 
+                            ? `Continuar con ${nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...`
+                            : `Continuar con ${nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...`
+                          }
                         </Button>
                       ) : !areaCompleted && !nextCompetenceInfo ? (
                         <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
