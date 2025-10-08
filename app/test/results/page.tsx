@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect } from "react"
+import { Suspense, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
@@ -9,15 +9,16 @@ import { Trophy, XCircle, CheckCircle, XCircle as XIcon, ChevronRight } from "lu
 import { finalizeSession } from "@/lib/testSession"
 import { useAuth } from "@/contexts/AuthContext"
 import { skillsInfo } from "@/components/data/digcompSkills"
-import { updateCurrentLevel } from "@/lib/updateCurrentLevel"
+import { markLevelCompleted } from "@/lib/levelProgress"
 import { doc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
 function ResultsUniversalContent() {
   const sp = useSearchParams()
   const router = useRouter()
-  const { user, userData } = useAuth()
+  const { userData } = useAuth()
   const isTeacher = userData?.role === "profesor"
+  const hasUpdatedFirebase = useRef(false)
 
   // --------- Parámetros recibidos (flexibles y con defaults) ----------
   const score = Number.parseInt(sp.get("score") || "0")
@@ -47,22 +48,21 @@ function ResultsUniversalContent() {
   const pairs = sp.get("pairs") // "12/15"
   const kscore = sp.get("kscore") // "80"
 
-  // --------- Limpieza local, marcar finalización y consolidación opcional ----------
+  // --------- Limpieza local y consolidación opcional ----------
   useEffect(() => {
     try {
       const key = `ladico:${competence}:${level}:progress`
       localStorage.removeItem(key)
+      
+      // Marcar el nivel como completado (aprobado o reprobado)
+      const levelMap: Record<string, "básico" | "intermedio" | "avanzado"> = {
+        "basico": "básico",
+        "intermedio": "intermedio", 
+        "avanzado": "avanzado"
+      }
+      const normalizedLevel = levelMap[level] || "básico"
+      markLevelCompleted(competence, normalizedLevel)
     } catch {/* no-op */}
-
-    // Marcar como finalizado (aprobado o reprobado) para que el dashboard lo muestre
-    try {
-      const slug = level.toLowerCase()
-      localStorage.setItem(`ladico:completed:${competence}:${slug}`, "1")
-      localStorage.setItem("ladico:progress:version", String(Date.now()))
-      window.dispatchEvent(new Event("ladico:refresh"))
-    } catch {
-      /* no-op */
-    }
 
     ;(async () => {
       if (!sid) return
@@ -73,45 +73,32 @@ function ResultsUniversalContent() {
       }
     })()
 
-    // Actualizar currentLevel si se completó el área
-    ;(async () => {
-      if (user?.uid && userData) {
-        try {
-          await updateCurrentLevel(user.uid, userData, level, isTeacher)
-        } catch (e) {
-          console.warn("No se pudo actualizar currentLevel:", e)
-        }
-      }
-    })()
+  }, [sid, competence, level, correct, total, passMin, passed, isTeacher])
 
-    // Actualizar completedCompetences si aprobó (solo para estudiantes)
-    ;(async () => {
-      if (passed && !isTeacher && user?.uid && userData && db) {
+  // Actualizar competencias completadas en Firebase si el usuario aprobó
+  useEffect(() => {
+    if (passed && userData && db && !isTeacher && !hasUpdatedFirebase.current) {
+      hasUpdatedFirebase.current = true
+      ;(async () => {
         try {
+          const competenceWithLevel = `${competence} ${level.charAt(0).toUpperCase()}`
           const updatedCompetences = [...userData.completedCompetences]
-          const levelLetter = level === "basico" ? "B" : level === "intermedio" ? "I" : level === "avanzado" ? "A" : level
-          const competenceWithLevel = `${competence} ${levelLetter}`
           
-          // Remover cualquier entrada anterior de esta competencia (sin nivel o con otro nivel)
-          const competenceId = competence
-          const filteredCompetences = updatedCompetences.filter(comp => {
-            // Mantener competencias que no sean de la misma competencia
-            return !comp.startsWith(competenceId + " ")
-          })
+          // Solo agregar si no existe ya
+          if (!updatedCompetences.includes(competenceWithLevel)) {
+            updatedCompetences.push(competenceWithLevel)
+          }
           
-          // Agregar la nueva entrada con el nivel correspondiente
-          filteredCompetences.push(competenceWithLevel)
-          
-          await updateDoc(doc(db, "users", user.uid), {
-            completedCompetences: filteredCompetences,
+          await updateDoc(doc(db, "users", userData.uid), {
+            completedCompetences: updatedCompetences,
             LadicoScore: userData.LadicoScore + 10,
           })
         } catch (error) {
           console.error("Error updating user progress:", error)
         }
-      }
-    })()
-  }, [sid, competence, level, correct, total, passMin, user?.uid, userData, isTeacher, passed])
+      })()
+    }
+  }, [passed, userData, db, isTeacher, competence, level])
 
   // --------- Acciones ----------
   const handleBack = () => router.push("/dashboard")
@@ -176,10 +163,6 @@ function ResultsUniversalContent() {
     const lastMinor = LAST_BY_AREA[major] ?? 4 // fallback genérico
     return minor >= lastMinor
   })()
-
-  // --- NUEVO: verificar si el área está completa en el nivel actual ---
-  // Simplificado: si estás en la última competencia del área y apruebas, asumimos que el área está completa
-  const isAreaCompletedAtLevel = isLastCompetenceOfArea && passed
 
   // --- NUEVO: máximo nivel + última competencia del área ---
   const isMaxLevelAndLast = isLastCompetenceOfArea && level === "avanzado"
@@ -348,20 +331,13 @@ function ResultsUniversalContent() {
                   ) : (
                     <>
                       {passed ? (
-                        // ✅ Si aprueba, verificar si puede avanzar al siguiente nivel
-                        isLastCompetenceOfArea && level !== "avanzado" && isAreaCompletedAtLevel ? (
+                        // ✅ Si aprueba, comportamiento normal
+                        isLastCompetenceOfArea && level !== "avanzado" ? (
                           <Button
                             onClick={handleGoToNextLevelInArea}
                             className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
                           >
                             Siguiente nivel
-                          </Button>
-                        ) : isLastCompetenceOfArea && level !== "avanzado" && !isAreaCompletedAtLevel ? (
-                          <Button
-                            onClick={handleBack}
-                            className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
-                          >
-                            Volver al Dashboard
                           </Button>
                         ) : (
                           <Button
