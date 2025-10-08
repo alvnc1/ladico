@@ -32,7 +32,7 @@ type PrivacyValue = typeof PRIVACY_OPTS[number]["value"]
 // Respuestas correctas según los íconos mostrados en el perfil ficticio
 // ⚠️ "Código postal" no aparece explícito → "Solo yo".
 const CORRECT: Record<"codigoPostal" | "listaAmigos", PrivacyValue> = {
-  codigoPostal: "solo-yo",
+  codigoPostal: "publico",
   listaAmigos: "amigos-de-amigos",
 }
 
