@@ -40,6 +40,9 @@ function TestResultsContent() {
   const [loadingQuestions, setLoadingQuestions] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
+  // ✅ NUEVO: bandera para detectar si ya se dio una vuelta completa por el área
+  const [hasCompletedLap, setHasCompletedLap] = useState(false)
+
   // Última competencia del área por código
   const isLastCompetenceOfArea = useMemo(() => {
     const id = (competenceId || "").trim()
@@ -180,6 +183,26 @@ function TestResultsContent() {
             const inArea = comps.filter(c => c.dimension === current.dimension).sort((a, b) => a.code.localeCompare(b.code))
             const currentIndex = inArea.findIndex(c => c.id === competenceId)
             
+            // ✅ NUEVO: tracking de visita por vuelta (dimension + nivel)
+            try {
+              const dimensionKey = `${current.dimension}:${levelParam}`
+              const raw = sessionStorage.getItem("visitedCompetences")
+              const map: Record<string, string[]> = raw ? JSON.parse(raw) : {}
+              const setArr = Array.isArray(map[dimensionKey]) ? map[dimensionKey] : []
+              if (competenceId && !setArr.includes(competenceId)) {
+                setArr.push(competenceId)
+              }
+              // normalizar (dedupe)
+              map[dimensionKey] = Array.from(new Set(setArr))
+              sessionStorage.setItem("visitedCompetences", JSON.stringify(map))
+              // si ya visitó todas en esta vuelta, marcamos lap completada
+              if (map[dimensionKey].length >= inArea.length) {
+                setHasCompletedLap(true)
+              }
+            } catch (e) {
+              console.error("❌ Error actualizando visitedCompetences:", e)
+            }
+
             // Determinar la siguiente competencia (secuencial)
             let nextCompetence: typeof inArea[0] | null = null
             if (currentIndex < inArea.length - 1) {
@@ -416,7 +439,7 @@ function TestResultsContent() {
                 <span className={`font-semibold ${q1 ? "text-green-700" : "text-red-700"}`}>{q1 ? "Correcta" : "Incorrecta"}</span>
               </div>
 
-              <div className={`flex items-center justify-between rounded-xl px-4 py-3 border text-sm mb-3 ${q2 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"}`}>
+              <div className={`flex items-center justify-between rounded-xl px-4 py-3 border text sm mb-3 ${q2 ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"}`}>
                 <div className="flex items-center gap-2 text-gray-800">
                   {q2 ? <CheckCircle className="w-5 h-5 text-green-700" /> : <XCircle className="w-5 h-5 text-red-700" />}
                   <span>Pregunta 2</span>
@@ -480,7 +503,7 @@ function TestResultsContent() {
                 /* --- USUARIO --- */
                 <>
                   {/* Lógica unificada para navegación secuencial */}
-                  {areaCompleted && passed ? (
+                  {areaCompleted && (areaCounts?.completed === areaCounts?.total) ? (
                     <div className="flex flex-col sm:flex-row gap-3 flex-1">
                       <Button
                         onClick={handleReturnToDashboard}
@@ -499,6 +522,11 @@ function TestResultsContent() {
                   ) : (
                     <>
                       {areaCompleted ? (
+                        <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
+                          Volver al Dashboard
+                        </Button>
+                      ) : hasCompletedLap ? (
+                        // ✅ NUEVO: si ya se dio la vuelta completa, ir al Dashboard
                         <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
                           Volver al Dashboard
                         </Button>
