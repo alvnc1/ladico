@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect, useRef } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { finalizeSession } from "@/lib/testSession"
 import { useAuth } from "@/contexts/AuthContext"
 import { skillsInfo } from "@/components/data/digcompSkills"
 import { markLevelCompleted } from "@/lib/levelProgress"
-import { doc, updateDoc } from "firebase/firestore"
+import { doc, updateDoc, collection, query, where, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
 function ResultsUniversalContent() {
@@ -19,6 +19,8 @@ function ResultsUniversalContent() {
   const { userData } = useAuth()
   const isTeacher = userData?.role === "profesor"
   const hasUpdatedFirebase = useRef(false)
+  const [isAreaComplete, setIsAreaComplete] = useState<boolean>(false)
+  const [isCheckingArea, setIsCheckingArea] = useState<boolean>(true)
 
   // --------- Parámetros recibidos (flexibles y con defaults) ----------
   const score = Number.parseInt(sp.get("score") || "0")
@@ -47,6 +49,64 @@ function ResultsUniversalContent() {
   // Métricas opcionales (p. ej., orden relativo)
   const pairs = sp.get("pairs") // "12/15"
   const kscore = sp.get("kscore") // "80"
+
+  // Función para verificar si todas las competencias del área están aprobadas
+  const checkAreaCompletion = async () => {
+    if (!userData?.uid || !db || isTeacher) {
+      setIsAreaComplete(true) // Los profesores siempre pueden avanzar
+      setIsCheckingArea(false)
+      return
+    }
+
+    try {
+      // Obtener la dimensión de la competencia actual
+      const [majorStr] = String(competence).split(".")
+      const major = Number(majorStr)
+      
+      if (Number.isNaN(major)) {
+        setIsAreaComplete(false)
+        setIsCheckingArea(false)
+        return
+      }
+
+      // Determinar las competencias del área basado en el número mayor
+      const areaCompetences: string[] = []
+      if (major === 1) {
+        // Área de búsqueda: 1.1, 1.2, 1.3
+        areaCompetences.push("1.1", "1.2", "1.3")
+      } else if (major === 4) {
+        // Área de seguridad: 4.1, 4.2, 4.3, 4.4
+        areaCompetences.push("4.1", "4.2", "4.3", "4.4")
+      }
+
+      // Verificar si todas las competencias del área están aprobadas
+      let approvedCount = 0
+      for (const compId of areaCompetences) {
+        const qs = await getDocs(
+          query(
+            collection(db, "testSessions"),
+            where("userId", "==", userData.uid),
+            where("competence", "==", compId),
+            where("level", "==", level)
+          )
+        )
+        const hasPassed = qs.docs.some((d) => (d.data() as any)?.passed === true)
+        if (hasPassed) approvedCount++
+      }
+
+      setIsAreaComplete(approvedCount === areaCompetences.length)
+    } catch (error) {
+      console.error("Error verificando completitud del área:", error)
+      setIsAreaComplete(false)
+    } finally {
+      setIsCheckingArea(false)
+    }
+  }
+
+  // Verificar completitud del área al cargar
+  useEffect(() => {
+    checkAreaCompletion()
+  }, [userData?.uid, competence, level, isTeacher])
 
   // --------- Limpieza local y consolidación opcional ----------
   useEffect(() => {
@@ -298,7 +358,12 @@ function ResultsUniversalContent() {
 
             {/* Acciones */}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              {isTeacher ? (
+              {isCheckingArea ? (
+                <div className="flex-1 text-center py-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#286675] mx-auto mb-2"></div>
+                  <span className="text-sm text-gray-600">Verificando progreso del área...</span>
+                </div>
+              ) : isTeacher ? (
                   <>
                     <Button
                       onClick={handleBack}
@@ -332,13 +397,22 @@ function ResultsUniversalContent() {
                     <>
                       {passed ? (
                         // ✅ Si aprueba, comportamiento normal
-                        isLastCompetenceOfArea && level !== "avanzado" ? (
+                        isLastCompetenceOfArea && level !== "avanzado" && isAreaComplete ? (
                           <Button
                             onClick={handleGoToNextLevelInArea}
                             className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
                           >
                             Siguiente nivel
                           </Button>
+                        ) : isLastCompetenceOfArea && level !== "avanzado" && !isAreaComplete ? (
+                          <div className="flex-1">
+                            <Button
+                              onClick={handleBack}
+                              className="w-full bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
+                            >
+                              Volver al Dashboard
+                            </Button>
+                          </div>
                         ) : (
                           <Button
                             onClick={handleContinueToNextCompetence}
