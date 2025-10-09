@@ -437,20 +437,22 @@ function TestResultsContent() {
               {/* --- PROFESOR --- */}
               {isTeacher ? (
                 <>
-                  <Button
-                    onClick={handleReturnToDashboard}
-                    variant="outline"
-                    className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
-                  >
-                    Volver al Dashboard
-                  </Button>
-                  <Button
-                    onClick={handleContinueEvaluation}
-                    className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                  >
-                    <ChevronRight className="w-4 h-4 mr-2" />
-                    Siguiente nivel
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                    <Button
+                      onClick={handleReturnToDashboard}
+                      variant="outline"
+                      className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
+                    >
+                      Ir al Dashboard
+                    </Button>
+                    <Button
+                      onClick={handleContinueEvaluation}
+                      className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                    >
+                      <ChevronRight className="w-4 h-4 mr-2" />
+                      Siguiente nivel
+                    </Button>
+                  </div>
                   {!passed && (
                     <Button
                       onClick={handleRetakeTest}
@@ -467,38 +469,55 @@ function TestResultsContent() {
                 <>
                   {/* Lógica unificada para navegación secuencial */}
                   {areaCompleted && passed ? (
-                    <Button
-                      onClick={handleContinueEvaluation}
-                      className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                    >
-                      Continuar al siguiente nivel
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                      <Button
+                        onClick={handleReturnToDashboard}
+                        variant="outline"
+                        className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
+                      >
+                        Ir al Dashboard
+                      </Button>
+                      <Button
+                        onClick={handleContinueEvaluation}
+                        className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                      >
+                        Continuar al siguiente nivel
+                      </Button>
+                    </div>
                   ) : (
                     <>
-                      {areaCompleted && (
+                      {areaCompleted ? (
                         <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
                           Volver al Dashboard
                         </Button>
-                      )}
-
-                      {!areaCompleted && nextCompetenceInfo ? (
-                        <Button
-                          onClick={handleContinueToNextCompetence}
-                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                        >
-                          {isLastCompetenceOfArea 
-                            ? `Continuar con ${nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...`
-                            : `Continuar con ${nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...`
-                          }
-                        </Button>
-                      ) : !areaCompleted && !nextCompetenceInfo ? (
-                        <Button onClick={handleReturnToDashboard} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                          Ir al Dashboard
-                        </Button>
                       ) : (
-                        <Button onClick={handleContinueEvaluation} className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold">
-                          Continuar al siguiente nivel
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                          <Button
+                            onClick={handleReturnToDashboard}
+                            variant="outline"
+                            className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
+                          >
+                            Ir al Dashboard
+                          </Button>
+                          {nextCompetenceInfo ? (
+                            <Button
+                              onClick={handleContinueToNextCompetence}
+                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                            >
+                              {isLastCompetenceOfArea 
+                                ? `Continuar con ${nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...`
+                                : `Continuar con ${nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...`
+                              }
+                            </Button>
+                          ) : (
+                            <Button 
+                              onClick={handleContinueEvaluation} 
+                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                            >
+                              Continuar al siguiente nivel
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </>
                   )}
