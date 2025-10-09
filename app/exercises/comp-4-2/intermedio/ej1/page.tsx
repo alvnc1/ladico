@@ -230,8 +230,17 @@ export default function Page() {
     setPool(prev => (prev.includes(motiveId) ? prev : [...prev, motiveId]))
   }
 
-  // Asignar (solo 1 motivo por ACCIÓN)
+  // Asignar (solo 1 motivo por ACCIÓN) — ahora devuelve el anterior al pool
   const dropToAction = (action: ActionId, motiveId: MotiveId) => {
+    // si la acción ya tenía un motivo distinto, regrésalo al pool
+    setAssign(prev => {
+      const previous = prev[action]
+      if (previous && previous !== motiveId) {
+        setPool(p => (p.includes(previous) ? p : [...p, previous]))
+      }
+      return prev
+    })
+    // elimina el nuevo de donde esté y asigna
     removeEverywhere(motiveId)
     setAssign(prev => ({ ...prev, [action]: motiveId }))
   }
