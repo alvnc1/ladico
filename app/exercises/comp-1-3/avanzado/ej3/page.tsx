@@ -93,7 +93,7 @@ export default function Ej3Comp13Avanzado() {
   const [g1, setG1] = useState('') // país
   const [g2, setG2] = useState('') // robusta Colombia
   const [g3, setG3] = useState('') // diferencia Honduras
-  const EXPECTED3 = { paisMayor: 'Venezuela', robustaColombia: 279.725, diferenciaHonduras: 243.613 }
+  const EXPECTED3 = { paisMayor: 'Venezuela', robustaColombia: 279725, diferenciaHonduras: 243613 }
 
   const vg1 = g1 ? compareText(g1, EXPECTED3.paisMayor).ok : null
 

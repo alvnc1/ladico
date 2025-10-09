@@ -19,8 +19,8 @@ function ResultsUniversalContent() {
   const { userData } = useAuth()
   const isTeacher = userData?.role === "profesor"
   const hasUpdatedFirebase = useRef(false)
-  const [isAreaComplete, setIsAreaComplete] = useState<boolean>(false)
-  const [isCheckingArea, setIsCheckingArea] = useState<boolean>(true)
+  const [isAreaComplete, setIsAreaComplete] = useState<boolean>(true)
+  const [isCheckingArea, setIsCheckingArea] = useState<boolean>(false)
 
   // --------- Parámetros recibidos (flexibles y con defaults) ----------
   const score = Number.parseInt(sp.get("score") || "0")
@@ -79,6 +79,9 @@ function ResultsUniversalContent() {
         areaCompetences.push("4.1", "4.2", "4.3", "4.4")
       }
 
+      console.log(`🔍 Verificando área ${major} en nivel ${level} para usuario ${userData.uid}`)
+      console.log(`📋 Competencias del área:`, areaCompetences)
+
       // Verificar si todas las competencias del área están aprobadas
       let approvedCount = 0
       for (const compId of areaCompetences) {
@@ -91,10 +94,13 @@ function ResultsUniversalContent() {
           )
         )
         const hasPassed = qs.docs.some((d) => (d.data() as any)?.passed === true)
+        console.log(`✅ Competencia ${compId}: ${hasPassed ? 'APROBADA' : 'NO APROBADA'} (${qs.docs.length} sesiones)`)
         if (hasPassed) approvedCount++
       }
 
-      setIsAreaComplete(approvedCount === areaCompetences.length)
+      const isComplete = approvedCount === areaCompetences.length
+      console.log(`📊 Resultado: ${approvedCount}/${areaCompetences.length} competencias aprobadas. Área completa: ${isComplete}`)
+      setIsAreaComplete(isComplete)
     } catch (error) {
       console.error("Error verificando completitud del área:", error)
       setIsAreaComplete(false)
@@ -103,10 +109,6 @@ function ResultsUniversalContent() {
     }
   }
 
-  // Verificar completitud del área al cargar
-  useEffect(() => {
-    checkAreaCompletion()
-  }, [userData?.uid, competence, level, isTeacher])
 
   // --------- Limpieza local y consolidación opcional ----------
   useEffect(() => {
@@ -226,6 +228,17 @@ function ResultsUniversalContent() {
 
   // --- NUEVO: máximo nivel + última competencia del área ---
   const isMaxLevelAndLast = isLastCompetenceOfArea && level === "avanzado"
+
+  // Verificar completitud del área al cargar
+  useEffect(() => {
+    // Si es la última competencia del área y está aprobada, asumir área completa
+    if (passed && isLastCompetenceOfArea && level !== "avanzado") {
+      console.log(`🎯 Competencia ${competence} aprobada y es la última del área. Asumiendo área completa.`)
+      setIsAreaComplete(true)
+    } else {
+      checkAreaCompletion()
+    }
+  }, [userData?.uid, competence, level, isTeacher, passed, isLastCompetenceOfArea])
 
   const compTitle = skillsInfo[competence]?.title || "Competencia"
 
@@ -358,12 +371,7 @@ function ResultsUniversalContent() {
 
             {/* Acciones */}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              {isCheckingArea ? (
-                <div className="flex-1 text-center py-3">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#286675] mx-auto mb-2"></div>
-                  <span className="text-sm text-gray-600">Verificando progreso del área...</span>
-                </div>
-              ) : isTeacher ? (
+              {isTeacher ? (
                   <>
                     <Button
                       onClick={handleBack}
@@ -397,13 +405,29 @@ function ResultsUniversalContent() {
                     <>
                       {passed ? (
                         // ✅ Si aprueba, comportamiento normal
-                        isLastCompetenceOfArea && level !== "avanzado" && isAreaComplete ? (
-                          <Button
-                            onClick={handleGoToNextLevelInArea}
-                            className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
-                          >
-                            Siguiente nivel
-                          </Button>
+                        (() => {
+                          console.log(`🎯 Debug botones - Competencia: ${competence}, Nivel: ${level}`)
+                          console.log(`🎯 Es última competencia del área: ${isLastCompetenceOfArea}`)
+                          console.log(`🎯 Nivel no es avanzado: ${level !== "avanzado"}`)
+                          console.log(`🎯 Área completa: ${isAreaComplete}`)
+                          console.log(`🎯 Condición completa: ${isLastCompetenceOfArea && level !== "avanzado" && isAreaComplete}`)
+                          return isLastCompetenceOfArea && level !== "avanzado" && isAreaComplete
+                        })() ? (
+                          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                            <Button
+                              onClick={handleBack}
+                              variant="outline"
+                              className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
+                            >
+                              Ir al Dashboard
+                            </Button>
+                            <Button
+                              onClick={handleGoToNextLevelInArea}
+                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                            >
+                              Siguiente nivel
+                            </Button>
+                          </div>
                         ) : isLastCompetenceOfArea && level !== "avanzado" && !isAreaComplete ? (
                           <div className="flex-1">
                             <Button
@@ -414,12 +438,22 @@ function ResultsUniversalContent() {
                             </Button>
                           </div>
                         ) : (
-                          <Button
-                            onClick={handleContinueToNextCompetence}
-                            className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
-                          >
-                            Continuar con la siguiente competencia
-                          </Button>
+                          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                            <Button
+                              onClick={handleBack}
+                              variant="outline"
+                              className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
+                            >
+                              Ir al Dashboard
+                            </Button>
+                            <Button
+                              onClick={handleContinueToNextCompetence}
+                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                            >
+                              Siguiente competencia
+                            </Button>
+                            
+                          </div>
                         )
                       ) : (
                         // ❌ Si reprueba:
@@ -433,12 +467,22 @@ function ResultsUniversalContent() {
                           </Button>
                         ) : (
                           // 👉 Si no es la última, puede seguir a la siguiente competencia
-                          <Button
-                            onClick={handleContinueToNextCompetence}
-                            className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
-                          >
-                            Siguiente competencia
-                          </Button>
+                          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                            
+                            <Button
+                              onClick={handleBack}
+                              variant="outline"
+                              className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
+                            >
+                              Ir al Dashboard
+                            </Button>
+                            <Button
+                              onClick={handleContinueToNextCompetence}
+                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                            >
+                              Siguiente competencia
+                            </Button>
+                          </div>
                         )
                       )}
                     </>
