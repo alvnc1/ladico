@@ -197,8 +197,7 @@ export default function LadicoPhotoMontageQ() {
                             La fotografía que verás a continuación
                             suele compartirse como si fuera un retrato auténtico de <b>Abraham Lincoln</b>. Sin embargo, en realidad
                             es un <b>montaje fotográfico histórico</b>. Tu objetivo es <b>reconocer la manipulación</b> y escribir el <b>nombre del personaje
-                            al que realmente corresponde el cuerpo</b> que aparece en la imagen (puedes escribir
-                            solo el apellido).
+                            al que realmente corresponde el cuerpo</b> que aparece en la imagen (puedes utilizar el buscador).
                         </p>
                         </div>
                     </div>
