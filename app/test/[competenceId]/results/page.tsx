@@ -248,16 +248,28 @@ function TestResultsContent() {
       return
     }
 
-    // Ir a la PRIMERA competencia del área (X.1) en el siguiente nivel
-    const id = (params.competenceId as string) || ""
-    const [majorStr] = id.split(".")
-    const major = Number(majorStr)
-    const firstIdInArea = !Number.isNaN(major) ? `${major}.1` : null
-    const compId = (firstIdInArea || firstCompetenceInArea || id).trim()
+    // --- Navegación de "Siguiente nivel" ---
+    // * Profesor: mismo competenceId, siguiente nivel (p.ej. 4.2 básico -> 4.2 intermedio)
+    // * Usuario (sin cambios): primera competencia del área en el siguiente nivel
+    const currentId = (params.competenceId as string) || ""
+
+    let compId: string
+    if (isTeacher) {
+      // ➜ Modo profesor: mantener la MISMA competencia
+      compId = currentId
+    } else {
+      // ➜ Modo usuario (lógica existente): ir a la PRIMERA competencia del área (X.1)
+      const [majorStr] = currentId.split(".")
+      const major = Number(majorStr)
+      const firstIdInArea = !Number.isNaN(major) ? `${major}.1` : null
+      compId = (firstIdInArea || firstCompetenceInArea || currentId).trim()
+    }
+
     if (!compId) {
       router.push("/dashboard")
       return
     }
+
     const compSlug = `comp-${compId.replace(/\./g, "-")}`
     const nextLevel =
       levelParam.startsWith("b") ? "intermedio" :
@@ -504,10 +516,7 @@ function TestResultsContent() {
                               onClick={handleContinueToNextCompetence}
                               className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
                             >
-                              {isLastCompetenceOfArea 
-                                ? `Continuar con ${nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...`
-                                : `Continuar con ${nextCompetenceInfo.name.split(' ').slice(0, 3).join(' ')}...`
-                              }
+                              Siguiente competencia
                             </Button>
                           ) : (
                             <Button 

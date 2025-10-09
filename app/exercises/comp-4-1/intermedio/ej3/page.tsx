@@ -69,10 +69,8 @@ export default function Page() {
 
   // 👉 Se obtiene 1 punto global si tiene 3 o más respuestas correctas
   const point: 0 | 1 = useMemo(() => {
-    const allAnswered = wifi && auto && nube && nivel && justif
-    if (!allAnswered) return 0
-    return subScore >= 3 ? 1 : 0
-  }, [wifi, auto, nube, nivel, justif, subScore])
+  return subScore >= 3 ? 1 : 0
+}, [subScore])
 
   // ===== Sesión =====
   useEffect(() => {
