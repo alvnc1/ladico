@@ -99,6 +99,62 @@ function TestResultsContent() {
     }
   }
 
+  const [areaNowComplete, setAreaNowComplete] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const checkAreaStatus = async () => {
+      if (!user?.uid || !db || !competenceId) return
+
+      const [majorStr] = (competenceId || "").split(".")
+      const major = Number(majorStr)
+      const AREA_COMPETENCES: Record<number, string[]> = {
+        1: ["1.1", "1.2", "1.3"],
+        4: ["4.1", "4.2", "4.3", "4.4"],
+      }
+      const areaList = AREA_COMPETENCES[major] ?? []
+      const lvl = levelParam
+
+       // Crear un mapa de competencias aprobadas incluyendo la actual
+       const passedCompetences = new Set<string>()
+       
+       // Agregar competencias aprobadas desde Firebase
+       for (const comp of areaList) {
+         const qSnap = await getDocs(
+           query(
+             collection(db, "testSessions"),
+             where("userId", "==", user.uid),
+             where("competence", "==", comp),
+             where("level", "==", lvl)
+           )
+         )
+         const hasPassed = qSnap.docs.some((d) => (d.data() as any)?.passed === true)
+         console.log(`🧩 Competencia ${comp}: ${hasPassed ? 'APROBADA' : 'NO APROBADA'}`)
+         if (hasPassed) {
+           passedCompetences.add(comp)
+         }
+       }
+       
+       // Si la competencia actual está aprobada, agregarla también
+       if (passed && areaList.includes(competenceId)) {
+         passedCompetences.add(competenceId)
+         console.log(`🧩 Competencia actual ${competenceId}: APROBADA (agregada al conteo)`)
+       }
+       
+       const totalPassed = passedCompetences.size
+       const totalNeeded = areaList.length
+       setAreaNowComplete(totalPassed >= totalNeeded)
+       console.log("🧩 Estado real del área:", { 
+         passedCompetences: Array.from(passedCompetences),
+         totalPassed, 
+         totalNeeded, 
+         areaComplete: totalPassed >= totalNeeded 
+       })
+    }
+
+    checkAreaStatus()
+  }, [user?.uid, competenceId, passed])
+
+
   useEffect(() => {
     if (hasLoadedOnce || !user?.uid || !competenceId) return
 
@@ -214,7 +270,7 @@ function TestResultsContent() {
           return
         }
 
-        // Si área completada, obtener info de área y conteos (usando passed === true)
+        // Siempre obtener info de área y conteos para calcular allPassedInArea correctamente
         const comps = await loadCompetences()
         const current = comps.find(c => c.id === competenceId)
         if (!current) return
@@ -228,12 +284,19 @@ function TestResultsContent() {
 
         const lvl = levelParam
         let completed = 0
+        console.log(`🔍 Calculando área para competencia ${competenceId} en nivel ${lvl}`)
+        console.log(`🔍 Competencias del área:`, inArea.map(c => c.id))
+        
         for (const c of inArea) {
           if (!db) continue
           const qs = await getDocs(query(collection(db, "testSessions"), where("competence", "==", c.id), where("level", "==", lvl)))
-          const hasPassed = qs.docs.some(d => (d.data() as any)?.passed === true) // <— antes: score === 100
+          const hasPassed = qs.docs.some(d => (d.data() as any)?.passed === true)
+          console.log(`🔍 Competencia ${c.id}: ${hasPassed ? 'APROBADA' : 'NO APROBADA'} (${qs.docs.length} sesiones)`)
           if (hasPassed) completed++
         }
+        
+        console.log(`🔍 Resultado: ${completed}/${inArea.length} competencias aprobadas`)
+        console.log(`🔍 allPassedInArea será: ${completed === inArea.length}`)
         setAreaCounts({ completed, total: inArea.length })
       } catch (error) {
         console.error("Error cargando datos de la sesión:", error)
@@ -520,45 +583,86 @@ function TestResultsContent() {
                   )}
                 </>
               ) : (
-                /* --- USUARIO --- */
                 <>
-                  {/* Lógica unificada para navegación secuencial */}
-                  {areaCompleted ? (
-                    <Button 
-                      onClick={handleReturnToDashboard} 
-                      variant="outline" 
-                      className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
-                    >
-                      Volver al Dashboard
-                    </Button>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                      <Button
-                        onClick={handleReturnToDashboard}
-                        variant="outline"
-                        className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
-                      >
-                        Ir al Dashboard
-                      </Button>
-                      {nextCompetenceInfo ? (
-                        <Button
-                          onClick={handleContinueToNextCompetence}
-                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                        >
-                          Siguiente competencia
-                        </Button>
-                      ) : (
-                        <Button 
-                          onClick={handleContinueEvaluation} 
-                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                        >
-                          Continuar al siguiente nivel
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                  {/* Lógica simplificada para usuarios */}
+                    {areaNowComplete === null ? (
+                      // ⏳ Aún verificando el estado del área
+                      <div className="flex justify-center py-4 text-gray-500 text-sm">
+                        Verificando estado del área...
+                      </div>
+                    ) : (
+                      <>
+                        {(() => {
+                          // 🔍 Caso 1: Última competencia del área
+                          if (isLastCompetenceOfArea) {
+                            if (areaNowComplete) {
+                              // ✅ Aprobó TODAS las competencias → Dashboard + Siguiente nivel
+                              return (
+                                <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                                  <Button
+                                    onClick={handleReturnToDashboard}
+                                    variant="outline"
+                                    className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
+                                  >
+                                    Volver al Dashboard
+                                  </Button>
+                                  <Button
+                                    onClick={handleContinueEvaluation}
+                                    className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                                  >
+                                    <ChevronRight className="w-4 h-4 mr-2" />
+                                    Siguiente nivel
+                                  </Button>
+                                </div>
+                              )
+                            } else {
+                              // ❌ Reprobó al menos una competencia → solo Dashboard
+                              return (
+                                <Button
+                                  onClick={handleReturnToDashboard}
+                                  className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl sm:rounded-2xl py-3 shadow"
+                                >
+                                  Volver al Dashboard
+                                </Button>
+                              )
+                            }
+                          }
+
+                          // 🔄 Caso 2: En medio del área → Dashboard + Siguiente competencia
+                          return (
+                            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                              <Button
+                                onClick={handleReturnToDashboard}
+                                variant="outline"
+                                className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
+                              >
+                                Ir al Dashboard
+                              </Button>
+                              {nextCompetenceInfo ? (
+                                <Button
+                                  onClick={handleContinueToNextCompetence}
+                                  className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                                >
+                                  Siguiente competencia
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={handleContinueEvaluation}
+                                  className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                                >
+                                  Continuar al siguiente nivel
+                                </Button>
+                              )}
+                            </div>
+                          )
+                        })()}
+                      </>
+                    )}
+
+
                 </>
               )}
+
             </div>
 
           </CardContent>
