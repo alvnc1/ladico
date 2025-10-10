@@ -39,6 +39,8 @@ function TestResultsContent() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [loadingQuestions, setLoadingQuestions] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const [isFullyLoaded, setIsFullyLoaded] = useState(false)
+  const [showContent, setShowContent] = useState(false)
 
   // Última competencia del área por código
   const isLastCompetenceOfArea = useMemo(() => {
@@ -202,6 +204,13 @@ function TestResultsContent() {
               setNextCompetenceInfo(null)
             }
           }
+          // Marcar como cargado cuando no se completó el área
+          setTimeout(() => {
+            setIsFullyLoaded(true)
+            setTimeout(() => {
+              setShowContent(true)
+            }, 100)
+          }, 300)
           return
         }
 
@@ -231,6 +240,14 @@ function TestResultsContent() {
       } finally {
         setLoadingArea(false)
         setLoadingQuestions(false)
+        // Marcar como completamente cargado después de un pequeño delay para evitar flash
+        setTimeout(() => {
+          setIsFullyLoaded(true)
+          // Mostrar contenido con una pequeña transición
+          setTimeout(() => {
+            setShowContent(true)
+          }, 100)
+        }, 500)
       }
     }
     run()
@@ -335,11 +352,31 @@ function TestResultsContent() {
     }
   }
 
+  // Mostrar loading mientras no esté completamente cargado
+  if (!isFullyLoaded) {
+    return (
+      <>
+        <Sidebar />
+        <div className="min-h-screen bg-[#f3fbfb] lg:pl-72 flex items-center justify-center p-3 sm:p-4">
+          <Card className="w-full max-w-2xl shadow-2xl rounded-2xl sm:rounded-3xl border-0 overflow-hidden">
+            <CardContent className="flex flex-col items-center justify-center p-8 sm:p-12">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#286675] mb-6"></div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Procesando resultados...</h3>
+              <p className="text-gray-600 text-center">
+                Estamos calculando tu puntuación y preparando los resultados.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
       <Sidebar />
 
-      <div className="min-h-screen bg-[#f3fbfb] lg:pl-72 flex items-center justify-center p-3 sm:p-4">
+      <div className={`min-h-screen bg-[#f3fbfb] lg:pl-72 flex items-center justify-center p-3 sm:p-4 transition-opacity duration-300 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
         <Card className="w-full max-w-2xl shadow-2xl rounded-2xl sm:rounded-3xl border-0 overflow-hidden">
           <CardHeader className="text-center bg-gradient-to-b from-white to-gray-50 pb-6 sm:pb-8 px-4 sm:px-6">
             <div className="mx-auto mb-4 sm:mb-6">
@@ -486,7 +523,15 @@ function TestResultsContent() {
                 /* --- USUARIO --- */
                 <>
                   {/* Lógica unificada para navegación secuencial */}
-                  {areaCompleted && allPassedInArea ? (
+                  {areaCompleted ? (
+                    <Button 
+                      onClick={handleReturnToDashboard} 
+                      variant="outline" 
+                      className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
+                    >
+                      Volver al Dashboard
+                    </Button>
+                  ) : (
                     <div className="flex flex-col sm:flex-row gap-3 flex-1">
                       <Button
                         onClick={handleReturnToDashboard}
@@ -495,46 +540,22 @@ function TestResultsContent() {
                       >
                         Ir al Dashboard
                       </Button>
-                      <Button
-                        onClick={handleContinueEvaluation}
-                        className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                      >
-                        Continuar al siguiente nivel
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      {areaCompleted ? (
-                        <Button onClick={handleReturnToDashboard} variant="outline" className="flex-1 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium">
-                          Volver al Dashboard
+                      {nextCompetenceInfo ? (
+                        <Button
+                          onClick={handleContinueToNextCompetence}
+                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                        >
+                          Siguiente competencia
                         </Button>
                       ) : (
-                        <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                          <Button
-                            onClick={handleReturnToDashboard}
-                            variant="outline"
-                            className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-medium transition-all"
-                          >
-                            Ir al Dashboard
-                          </Button>
-                          {nextCompetenceInfo ? (
-                            <Button
-                              onClick={handleContinueToNextCompetence}
-                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                            >
-                              Siguiente competencia
-                            </Button>
-                          ) : (
-                            <Button 
-                              onClick={handleContinueEvaluation} 
-                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
-                            >
-                              Continuar al siguiente nivel
-                            </Button>
-                          )}
-                        </div>
+                        <Button 
+                          onClick={handleContinueEvaluation} 
+                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl sm:rounded-2xl py-3 text-base sm:text-lg font-semibold"
+                        >
+                          Continuar al siguiente nivel
+                        </Button>
                       )}
-                    </>
+                    </div>
                   )}
                 </>
               )}

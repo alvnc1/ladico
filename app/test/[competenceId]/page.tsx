@@ -259,7 +259,7 @@ export default function TestPage() {
         .filter((c) => c.dimension === dimension)
         .sort((a, b) => a.code.localeCompare(b.code))
 
-      let missingAfter = 0
+      let attemptedAfter = 0
       for (const c of areaCompetences) {
         const qs = await getDocs(
           query(
@@ -269,11 +269,14 @@ export default function TestPage() {
             where("level", "==", levelParamForArea)
           )
         )
-        // ⬇️ antes: score === 100
-        const hasPassed = qs.docs.some((d) => (d.data() as any)?.passed === true)
-        if (!hasPassed) missingAfter++
+        // Verificar si se intentó la competencia (tiene sesión completada, aprobada o reprobada)
+        const hasAttempted = qs.docs.some((d) => {
+          const data = d.data() as any
+          return data?.endTime && (data?.passed === true || data?.passed === false)
+        })
+        if (hasAttempted) attemptedAfter++
       }
-      const justCompletedArea = missingAfter === 0
+      const justCompletedArea = attemptedAfter === areaCompetences.length
 
       // 6) Subir currentLevel cuando se complete el ÁREA en ese nivel (solo alumnos)
       if (!isTeacher && justCompletedArea && db && user?.uid) {

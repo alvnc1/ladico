@@ -35,7 +35,9 @@ export async function updateCurrentLevel(
       
       // Buscar competencias de esta área usando localStorage
       const areaCompetences = []
-      for (let i = 1; i <= 3; i++) {
+      const maxCompetences = area === "Búsqueda y gestión de información y datos" ? 3 : 4 // área 1: 3 competencias, área 4: 4 competencias
+      
+      for (let i = 1; i <= maxCompetences; i++) {
         const compId = area === "Búsqueda y gestión de información y datos" ? `1.${i}` : `4.${i}`
         const isCompleted = localStorage.getItem(`ladico:completed:${compId}:${levelParamForArea}`) === "1"
         if (isCompleted) {
@@ -46,7 +48,7 @@ export async function updateCurrentLevel(
       console.log(`🏢 Competencias completadas del área "${area}":`, areaCompetences)
 
       // Si todas las competencias del área están completadas, actualizar nivel
-      const expectedCount = 3 // 1.1, 1.2, 1.3 o 4.1, 4.2, 4.3
+      const expectedCount = maxCompetences
       const justCompletedArea = areaCompetences.length === expectedCount
       
       console.log(`📈 Área "${area}" completada: ${justCompletedArea} (${areaCompetences.length}/${expectedCount})`)
