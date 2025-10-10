@@ -132,7 +132,7 @@ export default function AdvancedEj3Page() {
     if (blocked) sub += 1
     if (isPrivate) sub += 1
     if (disableMsgRequests) sub += 1
-    if (muted) sub -= 1
+    // Silenciar a Pablo ya no resta puntos
     const p3: 0 | 1 = sub >= 2 ? 1 : 0
 
     // 3) Guardar punto local (nivel/competencia)

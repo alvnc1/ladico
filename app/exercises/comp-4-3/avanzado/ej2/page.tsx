@@ -287,7 +287,6 @@ export default function AdvancedEj3Page() {
         <Card className="w-full max-w-md mx-4">
           <CardContent className="p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#286575] mx-auto mb-4"></div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Cargando ejercicio...</h3>
             <p className="text-gray-600">Recuperando tus respuestas guardadas</p>
           </CardContent>
         </Card>

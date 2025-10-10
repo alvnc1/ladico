@@ -370,8 +370,8 @@ export default function SimMailPage() {
     if (selectedId && !list.some((m) => m.id === selectedId)) setSelectedId(null)
   }, [folder]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ⬇️ UI local para que SIEMPRE inicie como Activa y sólo pase a Desactiva tras el click
-  const [signedOutThisView, setSignedOutThisView] = useState(false)
+  // ⬇️ Estado visual que se persiste - inicia como Activa y pasa a Desactiva tras el click
+  const signedOutThisView = !!persisted.security?.signedOutAllSessions
 
   // Mostrar loading mientras se cargan los datos
   if (isLoading) {
@@ -402,7 +402,7 @@ export default function SimMailPage() {
                 <span className="text-sm opacity-70">| 4.2 Avanzado · Entorno simulado</span>
                 {isSaving && (
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full animate-pulse">
-                    Guardando...
+                    
                   </span>
                 )}
               </div>
@@ -684,8 +684,7 @@ export default function SimMailPage() {
                     <Button
                       className="rounded-xl bg-[#286575] hover:bg-[#3a7d89] text-white"
                       onClick={() => {
-                        setFlag("signedOutAllSessions", true) // registra el punto
-                        setSignedOutThisView(true)           // cambia UI a Desactiva sólo tras el click
+                        setFlag("signedOutAllSessions", true) // registra el punto y cambia UI a Desactiva
                       }}
                     >
                       Cerrar todas las sesiones
@@ -747,7 +746,7 @@ function RowDevice({ name, meta, active }: { name: string; meta: string; active:
   )
 }
 
-/** Bloque de “Cambiar contraseña” con validación fuerte (sin pistas) */
+/** Bloque de "Cambiar contraseña" con validación fuerte (sin pistas) */
 function PasswordChanger({
   done,
   onSuccess,
@@ -757,7 +756,7 @@ function PasswordChanger({
 }) {
   const [newPwd, setNewPwd] = useState("")
   const [repPwd, setRepPwd] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
 
   const strong = useMemo(() => {
     const len = newPwd.length >= 8
@@ -769,24 +768,29 @@ function PasswordChanger({
   }, [newPwd])
 
   const handleSave = () => {
-    if (!strong.ok) {
-      // ❗️error genérico para no dar pistas
-      setError("La contraseña no cumple los requisitos mínimos.")
-      return
-    }
+    // Solo validar que las contraseñas coincidan
     if (newPwd !== repPwd) {
-      setError("Las contraseñas no coinciden.")
+      setMessage("Las contraseñas no coinciden.")
       return
     }
-    setError(null)
-    onSuccess()
+    
+    // Siempre mostrar "Guardado" independientemente de si cumple los requisitos
+    setMessage("Guardado")
+    
+    // Internamente evaluar si cumple los requisitos para el puntaje
+    if (strong.ok) {
+      onSuccess() // Solo dar el punto si cumple los requisitos
+    }
+    
+    // Limpiar el mensaje después de 2 segundos
+    setTimeout(() => setMessage(null), 2000)
   }
 
   return (
     <SettingCard
       title="Cambiar contraseña"
       /* sin hint ni estado 'Pendiente' */
-      status={done ? "Hecho" : undefined}
+      status={done ? "" : undefined}
       done={done}
     >
       <div className="grid sm:grid-cols-3 gap-2">
@@ -812,8 +816,12 @@ function PasswordChanger({
         </Button>
       </div>
 
-      {/* ⛔ Se quitaron los indicadores para no dar pistas */}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {/* Mensaje de confirmación o error */}
+      {message && (
+        <p className={`mt-2 text-sm ${message === "Guardado" ? "text-green-600" : "text-red-600"}`}>
+          {message}
+        </p>
+      )}
     </SettingCard>
   )
 }
