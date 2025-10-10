@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { setPoint } from "@/lib/levelProgress"
 import { useAuth } from "@/contexts/AuthContext"
 import { ensureSession, markAnswered } from "@/lib/testSession"
+import { doc, setDoc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 const COMPETENCE = "4.3"
 const LEVEL_LOCAL = "avanzado"
@@ -18,6 +20,10 @@ const sessionKeyFor = (uid: string) => `${SESSION_PREFIX}:${uid}`
 // ✅ Esta es la Pregunta 2 de 3
 const QUESTION_NUM_LOCAL = 2        // (1-based) para setPoint
 const QUESTION_IDX_SESSION = 1      // (0-based) para markAnswered
+
+// Claves de almacenamiento
+const STORAGE_KEY = "ladico:4.3:avanzado:ej2"
+const storageKeyFor = (uid?: string | null) => `${STORAGE_KEY}:u:${uid ?? "anon"}`
 
 // ===== Opciones =====
 type CompKey = "footer" | "form" | "buttons" | "menu" | "notices"
@@ -43,13 +49,74 @@ const CHANGES: { key: ChangeKey; label: string }[] = [
 const CORRECT_COMPONENTS = new Set<CompKey>(["form", "buttons", "notices"])
 const CORRECT_CHANGES   = new Set<ChangeKey>(["bigButtons", "labelsExamples"]) // ⬅️ SIN "biggerTextContrast"
 
+// Tipo para las respuestas guardadas
+type SavedResponses = {
+  selComponents: Record<CompKey, boolean>
+  selChanges: Record<ChangeKey, boolean>
+  lastSaved: number
+}
+
+// Función para cargar respuestas guardadas
+const loadSavedResponses = (uid?: string | null): SavedResponses | null => {
+  if (typeof window === "undefined") return null
+  
+  try {
+    const raw = localStorage.getItem(storageKeyFor(uid))
+    if (raw) {
+      const parsed = JSON.parse(raw) as SavedResponses
+      console.log("✅ Respuestas cargadas desde localStorage")
+      return parsed
+    }
+  } catch (error) {
+    console.error("❌ Error cargando respuestas guardadas:", error)
+  }
+  
+  return null
+}
+
+// Función para guardar respuestas
+const saveResponses = (responses: SavedResponses, uid?: string | null) => {
+  if (typeof window === "undefined") return
+  
+  try {
+    const serialized = JSON.stringify(responses)
+    localStorage.setItem(storageKeyFor(uid), serialized)
+    console.log("✅ Respuestas guardadas en localStorage")
+  } catch (error) {
+    console.error("❌ Error guardando respuestas:", error)
+  }
+}
+
+// Función para sincronizar con Firebase
+const syncWithFirebase = async (responses: SavedResponses, uid?: string | null) => {
+  if (!uid || !db) return
+  
+  try {
+    const docRef = doc(db, "exerciseResponses", `${uid}_4.3_avanzado_ej2`)
+    await setDoc(docRef, {
+      userId: uid,
+      competence: "4.3",
+      level: "avanzado",
+      exercise: "ej2",
+      responses: responses,
+      lastUpdated: new Date(),
+      timestamp: Date.now()
+    })
+    console.log("✅ Respuestas sincronizadas con Firebase")
+  } catch (error) {
+    console.error("❌ Error sincronizando con Firebase:", error)
+  }
+}
+
 export default function AdvancedEj3Page() {
   const router = useRouter()
   const { user } = useAuth()
   const [sessionId, setSessionId] = useState<string | null>(null)
   const ensuringRef = useRef(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
-  // Estado: selecciones (checkboxes)
+  // Estado: selecciones (checkboxes) - inicializar con valores por defecto
   const [selComponents, setSelComponents] = useState<Record<CompKey, boolean>>({
     footer: false,
     form: false,
@@ -75,6 +142,50 @@ export default function AdvancedEj3Page() {
     })
     return total
   }, [selComponents, selChanges])
+
+  // ===== Cargar respuestas guardadas =====
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    
+    const loadData = async () => {
+      try {
+        // Cargar respuestas desde localStorage
+        const saved = loadSavedResponses(user?.uid)
+        if (saved) {
+          setSelComponents(saved.selComponents)
+          setSelChanges(saved.selChanges)
+          console.log("✅ Respuestas cargadas desde almacenamiento local")
+        }
+        
+        // Intentar cargar desde Firebase si no hay datos locales
+        if (!saved && user?.uid && db) {
+          try {
+            const docRef = doc(db, "exerciseResponses", `${user.uid}_4.3_avanzado_ej2`)
+            const docSnap = await getDoc(docRef)
+            
+            if (docSnap.exists()) {
+              const data = docSnap.data()
+              const responses = data.responses as SavedResponses
+              setSelComponents(responses.selComponents)
+              setSelChanges(responses.selChanges)
+              console.log("✅ Respuestas cargadas desde Firebase")
+              
+              // Sincronizar con localStorage
+              saveResponses(responses, user.uid)
+            }
+          } catch (error) {
+            console.error("❌ Error cargando desde Firebase:", error)
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error cargando datos:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadData()
+  }, [user?.uid])
 
   // ===== Sesión por-usuario =====
   useEffect(() => {
@@ -117,6 +228,37 @@ export default function AdvancedEj3Page() {
     })()
   }, [user?.uid, sessionId])
 
+  // ===== Guardado automático de respuestas =====
+  useEffect(() => {
+    if (isLoading) return // No guardar mientras se está cargando
+    
+    const saveData = async () => {
+      setIsSaving(true)
+      try {
+        const responses: SavedResponses = {
+          selComponents,
+          selChanges,
+          lastSaved: Date.now()
+        }
+        
+        // Guardar en localStorage
+        saveResponses(responses, user?.uid)
+        
+        // Sincronizar con Firebase en segundo plano
+        if (user?.uid) {
+          syncWithFirebase(responses, user.uid)
+        }
+      } catch (error) {
+        console.error("❌ Error guardando respuestas:", error)
+      } finally {
+        // Reset saving state after a short delay
+        setTimeout(() => setIsSaving(false), 1000)
+      }
+    }
+    
+    saveData()
+  }, [selComponents, selChanges, user?.uid, isLoading])
+
   // ===== Navegación / Guardado =====
   const handleNext = async () => {
     // ✅ Punto si hay 3 o más respuestas correctas entre ambos bloques
@@ -137,6 +279,21 @@ export default function AdvancedEj3Page() {
   }
 
   const progressPct = (2 / 3) * 100 // Pregunta 2 de 3
+
+  // Mostrar loading mientras se cargan los datos
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f3fbfb] flex items-center justify-center">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#286575] mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Cargando ejercicio...</h3>
+            <p className="text-gray-600">Recuperando tus respuestas guardadas</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">

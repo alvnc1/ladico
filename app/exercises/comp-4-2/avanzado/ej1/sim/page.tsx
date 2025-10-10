@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, Settings as Gear, Star } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { doc, setDoc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 /** ⬇️ Namespacing por usuario (clave propia por uid) */
 const STORAGE_NS = "ladico:4.2:avanzado:ej1"
@@ -120,37 +122,165 @@ function SettingCard(props: { title: string; hint?: string; status?: string; don
 export default function SimMailPage() {
   const { user } = useAuth()
 
+  // Función para sincronizar con Firebase
+  const syncWithFirebase = async (data: PersistedSim) => {
+    if (!user?.uid || !db) return
+    
+    try {
+      const docRef = doc(db, "simulatorResponses", `${user.uid}_4.2_avanzado_ej1`)
+      await setDoc(docRef, {
+        userId: user.uid,
+        competence: "4.2",
+        level: "avanzado",
+        exercise: "ej1",
+        responses: data,
+        lastUpdated: new Date(),
+        timestamp: Date.now()
+      })
+      console.log("✅ Datos sincronizados con Firebase")
+    } catch (error) {
+      console.error("❌ Error sincronizando con Firebase:", error)
+    }
+  }
+
+  // Función para cargar desde Firebase
+  const loadFromFirebase = async (): Promise<PersistedSim | null> => {
+    if (!user?.uid || !db) return null
+    
+    try {
+      const docRef = doc(db, "simulatorResponses", `${user.uid}_4.2_avanzado_ej1`)
+      const docSnap = await getDoc(docRef)
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        console.log("✅ Datos cargados desde Firebase")
+        return data.responses as PersistedSim
+      }
+    } catch (error) {
+      console.error("❌ Error cargando desde Firebase:", error)
+    }
+    
+    return null
+  }
+
   /** ⬇️ Clave por usuario (uid o 'anon') */
   const STORAGE_KEY = useMemo(
     () => `${STORAGE_NS}:u:${user?.uid ?? "anon"}`,
     [user?.uid]
   )
 
-  /** ⬇️ Carga por-usuario con defaults OFF */
+  /** ⬇️ Carga por-usuario con defaults OFF y respaldo en sessionStorage y Firebase */
   const [persisted, setPersisted] = useState<PersistedSim>(DEFAULT_STATE)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  
   useEffect(() => {
     if (typeof window === "undefined") return
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      setPersisted(raw ? (JSON.parse(raw) as PersistedSim) : DEFAULT_STATE)
-    } catch {
-      setPersisted(DEFAULT_STATE)
+    
+    const loadData = async () => {
+      try {
+        // Intentar cargar desde localStorage primero
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (raw) {
+          const parsed = JSON.parse(raw) as PersistedSim
+          setPersisted(parsed)
+          console.log("✅ Datos cargados desde localStorage")
+          setIsLoading(false)
+          return
+        }
+        
+        // Si no hay datos en localStorage, intentar sessionStorage
+        const sessionRaw = sessionStorage.getItem(STORAGE_KEY)
+        if (sessionRaw) {
+          const parsed = JSON.parse(sessionRaw) as PersistedSim
+          setPersisted(parsed)
+          console.log("✅ Datos cargados desde sessionStorage")
+          setIsLoading(false)
+          return
+        }
+        
+        // Si no hay datos locales, intentar Firebase
+        const firebaseData = await loadFromFirebase()
+        if (firebaseData) {
+          setPersisted(firebaseData)
+          // Sincronizar con localStorage para futuras cargas
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseData))
+          } catch (e) {
+            console.warn("No se pudo sincronizar con localStorage")
+          }
+          setIsLoading(false)
+          return
+        }
+        
+        // Si no hay datos en ningún lado, usar defaults
+        setPersisted(DEFAULT_STATE)
+        console.log("ℹ️ Usando datos por defecto")
+        setIsLoading(false)
+      } catch (error) {
+        console.error("❌ Error cargando datos del simulador:", error)
+        setPersisted(DEFAULT_STATE)
+        setIsLoading(false)
+      }
     }
+    
+    loadData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [STORAGE_KEY])
 
-  /** ⬇️ Guarda por-usuario */
+  /** ⬇️ Guarda por-usuario con validación y sincronización con Firebase */
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
-    } catch {}
-  }, [persisted, STORAGE_KEY])
+    if (isLoading) return // No guardar mientras se está cargando
+    
+    const saveData = async () => {
+      try {
+        const serialized = JSON.stringify(persisted)
+        localStorage.setItem(STORAGE_KEY, serialized)
+        
+        // Verificar que se guardó correctamente
+        const verification = localStorage.getItem(STORAGE_KEY)
+        if (verification !== serialized) {
+          console.warn("⚠️ Error: Los datos no se guardaron correctamente en localStorage")
+          // Intentar guardar en sessionStorage como respaldo
+          try {
+            sessionStorage.setItem(STORAGE_KEY, serialized)
+            console.log("✅ Datos guardados en sessionStorage como respaldo")
+          } catch (e) {
+            console.error("❌ Error crítico: No se pudieron guardar los datos en ningún almacenamiento", e)
+          }
+        } else {
+          console.log("✅ Datos guardados correctamente en localStorage")
+        }
+        
+        // Sincronizar con Firebase en segundo plano
+        syncWithFirebase(persisted)
+        
+      } catch (error) {
+        console.error("❌ Error guardando datos del simulador:", error)
+        // Intentar guardar en sessionStorage como respaldo
+        try {
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
+          console.log("✅ Datos guardados en sessionStorage como respaldo")
+        } catch (e) {
+          console.error("❌ Error crítico: No se pudieron guardar los datos", e)
+        }
+      }
+    }
+    
+    saveData()
+  }, [persisted, STORAGE_KEY, isLoading])
 
   const setFlag = (key: keyof NonNullable<PersistedSim["security"]>, value: boolean) => {
+    setIsSaving(true)
     setPersisted((p) => ({ ...p, security: { ...(p.security || {}), [key]: value } }))
+    // Reset saving state after a short delay
+    setTimeout(() => setIsSaving(false), 1000)
   }
   const setSecurityWord = (v: string) => {
+    setIsSaving(true)
     setPersisted((p) => ({ ...p, security: { ...(p.security || {}), securityWord: v } }))
+    // Reset saving state after a short delay
+    setTimeout(() => setIsSaving(false), 1000)
   }
 
   const changedPassword = !!persisted.security?.changedPassword
@@ -243,30 +373,50 @@ export default function SimMailPage() {
   // ⬇️ UI local para que SIEMPRE inicie como Activa y sólo pase a Desactiva tras el click
   const [signedOutThisView, setSignedOutThisView] = useState(false)
 
+  // Mostrar loading mientras se cargan los datos
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f3fbfb] flex items-center justify-center">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#286575] mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Cargando simulador...</h3>
+            <p className="text-gray-600">Recuperando tus respuestas guardadas</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
       {/* Barra superior (mantener) */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 rounded-b-2xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 text-[#286575]">
-              <Link href="/exercises/comp-4-2/avanzado/ej1" className="inline-flex items-center gap-2 hover:underline">
-                <ChevronLeft className="w-4 h-4" />
-                <span className="text-sm font-medium">Volver al enunciado</span>
-              </Link>
-              <span className="text-sm opacity-70">| 4.2 Avanzado · Entorno simulado</span>
-            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-[#286575]">
+                <Link href="/exercises/comp-4-2/avanzado/ej1" className="inline-flex items-center gap-2 hover:underline">
+                  <ChevronLeft className="w-4 h-4" />
+                  <span className="text-sm font-medium">Volver al enunciado</span>
+                </Link>
+                <span className="text-sm opacity-70">| 4.2 Avanzado · Entorno simulado</span>
+                {isSaving && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full animate-pulse">
+                    Guardando...
+                  </span>
+                )}
+              </div>
 
-            {/* Botón SOLO con tuerca */}
-            <button
-              onClick={() => setOpenSettings(true)}
-              className="inline-flex items-center justify-center w-10 h-10 rounded-xl border-2 border-gray-200 hover:border-[#286575] hover:bg-gray-50"
-              title="Configuración"
-              aria-label="Abrir configuración"
-            >
-              <Gear className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
+              {/* Botón SOLO con tuerca */}
+              <button
+                onClick={() => setOpenSettings(true)}
+                className="inline-flex items-center justify-center w-10 h-10 rounded-xl border-2 border-gray-200 hover:border-[#286575] hover:bg-gray-50"
+                title="Configuración"
+                aria-label="Abrir configuración"
+              >
+                <Gear className="w-5 h-5 text-gray-700" />
+              </button>
+            </div>
         </div>
       </div>
 

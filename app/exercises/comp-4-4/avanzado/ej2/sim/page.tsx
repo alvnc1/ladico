@@ -20,8 +20,12 @@ import {
   Grid,
   Globe,
 } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { doc, setDoc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 const STORAGE_KEY = "ladico:4.4:avanzado:ej2"
+const storageKeyFor = (uid?: string | null) => `${STORAGE_KEY}:u:${uid ?? "anon"}`
 
 type Screen =
   | "root"
@@ -39,8 +43,88 @@ type Screen =
   | "app_gmail"
   | "app_youtube"
 
+// Tipo para las configuraciones guardadas
+type SavedPhoneConfig = {
+  // Configuraciones principales
+  modoVuelo: boolean
+  wifiOn: boolean
+  wifiAskToJoin: boolean
+  btOn: boolean
+  btAutoConnect: boolean
+  cellData: boolean
+  hotspot: boolean
+  batteryPercent: boolean
+  batterySaver: boolean
+  autoUpdate: boolean
+  boldText: boolean
+  largerText: boolean
+  labels: boolean
+  notifMaster: boolean
+  notifPreview: boolean
+  gmailWifiOnlyAttachments: boolean
+  gmailPush: boolean
+  ytDefaultQuality: boolean
+  ytOfflineDownloads: boolean
+  lastSaved: number
+}
+
+// Función para cargar configuraciones guardadas
+const loadSavedConfig = (uid?: string | null): SavedPhoneConfig | null => {
+  if (typeof window === "undefined") return null
+  
+  try {
+    const raw = localStorage.getItem(storageKeyFor(uid))
+    if (raw) {
+      const parsed = JSON.parse(raw) as SavedPhoneConfig
+      console.log("✅ Configuración del teléfono cargada desde localStorage")
+      return parsed
+    }
+  } catch (error) {
+    console.error("❌ Error cargando configuración del teléfono:", error)
+  }
+  
+  return null
+}
+
+// Función para guardar configuraciones
+const saveConfig = (config: SavedPhoneConfig, uid?: string | null) => {
+  if (typeof window === "undefined") return
+  
+  try {
+    const serialized = JSON.stringify(config)
+    localStorage.setItem(storageKeyFor(uid), serialized)
+    console.log("✅ Configuración del teléfono guardada en localStorage")
+  } catch (error) {
+    console.error("❌ Error guardando configuración del teléfono:", error)
+  }
+}
+
+// Función para sincronizar con Firebase
+const syncWithFirebase = async (config: SavedPhoneConfig, uid?: string | null) => {
+  if (!uid || !db) return
+  
+  try {
+    const docRef = doc(db, "phoneConfigurations", `${uid}_4.4_avanzado_ej2`)
+    await setDoc(docRef, {
+      userId: uid,
+      competence: "4.4",
+      level: "avanzado",
+      exercise: "ej2",
+      configuration: config,
+      lastUpdated: new Date(),
+      timestamp: Date.now()
+    })
+    console.log("✅ Configuración del teléfono sincronizada con Firebase")
+  } catch (error) {
+    console.error("❌ Error sincronizando configuración del teléfono con Firebase:", error)
+  }
+}
+
 export default function SettingsSim() {
+  const { user } = useAuth()
   const [screen, setScreen] = useState<Screen>("root")
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   // === Estado inicial EXACTO según tu mapa ===
   const [modoVuelo, setModoVuelo] = useState(false)
@@ -72,36 +156,187 @@ export default function SettingsSim() {
   const [ytDefaultQuality, setYtDefaultQuality] = useState(false)
   const [ytOfflineDownloads, setYtOfflineDownloads] = useState(false)
 
-  // ⬇️ Sistema de puntaje (solo esto agregado): 1 punto por cada acción correcta; con 3 o más ⇒ punto de la pregunta.
+  // ===== Cargar configuraciones guardadas =====
   useEffect(() => {
-    try {
-      const actions = {
-        bluetoothOff: !btOn,                     // desactivar bluetooth
-        btAutoConnectOff: !btAutoConnect,        // desactivar nuevas conexiones automáticas
-        hotspotOff: !hotspot,                    // desactivar compartir Internet
-        gmailWifiOnlyAttachments: gmailWifiOnlyAttachments, // activar adjuntos solo en Wi-Fi (Gmail)
-        ytDefaultQuality: ytDefaultQuality,      // activar calidad de video predeterminada (YouTube)
+    if (typeof window === "undefined") return
+    
+    const loadData = async () => {
+      try {
+        // Cargar configuraciones desde localStorage
+        const saved = loadSavedConfig(user?.uid)
+        if (saved) {
+          setModoVuelo(saved.modoVuelo)
+          setWifiOn(saved.wifiOn)
+          setWifiAskToJoin(saved.wifiAskToJoin)
+          setBtOn(saved.btOn)
+          setBtAutoConnect(saved.btAutoConnect)
+          setCellData(saved.cellData)
+          setHotspot(saved.hotspot)
+          setBatteryPercent(saved.batteryPercent)
+          setBatterySaver(saved.batterySaver)
+          setAutoUpdate(saved.autoUpdate)
+          setBoldText(saved.boldText)
+          setLargerText(saved.largerText)
+          setLabels(saved.labels)
+          setNotifMaster(saved.notifMaster)
+          setNotifPreview(saved.notifPreview)
+          setGmailWifiOnlyAttachments(saved.gmailWifiOnlyAttachments)
+          setGmailPush(saved.gmailPush)
+          setYtDefaultQuality(saved.ytDefaultQuality)
+          setYtOfflineDownloads(saved.ytOfflineDownloads)
+          console.log("✅ Configuraciones del teléfono cargadas desde almacenamiento local")
+        }
+        
+        // Intentar cargar desde Firebase si no hay datos locales
+        if (!saved && user?.uid && db) {
+          try {
+            const docRef = doc(db, "phoneConfigurations", `${user.uid}_4.4_avanzado_ej2`)
+            const docSnap = await getDoc(docRef)
+            
+            if (docSnap.exists()) {
+              const data = docSnap.data()
+              const config = data.configuration as SavedPhoneConfig
+              
+              setModoVuelo(config.modoVuelo)
+              setWifiOn(config.wifiOn)
+              setWifiAskToJoin(config.wifiAskToJoin)
+              setBtOn(config.btOn)
+              setBtAutoConnect(config.btAutoConnect)
+              setCellData(config.cellData)
+              setHotspot(config.hotspot)
+              setBatteryPercent(config.batteryPercent)
+              setBatterySaver(config.batterySaver)
+              setAutoUpdate(config.autoUpdate)
+              setBoldText(config.boldText)
+              setLargerText(config.largerText)
+              setLabels(config.labels)
+              setNotifMaster(config.notifMaster)
+              setNotifPreview(config.notifPreview)
+              setGmailWifiOnlyAttachments(config.gmailWifiOnlyAttachments)
+              setGmailPush(config.gmailPush)
+              setYtDefaultQuality(config.ytDefaultQuality)
+              setYtOfflineDownloads(config.ytOfflineDownloads)
+              console.log("✅ Configuraciones del teléfono cargadas desde Firebase")
+              
+              // Sincronizar con localStorage
+              saveConfig(config, user.uid)
+            }
+          } catch (error) {
+            console.error("❌ Error cargando desde Firebase:", error)
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error cargando configuraciones del teléfono:", error)
+      } finally {
+        setIsLoading(false)
       }
-
-      const sub =
-        (actions.bluetoothOff ? 1 : 0) +
-        (actions.btAutoConnectOff ? 1 : 0) +
-        (actions.hotspotOff ? 1 : 0) +
-        (actions.gmailWifiOnlyAttachments ? 1 : 0) +
-        (actions.ytDefaultQuality ? 1 : 0)
-
-      const payload = { settings: actions, sub }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
-    } catch {
-      // no-op
     }
+    
+    loadData()
+  }, [user?.uid])
+
+  // ===== Guardado automático de configuraciones =====
+  useEffect(() => {
+    if (isLoading) return // No guardar mientras se está cargando
+    
+    const saveData = async () => {
+      setIsSaving(true)
+      try {
+        // Crear objeto de configuración completo
+        const config: SavedPhoneConfig = {
+          modoVuelo,
+          wifiOn,
+          wifiAskToJoin,
+          btOn,
+          btAutoConnect,
+          cellData,
+          hotspot,
+          batteryPercent,
+          batterySaver,
+          autoUpdate,
+          boldText,
+          largerText,
+          labels,
+          notifMaster,
+          notifPreview,
+          gmailWifiOnlyAttachments,
+          gmailPush,
+          ytDefaultQuality,
+          ytOfflineDownloads,
+          lastSaved: Date.now()
+        }
+        
+        // Guardar en localStorage
+        saveConfig(config, user?.uid)
+        
+        // Sincronizar con Firebase en segundo plano
+        if (user?.uid) {
+          syncWithFirebase(config, user.uid)
+        }
+        
+        // También mantener el sistema de puntaje existente
+        const actions = {
+          bluetoothOff: !btOn,                     // desactivar bluetooth
+          btAutoConnectOff: !btAutoConnect,        // desactivar nuevas conexiones automáticas
+          hotspotOff: !hotspot,                    // desactivar compartir Internet
+          gmailWifiOnlyAttachments: gmailWifiOnlyAttachments, // activar adjuntos solo en Wi-Fi (Gmail)
+          ytDefaultQuality: ytDefaultQuality,      // activar calidad de video predeterminada (YouTube)
+        }
+
+        const sub = 
+          (actions.bluetoothOff ? 1 : 0) +
+          (actions.btAutoConnectOff ? 1 : 0) +
+          (actions.hotspotOff ? 1 : 0) +
+          (actions.gmailWifiOnlyAttachments ? 1 : 0) +
+          (actions.ytDefaultQuality ? 1 : 0)
+
+        const payload = { settings: actions, sub }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+      } catch (error) {
+        console.error("❌ Error guardando configuraciones del teléfono:", error)
+      } finally {
+        // Reset saving state after a short delay
+        setTimeout(() => setIsSaving(false), 1000)
+      }
+    }
+    
+    saveData()
   }, [
+    isLoading,
+    modoVuelo,
+    wifiOn,
+    wifiAskToJoin,
     btOn,
     btAutoConnect,
+    cellData,
     hotspot,
+    batteryPercent,
+    batterySaver,
+    autoUpdate,
+    boldText,
+    largerText,
+    labels,
+    notifMaster,
+    notifPreview,
     gmailWifiOnlyAttachments,
+    gmailPush,
     ytDefaultQuality,
+    ytOfflineDownloads,
+    user?.uid
   ])
+
+  // Mostrar loading mientras se cargan las configuraciones
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f3fbfb] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#286575] mx-auto mb-4"></div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Cargando configuración...</h3>
+          <p className="text-gray-600">Recuperando tus configuraciones guardadas</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#f3fbfb]">
