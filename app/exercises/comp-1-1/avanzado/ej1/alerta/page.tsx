@@ -439,17 +439,6 @@ export default function AlertaBusqueda() {
                   </ul>
                 </div>
               ))}
-
-              {/* Pista */}
-              <div className="mt-4 text-xs text-gray-500">
-                {!query.trim()
-                  ? "🔎 Enviaste la alerta sin consulta: mostramos vista previa con todas las fuentes."
-                  : sources.automatic
-                  ? "🤖 Automático activado con consulta: mostramos resultados de todas las fuentes."
-                  : isTarget
-                  ? "✅ Configuración correcta. El primer resultado en BLOGS es “La famosa invasión de los osos en Sicilia”."
-                  : "ℹ️ Para cumplir la consigna usa: consulta “cine de animación”, idioma Español (LatAm), frecuencia Una vez al día, Todos los resultados y deja solo Blogs."}
-              </div>
             </>
           )}
         </div>
