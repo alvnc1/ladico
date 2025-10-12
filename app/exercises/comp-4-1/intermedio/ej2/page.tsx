@@ -24,7 +24,7 @@ type Threat = "phishing" | "malware" | "virus"
 // Etiquetas visibles tal como pediste
 // (Cambio: se quita la opción "smishing")
 const OPTIONS: { value: Threat; label: string }[] = [
-  { value: "phishing", label: "pishing" },
+  { value: "phishing", label: "phishing" },
   { value: "malware", label: "malware" },
   { value: "virus", label: "virus" },
 ]
