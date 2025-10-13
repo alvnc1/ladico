@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "next lint",
-    "start": "cross-env PORT=3000 next start -p $PORT"
+    "start": "node server.js",
+    "start:next": "cross-env PORT=3000 next start -p $PORT"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
