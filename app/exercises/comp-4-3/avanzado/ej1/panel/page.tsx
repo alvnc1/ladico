@@ -63,14 +63,6 @@ export default function PanelMenuPage() {
             desc="Bloquea el uso en horario nocturno."
             href="/exercises/comp-4-3/avanzado/ej1/panel/night"
           />
-
-          <SettingCard
-            icon={<Shield className="w-6 h-6 text-red-600" />}
-            title="Control de contenido"
-            desc="Gestiona el bloqueo de apps y webs con contenido inapropiado."
-            href=""
-          />
-
           <SettingCard
             icon={<Activity className="w-6 h-6 text-green-600" />}
             title="Actividad"
