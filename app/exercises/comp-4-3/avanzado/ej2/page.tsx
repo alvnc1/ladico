@@ -344,7 +344,7 @@ export default function AdvancedEj3Page() {
             {/* Instrucciones */}
             <div className="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#286575]">
               <p className="text-gray-700 leading-relaxed">
-                Observa el sitio web. Identifica los componentes que presentan problemas de accesibilidad para adultos mayores
+                Observa la página de inicio del sitio web. Identifica los componentes que presentan problemas de accesibilidad para adultos mayores
                 y selecciona las mejoras más adecuadas para que la página sea más inclusiva.
               </p>
               <p className="mt-2">
