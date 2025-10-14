@@ -679,45 +679,76 @@ function TestResultsContent() {
                       )
                     }
 
-                    // Si ya intentó TODAS las competencias del área
-                    if (allAttempted) {
-                      // Verificar si todas fueron aprobadas
-                      const allApproved = competencesInArea.every((c) =>
-                        approvedFromProfile.has(`${c} ${levelLetter}`)
-                      )
-                      
-                      if (allApproved) {
-                        // Todas aprobadas: Dashboard + Siguiente nivel
-                        return (
-                          <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                            <Button
-                              onClick={handleReturnToDashboard}
-                              variant="outline"
-                              className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
-                            >
-                              Volver al Dashboard
-                            </Button>
-                            <Button
-                              onClick={handleContinueEvaluation}
-                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base font-semibold"
-                            >
-                              <ChevronRight className="w-4 h-4 mr-2" />
-                              Siguiente nivel
-                            </Button>
-                          </div>
-                        )
-                      } else {
-                        // Algunas reprobadas: Solo Dashboard
-                        return (
-                          <Button
-                            onClick={handleReturnToDashboard}
-                            className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
-                          >
-                            Volver al Dashboard
-                          </Button>
-                        )
-                      }
-                    }
+                     // Si ya intentó TODAS las competencias del área
+                     if (allAttempted) {
+                       // Verificar si todas fueron APROBADAS (no solo intentadas)
+                       // Usar la información de Firebase que ya se calculó en checkAreaStatus
+                       const allApproved = areaNowComplete === true
+                       
+                       // También verificar individualmente como respaldo
+                       const individualCheck = competencesInArea.every((c) => {
+                         // Verificar desde el perfil del usuario (solo las que están en completedCompetences están aprobadas)
+                         const fromProfile = approvedFromProfile.has(`${c} ${levelLetter}`)
+                         
+                         // Si es la competencia actual y fue aprobada, incluirla
+                         const isCurrentAndPassed = c === competenceId && passed
+                         
+                         return fromProfile || isCurrentAndPassed
+                       })
+                       
+                       // Usar cualquiera de las dos verificaciones
+                       const finalAllApproved = allApproved || individualCheck
+                       
+                       console.log("🧩 Verificación de competencias APROBADAS:", {
+                         competencesInArea,
+                         allApproved,
+                         individualCheck,
+                         finalAllApproved,
+                         areaNowComplete,
+                         areaCounts,
+                         approvedFromProfile: Array.from(approvedFromProfile),
+                         currentCompetence: competenceId,
+                         currentPassed: passed,
+                         competencesStatus: competencesInArea.map(c => ({
+                           id: c,
+                           fromProfile: approvedFromProfile.has(`${c} ${levelLetter}`),
+                           isCurrentAndPassed: c === competenceId && passed,
+                           isApproved: approvedFromProfile.has(`${c} ${levelLetter}`) || (c === competenceId && passed)
+                         }))
+                       })
+                       
+                       if (finalAllApproved) {
+                         // Todas APROBADAS: Dashboard + Siguiente nivel
+                         return (
+                           <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                             <Button
+                               onClick={handleReturnToDashboard}
+                               variant="outline"
+                               className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
+                             >
+                               Volver al Dashboard
+                             </Button>
+                             <Button
+                               onClick={handleContinueEvaluation}
+                               className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base font-semibold"
+                             >
+                               <ChevronRight className="w-4 h-4 mr-2" />
+                               Siguiente nivel
+                             </Button>
+                           </div>
+                         )
+                       } else {
+                         // Algunas reprobadas: Solo Dashboard
+                         return (
+                           <Button
+                             onClick={handleReturnToDashboard}
+                             className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
+                           >
+                             Volver al Dashboard
+                           </Button>
+                         )
+                       }
+                     }
 
                     // Si aún quedan competencias por hacer, permitir continuar
                     return (
