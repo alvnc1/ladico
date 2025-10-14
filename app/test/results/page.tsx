@@ -137,29 +137,43 @@ function ResultsUniversalContent() {
         .filter(c => c.dimension === current.dimension)
         .sort((a, b) => a.code.localeCompare(b.code))
 
-      // Encontrar el índice de la competencia actual
-      const currentIndex = inArea.findIndex(c => c.id === competence)
+      const levelLetter =
+        level === "basico" ? "B" :
+        level === "intermedio" ? "I" :
+        level === "avanzado" ? "A" :
+        level.charAt(0).toUpperCase()
+
+      // Obtener competencias completadas (usando la misma lógica que la página de resultados)
+      const completedCompetences = new Set<string>()
       
-      if (currentIndex === -1) {
-        router.push("/dashboard")
-        return
+      // Agregar competencias del perfil (aprobadas)
+      const approvedFromProfile = new Set<string>(
+        (userData?.completedCompetences || []).filter((c) =>
+          c.endsWith(` ${levelLetter}`)
+        )
+      )
+      approvedFromProfile.forEach(comp => completedCompetences.add(comp))
+      
+      // Agregar competencias completadas desde localStorage
+      if (typeof window !== "undefined") {
+        for (const compCode of inArea.map(c => c.id)) {
+          const completedKey = `ladico:completed:${compCode}:${level}`
+          if (localStorage.getItem(completedKey) === "1") {
+            completedCompetences.add(`${compCode} ${levelLetter}`)
+          }
+        }
       }
 
-      // Determinar la siguiente competencia
-      let nextCompetence: typeof inArea[0] | null = null
-      
-      if (currentIndex < inArea.length - 1) {
-        // Si no es la última competencia, ir a la siguiente
-        nextCompetence = inArea[currentIndex + 1]
-      } else {
-        // Si es la última competencia del área, volver a la primera
-        nextCompetence = inArea[0]
-      }
+      // Encontrar la primera competencia no completada
+      const nextCompetence = inArea.find(c => 
+        !completedCompetences.has(`${c.id} ${levelLetter}`)
+      )
 
       if (nextCompetence) {
         const nextCompPath = `comp-${nextCompetence.id.replace(/\./g, "-")}`
         router.push(`/exercises/${nextCompPath}/${level}/ej1`)
       } else {
+        // Si todas están completadas, ir al dashboard
         router.push("/dashboard")
       }
     } catch (error) {
