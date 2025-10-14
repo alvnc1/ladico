@@ -12,6 +12,7 @@ import { skillsInfo } from "@/components/data/digcompSkills"
 import { markLevelCompleted } from "@/lib/levelProgress"
 import { doc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { loadCompetences } from "@/services/questionsService"
 
 function ResultsUniversalContent() {
   const sp = useSearchParams()
@@ -113,18 +114,51 @@ function ResultsUniversalContent() {
     router.push(`/exercises/${compPath}/${nextLevel}/ej1`)
   }
 
-  const handleContinueToNextCompetence = () => {
-    const [majorStr, minorStr] = String(competence).split(".")
-    const major = Number(majorStr)
-    const minor = Number(minorStr)
-    if (Number.isNaN(major) || Number.isNaN(minor)) {
+  const handleContinueToNextCompetence = async () => {
+    try {
+      // Cargar todas las competencias para obtener el orden correcto
+      const comps = await loadCompetences()
+      const current = comps.find(c => c.id === competence)
+      
+      if (!current) {
+        router.push("/dashboard")
+        return
+      }
+
+      // Obtener todas las competencias del área actual ordenadas
+      const inArea = comps
+        .filter(c => c.dimension === current.dimension)
+        .sort((a, b) => a.code.localeCompare(b.code))
+
+      // Encontrar el índice de la competencia actual
+      const currentIndex = inArea.findIndex(c => c.id === competence)
+      
+      if (currentIndex === -1) {
+        router.push("/dashboard")
+        return
+      }
+
+      // Determinar la siguiente competencia
+      let nextCompetence: typeof inArea[0] | null = null
+      
+      if (currentIndex < inArea.length - 1) {
+        // Si no es la última competencia, ir a la siguiente
+        nextCompetence = inArea[currentIndex + 1]
+      } else {
+        // Si es la última competencia del área, volver a la primera
+        nextCompetence = inArea[0]
+      }
+
+      if (nextCompetence) {
+        const nextCompPath = `comp-${nextCompetence.id.replace(/\./g, "-")}`
+        router.push(`/exercises/${nextCompPath}/${level}/ej1`)
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (error) {
+      console.error("Error navegando a la siguiente competencia:", error)
       router.push("/dashboard")
-      return
     }
-    const nextMinor = minor + 1
-    const nextCompetenceId = `${major}.${nextMinor}`
-    const nextCompPath = `comp-${nextCompetenceId.replace(/\./g, "-")}`
-    router.push(`/exercises/${nextCompPath}/${level}/ej1`)
   }
 
   const handleGoToNextLevelInArea = () => {
@@ -149,7 +183,7 @@ function ResultsUniversalContent() {
     if (Number.isNaN(major) || Number.isNaN(minor)) return false
     const LAST_BY_AREA: Record<number, number> = { 1: 3, 4: 4 }
     const lastMinor = LAST_BY_AREA[major] ?? 4
-    return minor >= lastMinor
+    return minor === lastMinor
   })()
 
   const isMaxLevelAndLast = isLastCompetenceOfArea && level === "avanzado"
@@ -348,34 +382,25 @@ function ResultsUniversalContent() {
                     <>
                       {passed ? (
                         // ✅ Si aprueba:
-                        isLastCompetenceOfArea && level !== "avanzado" ? (
-                          // Última del área: decidir según el área completa en ESTE nivel
-                          isAreaCompletedAtLevel ? (
-                            <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                              <Button
-                                onClick={handleBack}
-                                variant="outline"
-                                className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
-                              >
-                                Ir al Dashboard
-                              </Button>
-                              <Button
-                                onClick={handleGoToNextLevelInArea}
-                                className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
-                              >
-                                Siguiente nivel
-                              </Button>
-                            </div>
-                          ) : (
+                        isAreaCompletedAtLevel ? (
+                          // Área completa en ESTE nivel → ir al siguiente nivel
+                          <div className="flex flex-col sm:flex-row gap-3 flex-1">
                             <Button
                               onClick={handleBack}
-                              className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
+                              variant="outline"
+                              className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
                             >
-                              Volver al Dashboard
+                              Ir al Dashboard
                             </Button>
-                          )
+                            <Button
+                              onClick={handleGoToNextLevelInArea}
+                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                            >
+                              Siguiente nivel
+                            </Button>
+                          </div>
                         ) : (
-                          // No es la última del área → continuar a la siguiente competencia
+                          // Área NO completa → continuar a la siguiente competencia
                           <div className="flex flex-col sm:flex-row gap-3 flex-1">
                             <Button
                               onClick={handleBack}

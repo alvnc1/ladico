@@ -5,14 +5,14 @@ import { getStorage, type FirebaseStorage } from "firebase/storage"
 import { getAnalytics, type Analytics } from "firebase/analytics"
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyD0nNdAafmNc4Crejel9eSl57a8tOpnsvI",
-  authDomain: "ladico-d8aa2.firebaseapp.com",
-  projectId: "ladico-d8aa2",
-  storageBucket: "ladico-d8aa2.firebasestorage.app",
-  messagingSenderId: "79757424410",
-  appId: "1:79757424410:web:79247603cf5f70d9939ea3",
-  measurementId: "G-2K90VT76EC"
-};
+  apiKey: "AIzaSyADgCJZhie5XzhovxDVVQ6oySlmO7ADDgA",
+  authDomain: "ludicocos-e4bcc.firebaseapp.com",
+  projectId: "ludicocos-e4bcc",
+  storageBucket: "ludicocos-e4bcc.firebasestorage.app",
+  messagingSenderId: "251212234614",
+  appId: "1:251212234614:web:f52d46396a1374b66cc457",
+  measurementId: "G-RT3XB7QGP0"
+}
 
 let app: FirebaseApp
 let auth: Auth
