@@ -55,6 +55,13 @@ function ResultsUniversalContent() {
       const key = `ladico:${competence}:${level}:progress`
       localStorage.removeItem(key)
 
+      // Marcar la competencia como completada (aprobada o reprobada) usando la misma lógica que CompetenceCard
+      const completedKey = `ladico:completed:${competence}:${level}`
+      localStorage.setItem(completedKey, "1")
+      
+      // Disparar evento para actualizar CompetenceCard
+      window.dispatchEvent(new Event("ladico:refresh"))
+
       const levelMap: Record<string, "básico" | "intermedio" | "avanzado"> = {
         basico: "básico",
         intermedio: "intermedio",
@@ -189,7 +196,7 @@ function ResultsUniversalContent() {
   const isMaxLevelAndLast = isLastCompetenceOfArea && level === "avanzado"
 
   // --------- NUEVO: Cálculo robusto de "área completa" en ESTE nivel ----------
-  // Usamos lo que ya tiene el usuario en completedCompetences + la competencia actual si "passed"
+  // Consideramos el área completa si TODAS las competencias han sido intentadas (aprobadas o reprobadas)
   const isAreaCompletedAtLevel = (() => {
     const [majorStr] = String(competence).split(".")
     const major = Number(majorStr)
@@ -204,18 +211,44 @@ function ResultsUniversalContent() {
     if (!list) return false // si el área no está mapeada, no forzamos "Siguiente nivel"
 
     const levelLetter = level === "basico" ? "B" : level === "intermedio" ? "I" : level === "avanzado" ? "A" : level.charAt(0).toUpperCase()
-    const fromProfile = new Set<string>(
+    
+    // Obtener competencias aprobadas del perfil
+    const approvedFromProfile = new Set<string>(
       (Array.isArray(userData?.completedCompetences) ? userData!.completedCompetences : [])
         .filter((c) => c.endsWith(` ${levelLetter}`))
     )
 
-    // Incluir el resultado actual en memoria (por si Firestore aún no sincroniza)
+    // Incluir el resultado actual si fue aprobado
     if (passed) {
-      fromProfile.add(`${competence} ${levelLetter}`)
+      approvedFromProfile.add(`${competence} ${levelLetter}`)
     }
 
-    // El área está completa si TODAS las competencias del área (en este nivel) están dentro del set
-    return list.every((code) => fromProfile.has(`${code} ${levelLetter}`))
+    // Verificar competencias intentadas usando localStorage
+    // Buscar en localStorage por competencias que hayan sido intentadas
+    const attemptedCompetences = new Set<string>()
+    
+    // Agregar competencias aprobadas
+    approvedFromProfile.forEach(comp => attemptedCompetences.add(comp))
+    
+    // Buscar en localStorage por competencias intentadas (tanto aprobadas como reprobadas)
+    if (typeof window !== "undefined") {
+      try {
+        for (const compCode of list) {
+          // Buscar si hay evidencia de que esta competencia fue intentada
+          const sessionKey = `session:${compCode}:${level.charAt(0).toUpperCase() + level.slice(1)}`
+          const hasSession = localStorage.getItem(sessionKey)
+          
+          if (hasSession) {
+            attemptedCompetences.add(`${compCode} ${levelLetter}`)
+          }
+        }
+      } catch (error) {
+        console.error("Error checking localStorage for attempted competences:", error)
+      }
+    }
+
+    // El área está completa si TODAS las competencias del área han sido intentadas
+    return list.every((code) => attemptedCompetences.has(`${code} ${levelLetter}`))
   })()
 
   const compTitle = skillsInfo[competence]?.title || "Competencia"
@@ -371,81 +404,132 @@ function ResultsUniversalContent() {
                 </>
               ) : (
                 <>
-                  {isMaxLevelAndLast ? (
-                    <Button
-                      onClick={handleBack}
-                      className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
-                    >
-                      Volver al Dashboard
-                    </Button>
-                  ) : (
-                    <>
-                      {passed ? (
-                        // ✅ Si aprueba:
-                        isAreaCompletedAtLevel ? (
-                          // Área completa en ESTE nivel → ir al siguiente nivel
+                  {(() => {
+                    // --- Config base ---
+                    const [currentMajorStr] = String(competence).split(".")
+                    const currentMajor = Number(currentMajorStr)
+                    const areaCompetences: Record<number, string[]> = {
+                      1: ["1.1", "1.2", "1.3"],
+                      4: ["4.1", "4.2", "4.3", "4.4"],
+                    }
+                    const competencesInArea = areaCompetences[currentMajor] || []
+
+                    const levelLetter =
+                      level === "basico" ? "B" :
+                      level === "intermedio" ? "I" :
+                      level === "avanzado" ? "A" :
+                      level.charAt(0).toUpperCase()
+
+                    // --- Competencias intentadas usando la misma lógica que CompetenceCard ---
+                    const attemptedCompetences = new Set<string>()
+                    
+                    // Agregar competencias del perfil (aprobadas)
+                    const approvedFromProfile = new Set<string>(
+                      (userData?.completedCompetences || []).filter((c) =>
+                        c.endsWith(` ${levelLetter}`)
+                      )
+                    )
+                    approvedFromProfile.forEach(comp => attemptedCompetences.add(comp))
+                    
+                    // Agregar competencias completadas desde localStorage (usando la misma clave que CompetenceCard)
+                    if (typeof window !== "undefined") {
+                      for (const compCode of competencesInArea) {
+                        // Usar la misma lógica que CompetenceCard para detectar competencias completadas
+                        const completedKey = `ladico:completed:${compCode}:${level}`
+                        if (localStorage.getItem(completedKey) === "1") {
+                          attemptedCompetences.add(`${compCode} ${levelLetter}`)
+                        }
+                      }
+                    }
+                    
+                    // Agregar la competencia actual (que acabamos de hacer)
+                    attemptedCompetences.add(`${competence} ${levelLetter}`)
+                    
+                    // Verificar si todas las competencias del área han sido intentadas
+                    const allAttempted = competencesInArea.every((c) =>
+                      attemptedCompetences.has(`${c} ${levelLetter}`)
+                    )
+
+                    console.log("🧩 Estado área:", {
+                      competence,
+                      attempted: [...attemptedCompetences],
+                      allAttempted,
+                      competencesInArea,
+                    })
+
+                    // 🧠 CASOS SIMPLIFICADOS
+                    if (isMaxLevelAndLast) {
+                      // Fin del nivel avanzado - última competencia del área
+                      return (
+                        <Button
+                          onClick={handleBack}
+                          className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
+                        >
+                          Volver al Dashboard
+                        </Button>
+                      )
+                    }
+
+                    // Si ya intentó TODAS las competencias del área
+                    if (allAttempted) {
+                      // Verificar si todas fueron aprobadas
+                      const allApproved = competencesInArea.every((c) =>
+                        approvedFromProfile.has(`${c} ${levelLetter}`)
+                      )
+                      
+                      if (allApproved) {
+                        // Todas aprobadas: Dashboard + Siguiente nivel
+                        return (
                           <div className="flex flex-col sm:flex-row gap-3 flex-1">
                             <Button
                               onClick={handleBack}
                               variant="outline"
                               className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
                             >
-                              Ir al Dashboard
+                              Volver al Dashboard
                             </Button>
                             <Button
                               onClick={handleGoToNextLevelInArea}
-                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base font-semibold"
                             >
+                              <ChevronRight className="w-4 h-4 mr-2" />
                               Siguiente nivel
                             </Button>
                           </div>
-                        ) : (
-                          // Área NO completa → continuar a la siguiente competencia
-                          <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                            <Button
-                              onClick={handleBack}
-                              variant="outline"
-                              className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
-                            >
-                              Ir al Dashboard
-                            </Button>
-                            <Button
-                              onClick={handleContinueToNextCompetence}
-                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
-                            >
-                              Siguiente competencia
-                            </Button>
-                          </div>
                         )
-                      ) : (
-                        // ❌ Si reprueba:
-                        isLastCompetenceOfArea ? (
+                      } else {
+                        // Algunas reprobadas: Solo Dashboard
+                        return (
                           <Button
                             onClick={handleBack}
                             className="flex-1 bg-[#286575] hover:bg-[#3a7d89] text-white rounded-xl py-3 shadow"
                           >
                             Volver al Dashboard
                           </Button>
-                        ) : (
-                          <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                            <Button
-                              onClick={handleBack}
-                              variant="outline"
-                              className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
-                            >
-                              Ir al Dashboard
-                            </Button>
-                            <Button
-                              onClick={handleContinueToNextCompetence}
-                              className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
-                            >
-                              Siguiente competencia
-                            </Button>
-                          </div>
                         )
-                      )}
-                    </>
-                  )}
+                      }
+                    }
+
+                    // Si aún quedan competencias por hacer, permitir continuar
+                    return (
+                      <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                        <Button
+                          onClick={handleBack}
+                          variant="outline"
+                          className="flex-1 bg-transparent border-2 border-gray-300 hover:border-gray-400 rounded-xl py-3 text-base font-medium transition-all"
+                        >
+                          Ir al Dashboard
+                        </Button>
+                        <Button
+                          onClick={handleContinueToNextCompetence}
+                          className="flex-1 bg-[#286675] hover:bg-[#1e4a56] text-white rounded-xl py-3 text-base sm:text-lg font-semibold"
+                        >
+                          <ChevronRight className="w-4 h-4 mr-2" />
+                          Siguiente competencia
+                        </Button>
+                      </div>
+                    )
+                  })()}
                 </>
               )}
             </div>
